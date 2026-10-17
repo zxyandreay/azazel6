@@ -1,0 +1,18 @@
+name: Foundation
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -v
+      - run: python tools/repository_check.py
+      - run: python tools/framework.py fetch
+      - run: cmake -S . -B local/build/ci -DAZAZEL6_FRAMEWORK=ON -DCMAKE_BUILD_TYPE=Debug
+      - run: cmake --build local/build/ci --parallel 2
+      - run: ctest --test-dir local/build/ci --output-on-failure

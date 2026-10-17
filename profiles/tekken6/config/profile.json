@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "game_id": "ULUS10466",
+  "region": "USA",
+  "executable": {
+    "format": "ELF32-LE-MIPS",
+    "size": 4158480,
+    "sha256": "e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f",
+    "entry": "0x08804124",
+    "load_address": "0x08804018"
+  },
+  "generation": {"unit_span": 4096, "prefix": "tekken6"},
+  "source": "https://github.com/zxyandreay/tekken6-jin8/blob/dd3894fe72c09e67226f5482ca1ef5afa9c0d1a0/research/eboot/fingerprint.md"
+}

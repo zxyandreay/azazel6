@@ -1,0 +1,8 @@
+{
+  "yakumo": {
+    "url": "https://github.com/TeamGDB/Yakumo.git",
+    "revision": "39ac05f1a166703430d18826bc5877f4feb6b511",
+    "license": "MIT",
+    "paths": ["cmake", "configs", "include", "src", "tools", "tests", "docs"]
+  }
+}
