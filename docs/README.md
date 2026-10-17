@@ -1,6 +1,6 @@
 # Azazel6 technical knowledge base
 
-Reviewed 2026-10-17. Evidence labels apply to individual claims:
+Reviewed 2026-10-18. Evidence labels apply to individual claims:
 
 - **VERIFIED:** inspected source/bytes or reproduced execution/test in this project.
 - **DOCUMENTED:** reported by a reference project, not reproduced here.
@@ -34,6 +34,7 @@ Reviewed 2026-10-17. Evidence labels apply to individual claims:
 - [Dormant threads and StartThread boundary](research/dormant-threads.md)
 - [Thread startup and bootstrap handoff](research/thread-startup.md)
 - [Shared partition memory](research/partition-memory.md)
+- [Resident module identity](research/module-identity.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

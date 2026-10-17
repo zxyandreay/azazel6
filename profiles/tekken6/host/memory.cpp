@@ -67,7 +67,7 @@ std::shared_ptr<PartitionMemory> register_memory_hle(psprecomp::Runtime& rt, std
         }
         std::uint64_t adjusted = size;
         if (type == 2) adjusted += address & 255u;
-        if (!size || adjusted > 0xFFFFFFFFull || state->next_uid >= 0x7FFFFFFFu) {
+        if (!size || adjusted > 0xFFFFFFFFull || state->next_uid >= 0x20000000u) {
             c.set_gpr(2, 0x800200D9u); return;
         }
         auto block = state->allocator->allocate(static_cast<std::uint32_t>(adjusted), type >= 3 ? address : 256,

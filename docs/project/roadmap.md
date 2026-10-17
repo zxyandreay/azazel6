@@ -5,8 +5,8 @@ These are dependency-ordered research milestones, not delivery promises.
 | Milestone | Outcome | Exit evidence |
 | --- | --- | --- |
 | 001 Foundation | Implemented | Pinned framework, validation, analysis, native entry slice, Android cross-build |
-| 002 Native bring-up | In progress: bootstrap return and child execution; expanding AOT | First import semantics, wider verified AOT coverage, bootstrap ABI, explicit failure boundaries |
-| 003 Boot sequence | Planned | Kernel threads, scheduler, I/O, module loading and title-screen progression |
+| 002 Native bring-up | Implemented: bounded native bootstrap and child execution | First import semantics, wider verified AOT coverage, bootstrap ABI, explicit failure boundaries |
+| 003 Boot sequence | In progress: resident module and kernel services | Kernel threads, scheduler, I/O, module loading and title-screen progression |
 | 004 Graphics/input | Planned | GE/Vulkan correctness, menus, gamepads and multitouch |
 | 005 Stock combat | Planned | Character selection, training, advancing simulation, audio and stable stock matches |
 | 006 Ultrawide | Planned | Verified 3D projection and semantic HUD ownership, round-win matrix |

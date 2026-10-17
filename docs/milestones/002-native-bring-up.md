@@ -1,50 +1,43 @@
-# Milestone 002: native bring-up
+# Milestone 002: native executable bring-up
 
-Current continuation: [thread startup and bootstrap handoff](../research/thread-startup.md).
+**Status: IMPLEMENTED, 2026-10-18.** The original milestone requires guest memory,
+ELF loading, AOT registration, PSP imports and first verified Tekken execution.
+Those foundations now execute the exact-hash module bootstrap and its first child
+thread. This is not completion of the boot sequence or a playable port.
 
-**Status: IN PROGRESS, checkpoint 2026-10-17.** This advances the foundation probe;
-it does not complete bootstrap ABI research or produce a playable port.
+## Verified outcomes
 
-## Implemented checkpoint
+- The validated ELF loads into checked guest RAM; GP and bootstrap thread
+  parameters come from module metadata and exports.
+- Bounded CFG discovery supplies six observed roots, 530 instruction words,
+  generated native C++ and returning wrappers for all 268 imports. Unsupported
+  control flow fails closed and missing HLE remains rejecting.
+- SDK/compiler services, thread create/start/exit/delete, argument copying,
+  service-boundary priority scheduling and shared stack/heap allocation work.
+- The real startup returns from module_start, executes its child, allocates an
+  aligned 18 MiB-class partition block and resolves its resident module ID.
+- Native execution now reaches interrupt suspension in runtime initialization:
+  `Kernel_Library::0x092968F4` at `0x08B88D38`.
 
-- Bounded intraprocedural startup discovery replaces the first-call-only slice.
-  The exact input yields 69 instruction words, including delay slots; indirect
-  transfers, invalid targets and unsupported branch forms fail closed.
-- Generated local import wrappers preserve HLE redirects/context changes and
-  perform ordinary returns only when the service remains in the same context.
-- Profile-owned SDK/compiler settings implement two source-backed service
-  contracts without changing the external pinned framework.
-- Diagnostics show import arguments and modeled state, with explicit stops for
-  missing services and separate failure results for other stop reasons.
+## Validation and limits
 
-The first checkpoint completed SDK/compiler calls and reached CreateThread; see
-[settings-service evidence](../research/startup-imports.md). The second checkpoint
-adds owned dormant threads, bounded guest stacks and deletion/reuse contracts.
-**VERIFIED current outcome:** startup creates one dormant thread and reaches
-`sceKernelStartThread` at `0x08B88E70`. No thread is started. See
-[thread contracts and observations](../research/dormant-threads.md).
+21 synthetic Python tests and eight integrated CTest suites passed on Windows.
+The generated probe compiled and linked on Windows and Android ARM64/API 26.
+The real-input probe retained a 15-second timeout, 64-dispatch limit and disabled
+interpreter fallback. Linux CI has passed the preceding memory checkpoint;
+subsequent commit results are tracked by GitHub Actions.
 
-## Validation
+Only observed startup code is covered. Full-corpus compilation, general code/data
+classification, overlays, complete kernel ABI, interrupts, waits, file I/O and
+boot progression remain Milestone 003 dependencies. Android execution, graphics,
+audio and input remain unverified or unimplemented.
 
-- 19 Python tests passed using synthetic input, including six CFG test methods.
-- Six integrated Release CTest suites passed: aspect, bootstrap HLE, dormant
-  threads, and three upstream suites. HLE tests include state lifetime, invalid
-  arguments, stack ownership/exhaustion and returns across redirects/context switches.
-- Generated startup and wrappers compiled with MSVC 19.43.34809. A hash-validated
-  real-input experiment stopped at the missing StartThread service within its
-  15-second timeout and 64-dispatch budget; no interpreter fallback was enabled.
-- Expanded probe and bootstrap HLE cross-compiled/linked for Android ARM64/API 26
-  with NDK 27.1.12297006. No Android device execution or APK packaging was tested.
-- Repository CI runs synthetic tests only. Hosted execution status is available
-  from the commit's GitHub Actions run; the local real-game trace is not uploaded.
+## Evidence trail
 
-## Remaining milestone work
+- [SDK/compiler settings](../research/startup-imports.md)
+- [Dormant thread ownership](../research/dormant-threads.md)
+- [Thread start and bootstrap handoff](../research/thread-startup.md)
+- [Shared partition memory](../research/partition-memory.md)
+- [Resident module identity](../research/module-identity.md)
 
-**PLANNED:** establish module-start ABI and the first thread lifecycle, validate
-guest-owned names/options/stack/UIDs, and expand verified AOT coverage as required.
-Kernel scheduling and subsequent boot services may span Milestone 003. Full-corpus
-compilation, graphics, audio, input and gameplay remain unimplemented.
-
-The next concrete task is StartThread argument ownership and bootstrap scheduling,
-including caller priority and return lifecycle. Keep that boundary until semantics
-and failure tests exist; fabricated success is not progress.
+Milestone 003 continues with interrupt state and bounded startup expansion.

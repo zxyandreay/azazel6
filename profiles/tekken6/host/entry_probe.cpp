@@ -5,6 +5,7 @@
 #include "probe_config.hpp"
 #include "azazel6/bootstrap.hpp"
 #include "azazel6/threads.hpp"
+#include "azazel6/module.hpp"
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -55,6 +56,7 @@ int main(int argc, char** argv) {
         }
         if (!image_segment || !(image_segment->flags & 1u)) throw Error("No executable image");
         const auto image_end = image_segment->vaddr + image_segment->memory_size;
+        azazel6::register_module_hle(*rt, image_segment->vaddr, image_segment->memory_size);
         const auto allocator = std::make_shared<azazel6::GuestAllocator>(
             (image_end + 255u) & ~255u, stack_top - bootstrap_size);
         const auto partition = azazel6::register_memory_hle(*rt, allocator);

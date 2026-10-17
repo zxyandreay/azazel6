@@ -8,25 +8,25 @@ ambiguous mappings, overlap, overflow and non-file-backed entry instructions.
 
 The framework's `required_ram_size()` selects 32 MiB to hold this executable and
 BSS. This is a loader fit result, not a measurement of gameplay or mod requirements.
-The probe reserves a 64 KiB experimental stack below `0x0A000000`, verifies it
-does not overlap loaded segments, and starts SP at `0x09FFFFF0`. Module GP is read
-from verified metadata, not guessed. Entry arguments begin at zero for this experiment.
+The bootstrap stack uses the exported 1 KiB size, with checked TLS/argument layout.
+Child stacks and partition blocks share one allocator excluding the loaded image
+and bootstrap stack. Module GP is read from verified metadata. Bootstrap arguments
+are zero for this experiment; filesystem launch arguments are not yet modeled.
 
 **VERIFIED limitation:** full automatic generation classifies the entire RWX
 segment as potentially executable, including data. Its 69,314 unsupported
 instruction occurrences are not 69,314 demonstrated missing gameplay opcodes.
 Overlapping functions and embedded data inflate those counts. The 1,015 generated
 units are exploratory output. Milestone 001 compiled a 52-byte entry slice;
-Milestone 002 expands that to 69 words (276 bytes) of bounded startup control flow.
+Milestone 002 expands that to 530 words across six observed startup roots.
 
 The startup scanner follows branch paths and call continuations without entering
 callees. PSPRecomp emits its C++; generated import wrappers call the profile's HLE
 and return to guest RA only when the service has neither stopped nor redirected
 execution or changed the execution-context token. The native experiment completes
-two settings services and CreateThread, then stops at StartThread. No hand-written
-substitute emulates the entry. See [current observations](../research/dormant-threads.md),
-[settings checkpoint](../research/startup-imports.md) and
-[foundation observations](../research/executable.md).
+settings services, bootstrap handoff, child execution, partition allocation and
+resident module lookup. It stops at interrupt suspension. No hand-written substitute
+emulates the entry. See [current outcomes](../milestones/002-native-bring-up.md).
 
 **PLANNED:** establish code/data ownership, repair import-aware generation for
 sectionless input, validate function boundaries and expand AOT in bounded slices.
