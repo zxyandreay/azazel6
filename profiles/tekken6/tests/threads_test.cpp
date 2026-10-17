@@ -214,9 +214,61 @@ void interrupt_state() {
           other.threads->snapshot()[0].status == ThreadStatus::Dormant, "Disabled-interrupt scheduling accepted");
     Scheduled independent; check(independent.threads->interrupts_enabled(), "Interrupt state leaked across runtimes");
 }
+std::uint32_t mutex_call(Scheduled& f, std::uint32_t nid, std::uint32_t a0,
+                         std::uint32_t a1 = 0, std::uint32_t a2 = 0, std::uint32_t a3 = 0) {
+    auto& c = f.rt->cpu(); c.gpr[4] = a0; c.gpr[5] = a1; c.gpr[6] = a2; c.gpr[7] = a3;
+    f.rt->invoke_import("ThreadManForUser", nid, c); return c.gpr[2];
+}
+void mutex_ownership() {
+    Scheduled f;
+    const auto uid = mutex_call(f, 0xB7D098C6u, 0x08004000u);
+    check(uid == 0x30000000u && f.threads->mutexes().at(uid).owner == 0, "Mutex creation namespace/ownership");
+    check(mutex_call(f, 0xB011B11Fu, uid, 0) == 0x800201BDu, "Zero lock count");
+    check(mutex_call(f, 0xB011B11Fu, uid, 1) == 0, "First lock");
+    check(mutex_call(f, 0xB011B11Fu, uid, 1) == 0x800201C8u, "Nonrecursive relock");
+    const auto high = f.create(8); f.start(high);
+    check(mutex_call(f, 0x0DDCD2C9u, uid, 1) == 0x800201C4u, "Try-lock by other owner");
+    check(mutex_call(f, 0x6B30100Fu, uid, 1) == 0x800201C5u, "Unlock by other owner");
+    const auto child_mutex = mutex_call(f, 0xB7D098C6u, 0x08004000u, 0, 1);
+    check(f.threads->mutexes().at(child_mutex).owner == high, "Initial owner");
+    f.exit();
+    check(f.threads->mutexes().at(child_mutex).owner == 0 && f.threads->mutexes().at(child_mutex).count == 0,
+          "Exiting owner retained mutex");
+    check(mutex_call(f, 0x6B30100Fu, uid, 1) == 0 && mutex_call(f, 0x6B30100Fu, uid, 1) == 0x800201C5u,
+          "Unlock ownership transition");
+    check(mutex_call(f, 0xF8170FBEu, uid) == 0 && mutex_call(f, 0xF8170FBEu, uid) == 0x800201C3u,
+          "Delete/stale UID");
+    check(mutex_call(f, 0xB011B11Fu, uid, 1) == 0x800201C3u, "Deleted mutex locked");
+    check(mutex_call(f, 0xB7D098C6u, 0x08004000u) != uid, "Deleted UID reused");
+    const auto recursive = mutex_call(f, 0xB7D098C6u, 0x08004000u, 0x200, 1);
+    check(mutex_call(f, 0xB011B11Fu, recursive, 0x7FFFFFFEu) == 0, "Recursive count");
+    check(mutex_call(f, 0xB011B11Fu, recursive, 1) == 0x800201C6u, "Recursive overflow");
+    check(mutex_call(f, 0x6B30100Fu, recursive, 0x7FFFFFFEu) == 0, "Recursive unlock");
+    check(mutex_call(f, 0x6B30100Fu, recursive, 2) == 0x800201C7u, "Recursive underflow");
+    check(mutex_call(f, 0xB7D098C6u, 0) == 0x80020001u, "Null mutex name");
+    check(mutex_call(f, 0xB7D098C6u, 0x08004000u, 0, 2) == 0x800201BDu, "Invalid initial count");
+    check(mutex_call(f, 0xB7D098C6u, 0x08004000u, 0x400) == 0x80020191u, "Invalid mutex attribute");
+    for (unsigned i = 0; i < 40; ++i) f.rt->memory().store8(0x08004000u + i, 'X');
+    const auto named = mutex_call(f, 0xB7D098C6u, 0x08004000u);
+    check(f.threads->mutexes().at(named).name.size() == 31, "Unbounded name");
+}
+void mutex_boundaries() {
+    Scheduled wait;
+    const auto uid = mutex_call(wait, 0xB7D098C6u, 0x08004000u, 0, 1);
+    const auto high = wait.create(8); wait.start(high);
+    mutex_call(wait, 0xB011B11Fu, uid, 1);
+    check(wait.rt->stopped() && wait.threads->mutexes().at(uid).owner == kBootstrapUid &&
+          wait.threads->mutexes().at(uid).count == 1, "Unimplemented wait fabricated success");
+    Scheduled timed; const auto t = mutex_call(timed, 0xB7D098C6u, 0x08004000u);
+    mutex_call(timed, 0xB011B11Fu, t, 1, 0x08004100u);
+    check(timed.rt->stopped() && timed.threads->mutexes().at(t).count == 0, "Unsupported timeout acquired lock");
+    Scheduled bad; mutex_call(bad, 0xB7D098C6u, 0xFFFFFFFFu);
+    check(bad.rt->stopped() && bad.threads->mutexes().empty(), "Invalid name mutated mutex registry");
+}
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
+          mutex_ownership(); mutex_boundaries();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

@@ -14,11 +14,12 @@
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; nine integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling |
+| Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; guarded first constructor reaches missing CreateMutex at 0x08B88F88 |
+| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; first constructor creates a mutex and returns; second constructor at 0x08B033BC needs coverage |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED preceding thread and memory checkpoints passed hosted CI |
 | Android device/APK | NOT TESTED / not implemented |

@@ -44,6 +44,16 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     };
     rt.register_hle("Kernel_Library", 0x5F10D406u, resume);
     rt.register_hle("Kernel_Library", 0x3B84732Du, resume);
+    rt.register_hle("ThreadManForUser", 0xB7D098C6u,
+        [state](auto& runtime, auto& ctx) { state->create_mutex(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0xF8170FBEu,
+        [state](auto& runtime, auto& ctx) { state->delete_mutex(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0xB011B11Fu,
+        [state](auto& runtime, auto& ctx) { state->lock_mutex(runtime, ctx, false); });
+    rt.register_hle("ThreadManForUser", 0x0DDCD2C9u,
+        [state](auto& runtime, auto& ctx) { state->lock_mutex(runtime, ctx, true); });
+    rt.register_hle("ThreadManForUser", 0x6B30100Fu,
+        [state](auto& runtime, auto& ctx) { state->unlock_mutex(runtime, ctx); });
     rt.nids().add("ThreadManForUser", kCreateThreadNid, "sceKernelCreateThread");
     rt.nids().add("ThreadManForUser", kDeleteThreadNid, "sceKernelDeleteThread");
     rt.register_hle("ThreadManForUser", kCreateThreadNid,
@@ -224,11 +234,76 @@ void ThreadRegistry::finish(psprecomp::Runtime& rt, psprecomp::AllegrexContext& 
     current->exit_status = ctx.gpr[from_return ? 2 : 4];
     current->context = ctx;
     current->status = ThreadStatus::Dormant;
+    for (auto& [id, mutex] : mutexes_) if (mutex.owner == uid) { mutex.owner = 0; mutex.count = 0; }
     schedule(rt, ctx);
     if (remove && uid != kBootstrapUid) {
         auto temporary = ctx;
         temporary.gpr[4] = uid;
         erase(rt, temporary);
     }
+}
+
+bool ThreadRegistry::mutex_context(psprecomp::Runtime& rt) {
+    if (current_uid_ && interrupts_enabled_) return true;
+    rt.stop("Mutex operation requires a running thread with interrupts enabled");
+    return false;
+}
+void ThreadRegistry::create_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!mutex_context(rt)) return;
+    const auto attr = c.gpr[5], count = c.gpr[6];
+    if (attr & ~0xBFFu) { c.set_gpr(2, 0x80020191u); return; }
+    if ((attr & ~0x300u) || c.gpr[7]) { rt.stop("Unsupported mutex attributes/options"); return; }
+    if (count > 0x7FFFFFFFu || (!(attr & 0x200u) && count > 1)) { c.set_gpr(2, 0x800201BDu); return; }
+    if (!c.gpr[4]) { c.set_gpr(2, 0x80020001u); return; }
+    std::string name;
+    for (std::uint32_t i = 0; i < 31; ++i) {
+        const auto address = static_cast<std::uint64_t>(c.gpr[4]) + i;
+        if (address < 0x08000000u || address >= 0x08000000ull + rt.memory().size()) {
+            rt.stop("Unsupported mutex name address"); return;
+        }
+        const auto byte = rt.memory().load8(static_cast<std::uint32_t>(address));
+        if (!byte) break;
+        name.push_back(static_cast<char>(byte));
+    }
+    // Bounded host metadata; UID ranges cannot overlap threads, heaps or modules.
+    if (mutexes_.size() >= 4096 || next_mutex_uid_ >= 0x40000000u) { c.set_gpr(2, no_memory); return; }
+    mutexes_.emplace(next_mutex_uid_, GuestMutex{std::move(name), attr, count, count, count ? current_uid_ : 0});
+    c.set_gpr(2, next_mutex_uid_++);
+}
+void ThreadRegistry::delete_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!mutex_context(rt)) return;
+    c.set_gpr(2, mutexes_.erase(c.gpr[4]) ? 0 : 0x800201C3u);
+}
+void ThreadRegistry::lock_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, bool try_only) {
+    if (!mutex_context(rt)) return;
+    const auto found = mutexes_.find(c.gpr[4]);
+    if (found == mutexes_.end()) { c.set_gpr(2, 0x800201C3u); return; }
+    auto& m = found->second;
+    const auto count = c.gpr[5];
+    if (!count || count > 0x7FFFFFFFu || (!(m.attributes & 0x200u) && count != 1)) {
+        c.set_gpr(2, 0x800201BDu); return;
+    }
+    if (!try_only && c.gpr[6]) { rt.stop("Mutex timeout is not implemented"); return; }
+    if (m.owner && m.owner != current_uid_) {
+        if (try_only) c.set_gpr(2, 0x800201C4u);
+        else rt.stop("Contended mutex wait is not implemented");
+        return;
+    }
+    if (m.owner && !(m.attributes & 0x200u)) { c.set_gpr(2, 0x800201C8u); return; }
+    if (count > 0x7FFFFFFFu - m.count) { c.set_gpr(2, 0x800201C6u); return; }
+    m.owner = current_uid_; m.count += count; c.set_gpr(2, 0);
+}
+void ThreadRegistry::unlock_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!mutex_context(rt)) return;
+    const auto found = mutexes_.find(c.gpr[4]);
+    if (found == mutexes_.end()) { c.set_gpr(2, 0x800201C3u); return; }
+    auto& m = found->second;
+    const auto count = c.gpr[5];
+    if (!count || count > 0x7FFFFFFFu || (!(m.attributes & 0x200u) && count != 1)) {
+        c.set_gpr(2, 0x800201BDu); return;
+    }
+    if (m.owner != current_uid_ || !m.count) { c.set_gpr(2, 0x800201C5u); return; }
+    if (count > m.count) { c.set_gpr(2, 0x800201C7u); return; }
+    m.count -= count; if (!m.count) m.owner = 0; c.set_gpr(2, 0);
 }
 } // namespace azazel6

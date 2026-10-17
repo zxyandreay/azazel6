@@ -29,11 +29,16 @@ struct GuestThread {
     std::uint32_t exit_status = 0;
     std::uint64_t stack_ticket = 0;
 };
+struct GuestMutex {
+    std::string name;
+    std::uint32_t attributes, initial_count, count, owner;
+};
 class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
+    [[nodiscard]] const std::map<std::uint32_t, GuestMutex>& mutexes() const { return mutexes_; }
 private:
     friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena, std::shared_ptr<GuestAllocator>);
     explicit ThreadRegistry(ThreadArena arena) : arena_(arena) {}
@@ -44,6 +49,11 @@ private:
     void schedule(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     GuestThread* find(std::uint32_t);
     void prepare(psprecomp::Runtime&, GuestThread&, const std::vector<std::uint8_t>&);
+    bool mutex_context(psprecomp::Runtime&);
+    void create_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void delete_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void lock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
+    void unlock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     ThreadArena arena_;
     std::shared_ptr<GuestAllocator> allocator_;
     std::vector<GuestThread> threads_;
@@ -51,6 +61,8 @@ private:
     std::uint32_t current_uid_ = 0;
     std::uint32_t next_uid_ = 1;
     bool interrupts_enabled_ = true;
+    std::map<std::uint32_t, GuestMutex> mutexes_;
+    std::uint32_t next_mutex_uid_ = 0x30000000u;
 };
 [[nodiscard]] std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena,
                                                                std::shared_ptr<GuestAllocator> = {});
