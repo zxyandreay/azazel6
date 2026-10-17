@@ -10,11 +10,21 @@
     "0x08B7AEE0",
     "0x08804018",
     "0x088040C4",
-    "0x08B778FC"
+    "0x08B778FC",
+    "0x08B88BF8",
+    "0x08B03CE4"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, observed thread entry and direct call reached after bootstrap return; no recursive callee discovery.",
   "constant_branch_roots": [
     "0x088040C4"
+  ],
+  "constructor_calls": [
+    {
+      "site": "0x08B88C24",
+      "register": 4,
+      "table_end": "0x08BFA1EC",
+      "max_entries": 128
+    }
   ]
 }

@@ -15,6 +15,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Roadmap](project/roadmap.md)
 - [Milestone 001](milestones/001-project-foundation.md)
 - [Milestone 002](milestones/002-native-bring-up.md)
+- [Milestone 003](milestones/003-boot-sequence.md)
 
 ## Architecture
 
@@ -37,6 +38,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Resident module identity](research/module-identity.md)
 - [Startup interrupt state](research/interrupt-state.md)
 - [Startup coverage and reachability](research/startup-coverage.md)
+- [Guarded constructor calls](research/constructor-calls.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

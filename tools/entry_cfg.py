@@ -6,7 +6,7 @@ read from executable file-backed segments; no guessed contiguous function end.
 from elf import ValidationError
 
 
-def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=()):
+def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=(), indirect_calls=None):
     unknown = (0,) + (None,) * 31
     pending = []
     states = {}
@@ -18,6 +18,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     if any(type(address) is not int or address < 0 or address > 0xFFFFFFFC or address % 4 for address in imports):
         raise ValidationError("Import stubs must be aligned 32-bit guest addresses")
     tail_calls = {}
+    indirect = indirect_calls or {}
+    used_indirect = {}
 
     def enqueue(pc, registers):
         previous = states.get(pc)
@@ -55,11 +57,13 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         offset = elf.guest_to_offset(pc, 4)
         return int.from_bytes(elf.data[offset:offset + 4], "little")
 
-    def flow(word):
+    def flow(word, pc):
         op, rs, rt, function = word >> 26, (word >> 21) & 31, (word >> 16) & 31, word & 63
         if op == 0 and function in (8, 9):
             if function == 8 and rs == 31:
                 return "return"
+            if function == 9 and pc in indirect and indirect[pc] and word == (rs << 21) | (31 << 11) | 9:
+                return "indirect_call"
             raise ValidationError("Indirect control transfer requires a verified target map")
         if op == 0 and function in (12, 13):
             raise ValidationError("Inline syscall/break requires explicit profile handling")
@@ -77,12 +81,12 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         if pc in delays:
             raise ValidationError("Branch into a delay slot requires explicit handling")
         word = read(pc)
-        kind = flow(word)
+        kind = flow(word, pc)
         instructions.add(pc)
         words.add(pc)
         if kind != "ordinary":
             delay = pc + 4
-            if delay in instructions or flow(read(delay)) != "ordinary":
+            if delay in instructions or flow(read(delay), delay) != "ordinary":
                 raise ValidationError("Overlapping/control-transfer delay slot")
             delays.add(delay)
             words.add(delay)
@@ -103,6 +107,9 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
                 enqueue(pc + 8, registers if likely else delayed)
             if taken is not False:
                 enqueue(pc + 4 + signed * 4, delayed)
+        elif kind == "indirect_call":
+            used_indirect[pc] = indirect[pc]
+            enqueue(pc + 8, unknown)
         elif kind in ("jump", "call"):
             target = ((pc + 4) & 0xF0000000) | ((word & 0x3FFFFFF) << 2)
             if kind == "jump":
@@ -120,4 +127,5 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         else:
             ranges.append([pc, 4])
     return {"ranges": ranges, "instruction_words": len(words), "calls": calls, "tail_calls": tail_calls,
+            "indirect_calls": used_indirect,
             "instruction_addresses": sorted(instructions)}

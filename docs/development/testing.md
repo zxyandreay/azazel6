@@ -1,7 +1,7 @@
 # Testing and debugging
 
-**Executed 2026-10-18 on Windows x64:** 27 Python test cases and eight integrated
-CTest suites (aspect math, bootstrap HLE, threads, shared memory, module identity and three upstream suites) all passed.
+**Executed 2026-10-18 on Windows x64:** 31 Python test cases and nine integrated
+CTest suites (aspect math, bootstrap HLE, threads, shared memory, module identity, indirect guards and three upstream suites) all passed.
 Python cases include every
 truncation of a synthetic ELF, invalid format/headers/segments, BSS/offset conversion,
 overflow/overlap, hash mismatch, missing input, profile validation, output confinement,
