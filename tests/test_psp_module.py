@@ -18,6 +18,30 @@ def module_fixture():
 
 
 class ModuleTests(unittest.TestCase):
+    def export_fixture(self):
+        data = module_fixture()
+        struct.pack_into("<II", data, 0x140 + 36, 0x08804120, 0x08804130)
+        struct.pack_into("<IHHBBHI", data, 0x220, 0, 0, 0x8000, 4, 1, 1, 0x08804140)
+        struct.pack_into("<IIII", data, 0x240, 0xD632ACDB, 0x0F7C276C, 0x08804000, 0x08804160)
+        struct.pack_into("<IIII", data, 0x260, 3, 32, 1024, 0x80000000)
+        return data
+
+    def test_start_thread_export(self):
+        report = module_report(Elf.parse(self.export_fixture()))
+        self.assertEqual(report["start_thread"], {"priority": 32, "stack_size": 1024, "attributes": 0x80000000})
+        self.assertEqual(report["exports"][1]["kind"], "variable")
+
+    def test_malformed_exports(self):
+        for offset, value in [(0x260, 4), (0x22C, 0xFFFFFFFF), (0x24C, 0xFFFFFFFF)]:
+            data = self.export_fixture()
+            struct.pack_into("<I", data, offset, value)
+            with self.subTest(offset=offset), self.assertRaises(ValidationError):
+                module_report(Elf.parse(data))
+        data = self.export_fixture()
+        data[0x228] = 5
+        with self.assertRaises(ValidationError):
+            module_report(Elf.parse(data))
+
     def test_metadata_and_import(self):
         report = module_report(Elf.parse(module_fixture()))
         self.assertEqual(report["name"], "synthetic")

@@ -1,5 +1,7 @@
 # Dormant thread ownership and StartThread boundary
 
+Current continuation: [thread startup and bootstrap handoff](thread-startup.md).
+
 ## Evidence and scope
 
 **VERIFIED source inspection, 2026-10-17:** uOFW's ThreadMan exports identify

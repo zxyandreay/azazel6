@@ -14,7 +14,7 @@ loads a bounded generated startup CFG and records unimplemented import boundarie
 Its experimental stack and zero entry arguments do not establish the game's full
 startup ABI. `host/bootstrap.cpp` implements two narrowly scoped SDK/compiler
 services. `host/threads.cpp` owns a bounded dormant-thread registry and guest stack
-arena with CreateThread/DeleteThread handlers; StartThread is not implemented.
+arena with create/start/exit/delete handlers and service-boundary priority handoff.
 See [service evidence](../../docs/research/startup-imports.md) and
 [thread limitations](../../docs/research/dormant-threads.md).
 

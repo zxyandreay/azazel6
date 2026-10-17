@@ -20,6 +20,12 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         arena.executable_end > arena.image_end || arena.executable_begin >= arena.executable_end ||
         arena.module_gp < arena.image_begin || arena.module_gp >= arena.image_end)
         throw psprecomp::Error("Invalid thread arena/image ownership");
+    if (arena.bootstrap_priority && (arena.bootstrap_priority < 8 || arena.bootstrap_priority > 119 ||
+        arena.bootstrap_stack_size < 512 || (arena.bootstrap_stack_size & 255u) ||
+        static_cast<std::uint64_t>(arena.end) + arena.bootstrap_stack_size >
+            psprecomp::GuestMemory::kPhysicalBase + static_cast<std::uint64_t>(rt.memory().size()) ||
+        arena.image_begin <= kThreadReturnGate + 4))
+        throw psprecomp::Error("Invalid bootstrap ownership");
     auto state = std::shared_ptr<ThreadRegistry>(new ThreadRegistry(arena));
     rt.nids().add("ThreadManForUser", kCreateThreadNid, "sceKernelCreateThread");
     rt.nids().add("ThreadManForUser", kDeleteThreadNid, "sceKernelDeleteThread");
@@ -27,6 +33,26 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         [state](auto& runtime, auto& ctx) { state->create(runtime, ctx); });
     rt.register_hle("ThreadManForUser", kDeleteThreadNid,
         [state](auto& runtime, auto& ctx) { state->erase(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", kStartThreadNid,
+        [state](auto& runtime, auto& ctx) { state->start(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0xAA73C935u,
+        [state](auto& runtime, auto& ctx) { state->finish(runtime, ctx, false, false); });
+    rt.register_hle("ThreadManForUser", 0x809CE29Bu,
+        [state](auto& runtime, auto& ctx) { state->finish(runtime, ctx, true, false); });
+    rt.register_hle("Azazel6Host", 1,
+        [state](auto& runtime, auto& ctx) { state->finish(runtime, ctx, false, true); });
+    rt.register_function(kThreadReturnGate, [](auto& runtime, auto& ctx) {
+        runtime.invoke_import("Azazel6Host", 1, ctx);
+    }, "host_thread_return");
+    if (arena.bootstrap_priority) {
+        state->bootstrap_ = {kBootstrapUid, rt.cpu().pc, arena.bootstrap_priority, 0x800000FFu,
+                            arena.end, arena.bootstrap_stack_size, arena.module_gp, "module_start"};
+        state->prepare(rt, state->bootstrap_, {});
+        state->bootstrap_.status = ThreadStatus::Running;
+        state->current_uid_ = kBootstrapUid;
+        rt.cpu() = state->bootstrap_.context;
+        psprecomp::set_runtime_thread_identity(kBootstrapUid, "module_start");
+    }
     return state;
 }
 
@@ -60,7 +86,7 @@ void ThreadRegistry::create(psprecomp::Runtime& rt, psprecomp::AllegrexContext& 
         return;
     }
     const auto rounded = (static_cast<std::uint64_t>(ctx.gpr[7]) + 255u) & ~std::uint64_t{255u};
-    if (rounded > arena_.end - arena_.begin || next_uid_ > 0x7FFFFFFFu) {
+    if (rounded > arena_.end - arena_.begin || next_uid_ >= kBootstrapUid) {
         ctx.set_gpr(2, no_memory); return;
     }
     // Highest free fitting range. Derive holes from live ownership so delete reclaims space.
@@ -88,10 +114,105 @@ void ThreadRegistry::erase(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c
     const auto found = std::find_if(threads_.begin(), threads_.end(),
         [&](const auto& thread) { return thread.uid == ctx.gpr[4]; });
     if (found == threads_.end()) { ctx.set_gpr(2, ctx.gpr[4] ? 0x80020198u : 0x80020197u); return; }
+    if (found->status != ThreadStatus::Dormant) { ctx.set_gpr(2, 0x800201A4u); return; }
     if (found->attributes & clear_stack)
         for (std::uint32_t offset = 0; offset < found->stack_size; offset += 4)
             rt.memory().store32(found->stack_base + offset, 0);
     threads_.erase(found);
     ctx.set_gpr(2, 0);
+}
+
+GuestThread* ThreadRegistry::find(std::uint32_t uid) {
+    if (uid == kBootstrapUid && arena_.bootstrap_priority) return &bootstrap_;
+    const auto found = std::find_if(threads_.begin(), threads_.end(),
+        [uid](const auto& thread) { return thread.uid == uid; });
+    return found == threads_.end() ? nullptr : &*found;
+}
+
+void ThreadRegistry::prepare(psprecomp::Runtime& rt, GuestThread& thread,
+                             const std::vector<std::uint8_t>& args) {
+    // PSP user-thread TLS occupies the final 256 bytes. Arguments precede it,
+    // aligned to 16, with 64 bytes of argument home below the initial SP.
+    const auto tls = thread.stack_base + thread.stack_size - 256;
+    const auto arg_address = tls - ((static_cast<std::uint32_t>(args.size()) + 15u) & ~15u);
+    if (!(thread.attributes & no_fill))
+        for (std::uint32_t a = thread.stack_base; a < tls; a += 4) rt.memory().store32(a, 0xFFFFFFFFu);
+    for (std::uint32_t a = tls; a < tls + 256; a += 4) rt.memory().store32(a, 0);
+    rt.memory().store32(tls + 192, thread.uid);
+    rt.memory().store32(tls + 200, thread.stack_base);
+    rt.memory().store32(tls + 248, 0xFFFFFFFFu);
+    rt.memory().store32(tls + 252, 0xFFFFFFFFu);
+    rt.memory().store32(thread.stack_base, thread.uid);
+    for (std::size_t i = 0; i < args.size(); ++i) rt.memory().store8(arg_address + static_cast<std::uint32_t>(i), args[i]);
+    thread.context = {};
+    thread.context.pc = thread.entry;
+    thread.context.gpr[4] = static_cast<std::uint32_t>(args.size());
+    thread.context.gpr[5] = args.empty() ? 0 : arg_address;
+    thread.context.gpr[26] = tls;
+    thread.context.gpr[28] = thread.gp;
+    thread.context.gpr[29] = arg_address - 64;
+    thread.context.gpr[31] = kThreadReturnGate;
+}
+
+void ThreadRegistry::start(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {
+    if (!current_uid_) { rt.stop("Bootstrap scheduler is not configured"); return; }
+    auto* thread = find(ctx.gpr[4]);
+    if (!thread) { ctx.set_gpr(2, ctx.gpr[4] ? 0x80020198u : 0x80020197u); return; }
+    if (thread->status != ThreadStatus::Dormant) { ctx.set_gpr(2, 0x800201A4u); return; }
+    const auto size = ctx.gpr[6] ? ctx.gpr[5] : 0u;
+    if (ctx.gpr[5] & 0x80000000u) { ctx.set_gpr(2, 0x800200D3u); return; }
+    if (size && (ctx.gpr[6] < psprecomp::GuestMemory::kPhysicalBase ||
+        static_cast<std::uint64_t>(ctx.gpr[6]) + size > psprecomp::GuestMemory::kPhysicalBase +
+            static_cast<std::uint64_t>(rt.memory().size()))) { ctx.set_gpr(2, 0x800200D3u); return; }
+    if (static_cast<std::uint64_t>(size) + 15 + 256 + 64 + 16 > thread->stack_size) {
+        rt.stop("Thread arguments exceed owned stack"); return;
+    }
+    if (!thread->entry || !rt.has_function(thread->entry)) {
+        rt.stop("Thread entry lacks AOT coverage " + psprecomp::hex32(thread->entry)); return;
+    }
+    // Snapshot before stack initialization, including when input aliases the destination.
+    std::vector<std::uint8_t> args(size);
+    for (std::uint32_t i = 0; i < size; ++i) args[i] = rt.memory().load8(ctx.gpr[6] + i);
+    prepare(rt, *thread, args);
+    thread->status = ThreadStatus::Ready;
+    ctx.set_gpr(2, 0);
+    ctx.pc = ctx.gpr[31];
+    schedule(rt, ctx);
+}
+
+void ThreadRegistry::schedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {
+    auto* current = find(current_uid_);
+    GuestThread* best = current && current->status == ThreadStatus::Running ? current : nullptr;
+    auto consider = [&](GuestThread& thread) {
+        if (thread.status == ThreadStatus::Ready && (!best || thread.priority < best->priority)) best = &thread;
+    };
+    consider(bootstrap_);
+    for (auto& thread : threads_) consider(thread);
+    if (best == current && best) return;
+    if (!best) { current_uid_ = 0; rt.stop("No runnable guest threads"); return; }
+    if (current && current->status == ThreadStatus::Running) {
+        current->context = ctx;
+        current->status = ThreadStatus::Ready;
+    }
+    best->status = ThreadStatus::Running;
+    current_uid_ = best->uid;
+    ctx = best->context;
+    psprecomp::set_runtime_thread_identity(static_cast<std::int32_t>(best->uid), best->name);
+}
+
+void ThreadRegistry::finish(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx,
+                            bool remove, bool from_return) {
+    auto* current = find(current_uid_);
+    if (!current || current->status != ThreadStatus::Running) { rt.stop("No running thread to exit"); return; }
+    const auto uid = current_uid_;
+    current->exit_status = ctx.gpr[from_return ? 2 : 4];
+    current->context = ctx;
+    current->status = ThreadStatus::Dormant;
+    schedule(rt, ctx);
+    if (remove && uid != kBootstrapUid) {
+        auto temporary = ctx;
+        temporary.gpr[4] = uid;
+        erase(rt, temporary);
+    }
 }
 } // namespace azazel6

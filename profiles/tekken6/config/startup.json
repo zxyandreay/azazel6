@@ -1,0 +1,5 @@
+{
+  "roots": ["0x08804124", "0x08804238"],
+  "max_instructions_per_root": 4096,
+  "evidence": "Exact-hash ELF entry and the thread entry observed at CreateThread; no recursive callee discovery."
+}

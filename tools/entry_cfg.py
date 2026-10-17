@@ -6,8 +6,8 @@ read from executable file-backed segments; no guessed contiguous function end.
 from elf import ValidationError
 
 
-def discover_entry(elf, max_instructions=256):
-    pending = [elf.entry]
+def discover_entry(elf, max_instructions=256, entry=None):
+    pending = [elf.entry if entry is None else entry]
     words = set()
     instructions = set()
     delays = set()

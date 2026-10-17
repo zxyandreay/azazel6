@@ -63,7 +63,7 @@ python tools/run_probe.py local/game/EBOOT.BIN --binary local/build/probe/profil
 On Linux remove `/Release` and `.exe`. The generator discovers a bounded startup
 control-flow graph, follows both branch paths and call continuations, and excludes
 callees. Unsupported indirect transfers and invalid delay slots fail closed. The
-supported input yields 69 instruction words, including delay slots. Regenerate
+current startup profile yields 233 instruction words, including delay slots. Regenerate
 older probe outputs: the current host requires generated `imports.cpp` wrappers.
 The native process
 returns 3 at a research boundary; the runner records it and returns 0 only to mark
@@ -72,7 +72,7 @@ never a game-boot success. The runner limits native execution to 15 seconds, the
 host to 64 dispatches, and interpreter fallback is explicitly disabled. The two
 [settings services](../research/startup-imports.md) and bounded
 [dormant thread creation/deletion](../research/dormant-threads.md) are implemented;
-StartThread remains a missing-import stop. Dispatch exhaustion, uncovered code and rejected
+StartThread and exit services now support bounded priority handoff; waiting, timers and general scheduling remain unimplemented. Dispatch exhaustion, uncovered code and rejected
 SDK versions are experiment failures, not completed research boundaries.
 
 ## Android cross-compilation

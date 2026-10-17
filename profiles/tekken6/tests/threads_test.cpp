@@ -124,9 +124,77 @@ void arena_validation() {
         check(rejected, "Invalid ownership accepted");
     }
 }
+struct Scheduled {
+    std::unique_ptr<psprecomp::Runtime> rt = std::make_unique<psprecomp::Runtime>();
+    std::shared_ptr<ThreadRegistry> threads;
+    Scheduled() {
+        auto config = arena; config.bootstrap_priority = 32; config.bootstrap_stack_size = 512;
+        threads = register_thread_hle(*rt, config);
+        rt->register_function(arena.executable_begin, [](auto&, auto& c) { c.pc = c.gpr[31]; }, "synthetic");
+        rt->memory().store8(0x08004000u, 0);
+    }
+    std::uint32_t create(std::uint32_t priority) {
+        auto& c = rt->cpu(); c.gpr[4] = 0x08004000u; c.gpr[5] = arena.executable_begin;
+        c.gpr[6] = priority; c.gpr[7] = 1024; c.gpr[8] = 0; c.gpr[9] = 0;
+        rt->invoke_import("ThreadManForUser", kCreateThreadNid, c); return c.gpr[2];
+    }
+    void start(std::uint32_t uid, std::uint32_t size = 0, std::uint32_t ptr = 0) {
+        auto& c = rt->cpu(); c.pc = 0x08001900u; c.gpr[31] = 0x08001800u;
+        c.gpr[4] = uid; c.gpr[5] = size; c.gpr[6] = ptr;
+        invoke_returning_import(*rt, c, "ThreadManForUser", kStartThreadNid);
+    }
+    void exit() { rt->invoke_import("ThreadManForUser", 0xAA73C935u, rt->cpu()); }
+};
+void scheduling() {
+    Scheduled f;
+    const auto high = f.create(8);
+    f.rt->cpu().fpr[7] = 7.25f; f.rt->cpu().vfpu[83] = 9.5f; f.rt->cpu().hi = 42;
+    f.start(high);
+    check(f.threads->current_uid() == high && f.rt->cpu().pc == arena.executable_begin, "Priority preemption");
+    check(f.rt->cpu().gpr[28] == arena.module_gp && f.rt->cpu().gpr[31] == kThreadReturnGate, "New thread ABI");
+    f.exit();
+    check(f.threads->current_uid() == kBootstrapUid && f.rt->cpu().pc == 0x08001800u, "Caller continuation");
+    check(f.rt->cpu().gpr[2] == 0 && f.rt->cpu().fpr[7] == 7.25f &&
+          f.rt->cpu().vfpu[83] == 9.5f && f.rt->cpu().hi == 42, "Saved full CPU context");
+    for (auto priority : {32u, 40u}) {
+        const auto uid = f.create(priority); f.start(uid);
+        check(f.threads->current_uid() == kBootstrapUid && f.rt->cpu().pc == 0x08001800u, "Equal/lower priority preempted");
+        f.start(uid); check(f.rt->cpu().gpr[2] == 0x800201A4u, "Double start accepted");
+        f.rt->cpu().gpr[4] = uid;
+        f.rt->invoke_import("ThreadManForUser", kDeleteThreadNid, f.rt->cpu());
+        check(f.rt->cpu().gpr[2] == 0x800201A4u, "Ready thread deleted");
+    }
+    f.exit(); check(f.threads->snapshot()[1].status == ThreadStatus::Running, "Highest ready thread not selected");
+    f.rt->cpu().gpr[2] = 123;
+    f.rt->invoke_import("Azazel6Host", 1, f.rt->cpu());
+    check(f.threads->snapshot()[1].exit_status == 123 && f.threads->snapshot()[2].status == ThreadStatus::Running,
+          "Return gate status/handoff");
+    f.rt->invoke_import("ThreadManForUser", 0x809CE29Bu, f.rt->cpu());
+    check(f.rt->stopped() && f.threads->snapshot().size() == 2, "Exit-delete/no runnable boundary");
+}
+void start_arguments() {
+    Scheduled f; const auto uid = f.create(40);
+    const auto bottom = f.threads->snapshot()[0].stack_base;
+    for (unsigned i = 0; i < 9; ++i) f.rt->memory().store8(bottom + 32 + i, static_cast<std::uint8_t>(i + 1));
+    f.start(uid, 9, bottom + 32); // Aliases the stack that initialization will overwrite.
+    const auto thread = f.threads->snapshot()[0]; const auto& c = thread.context;
+    check(c.gpr[4] == 9 && c.gpr[5] == bottom + 1024 - 256 - 16, "Argument placement");
+    check(c.gpr[29] == c.gpr[5] - 64 && c.gpr[26] == bottom + 768, "SP/TLS layout");
+    for (unsigned i = 0; i < 9; ++i) check(f.rt->memory().load8(c.gpr[5] + i) == i + 1, "Aliased argument copy");
+    check(f.rt->memory().load32(bottom) == uid && f.rt->memory().load32(c.gpr[26] + 192) == uid,
+          "Stack UID ownership");
+    Scheduled null_args; const auto n = null_args.create(40); null_args.start(n, 8, 0);
+    check(null_args.threads->snapshot()[0].context.gpr[4] == 0, "Null pointer must suppress arguments");
+    Scheduled bad; const auto b = bad.create(40); bad.start(b, 4, 0xFFFFFFFEu);
+    check(bad.rt->cpu().gpr[2] == 0x800200D3u && bad.threads->snapshot()[0].status == ThreadStatus::Dormant,
+          "Argument overflow accepted");
+    bad.start(b, 0xFFFFFFFFu, 0); check(bad.rt->cpu().gpr[2] == 0x800200D3u, "Negative size accepted");
+    Scheduled large; const auto l = large.create(40); large.start(l, 900, 0x08004000u);
+    check(large.rt->stopped() && large.threads->snapshot()[0].status == ThreadStatus::Dormant, "Oversized argument mutation");
+}
 }
 int main() {
-    try { ownership(); failures(); names_and_stops(); arena_validation();
+    try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

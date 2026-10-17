@@ -20,6 +20,32 @@ def module_report(elf):
             raise ValidationError("Invalid module table range")
         if end > start:
             elf.guest_to_offset(start, end - start)
+    exports = []
+    start_thread = None
+    cursor = ent_top
+    while cursor < ent_end:
+        if ent_end - cursor < 16:
+            raise ValidationError("Truncated export descriptor")
+        off = elf.guest_to_offset(cursor, 16)
+        lib, version, flags, words, variables, functions, table = struct.unpack_from("<IHHBBHI", elf.data, off)
+        if words != 4 or words * 4 > ent_end - cursor:
+            raise ValidationError("Unsupported export descriptor size")
+        count = variables + functions
+        if count:
+            table_off = elf.guest_to_offset(table, count * 8)
+            for i in range(count):
+                nid, target = (struct.unpack_from("<I", elf.data, table_off + index * 4)[0]
+                               for index in (i, count + i))
+                exports.append({"nid": f"0x{nid:08X}", "address": f"0x{target:08X}",
+                                "kind": "function" if i < functions else "variable"})
+                if lib == 0 and flags & 0x8000 and nid == 0x0F7C276C:
+                    if i < functions or start_thread is not None:
+                        raise ValidationError("Invalid/duplicate module start thread export")
+                    params = struct.unpack_from("<IIII", elf.data, elf.guest_to_offset(target, 16))
+                    if params[0] != 3:
+                        raise ValidationError("Unsupported module start thread parameters")
+                    start_thread = dict(zip(("priority", "stack_size", "attributes"), params[1:]))
+        cursor += words * 4
     imports = []
     cursor = stub_top
     while cursor < stub_end:
@@ -54,4 +80,5 @@ def module_report(elf):
     return {"name": name.decode("ascii"), "address": f"0x{address:08X}",
             "file_offset": f"0x{offset:08X}", "gp": f"0x{gp:08X}", "attributes": attributes,
             "version": f"{major}.{minor}", "stub_top": f"0x{stub_top:08X}",
-            "stub_end": f"0x{stub_end:08X}", "imports": imports}
+            "stub_end": f"0x{stub_end:08X}", "imports": imports,
+            "exports": exports, "start_thread": start_thread}

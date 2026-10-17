@@ -39,11 +39,11 @@ int main(int argc, char** argv) {
         azazel6::register_profile_imports(*rt);
         const auto bootstrap = azazel6::register_bootstrap_hle(*rt);
         rt->cpu().gpr[28] = module.gp;
-        // Experimental host-owned stack reservation at top of ELF-sized RAM.
-        // It is not a discovered PSP thread stack requirement.
+        // Stack size/priority come from the validated module-start export.
         const auto stack_top = GuestMemory::kPhysicalBase + mem.size();
+        constexpr auto bootstrap_size = (AZAZEL6_BOOTSTRAP_STACK_SIZE + 255u) & ~255u;
         for (const auto& segment : elf.segments()) {
-            if (segment.type == 1 && static_cast<std::uint64_t>(segment.vaddr) + segment.memory_size > stack_top - 65536u)
+            if (segment.type == 1 && static_cast<std::uint64_t>(segment.vaddr) + segment.memory_size > stack_top - bootstrap_size)
                 throw Error("Experimental stack overlaps loaded segment");
         }
         rt->cpu().gpr[29] = stack_top - 16u;
@@ -56,9 +56,10 @@ int main(int argc, char** argv) {
         if (!image_segment || !(image_segment->flags & 1u)) throw Error("No executable image");
         const auto image_end = image_segment->vaddr + image_segment->memory_size;
         const auto threads = azazel6::register_thread_hle(*rt, {
-            (image_end + 255u) & ~255u, stack_top - 65536u,
+            (image_end + 255u) & ~255u, stack_top - bootstrap_size,
             image_segment->vaddr, image_end, image_segment->vaddr,
-            image_segment->vaddr + image_segment->file_size, module.gp});
+            image_segment->vaddr + image_segment->file_size, module.gp,
+            AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size});
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
                   << " initial_sp=" << hex32(rt->cpu().gpr[29]) << std::endl;
@@ -80,7 +81,8 @@ int main(int argc, char** argv) {
                   << " game_info_flags=" << hex32(bootstrap->game_info_flags)
                   << " compiler_version=" << hex32(bootstrap->compiler_version) << std::endl;
         for (const auto& thread : threads->snapshot())
-            std::cout << "dormant_thread=" << thread.uid << " entry=" << hex32(thread.entry)
+            std::cout << "thread=" << thread.uid << " status=" << static_cast<std::uint32_t>(thread.status)
+                      << " entry=" << hex32(thread.entry)
                       << " priority=" << thread.priority << " stack_base=" << hex32(thread.stack_base)
                       << " stack_size=" << thread.stack_size << " gp=" << hex32(thread.gp) << std::endl;
         return rt->stop_reason().starts_with("Missing HLE import ") ? 3 : 1;

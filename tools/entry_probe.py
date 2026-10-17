@@ -21,9 +21,17 @@ def main():
     profile = load_profile(ROOT / "profiles/tekken6/config/profile.json")
     elf = validate(args.input, profile)
     module = module_report(elf)
-    cfg = discover_entry(elf)
+    startup = json.loads((ROOT / "profiles/tekken6/config/startup.json").read_text())
+    cfg = {root: discover_entry(elf, startup["max_instructions_per_root"], int(root, 16))
+           for root in startup["roots"]}
+    ranges = sorted(pair for graph in cfg.values() for pair in graph["ranges"])
+    if any(a + size > b for (a, size), (b, _) in zip(ranges, ranges[1:])):
+        raise ValueError("Overlapping startup roots")
+    start_thread = module["start_thread"]
+    if not start_thread or not 8 <= start_thread["priority"] <= 119 or not 512 <= start_thread["stack_size"] <= 65536 or start_thread["attributes"] != 0x80000000:
+        raise ValueError("Unsupported or missing module-start thread parameters")
     csv = "name,address,size\n" + "".join(
-        f"entry_range_{i},0x{start:08X},0x{size:X}\n" for i, (start, size) in enumerate(cfg["ranges"]))
+        f"entry_range_{i},0x{start:08X},0x{size:X}\n" for i, (start, size) in enumerate(ranges))
     (output / "entry.csv").write_text(csv, encoding="utf-8")
     exe = args.tools_dir.resolve() / ("psp_recomp.exe" if sys.platform == "win32" else "psp_recomp")
     execute([exe, args.input.resolve(), output / "entry.csv", output / "entry.cpp"], output / "generation.log", 60)
@@ -38,10 +46,12 @@ def main():
     (output / "imports.cpp").write_text("\n".join(wrappers) + "\n", encoding="utf-8")
     (output / "probe_config.hpp").write_text(
         '#pragma once\n#define AZAZEL6_EXPECTED_SHA "' + profile["executable"]["sha256"] + '"\n'
-        f'#define AZAZEL6_MODULE_ADDRESS {module["address"]}u\n', encoding="utf-8")
+        f'#define AZAZEL6_MODULE_ADDRESS {module["address"]}u\n'
+        f'#define AZAZEL6_BOOTSTRAP_PRIORITY {start_thread["priority"]}u\n'
+        f'#define AZAZEL6_BOOTSTRAP_STACK_SIZE {start_thread["stack_size"]}u\n', encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps({"input_sha256": profile["executable"]["sha256"],
         "cfg": cfg, "module": module, "scope": "Bounded startup CFG and returning import wrappers; no callees or fallback"}, indent=2) + "\n")
-    print(f"Generated {cfg['instruction_words']} startup instruction words in {output}")
+    print(f"Generated {sum(g['instruction_words'] for g in cfg.values())} startup instruction words in {output}")
 
 
 if __name__ == "__main__":

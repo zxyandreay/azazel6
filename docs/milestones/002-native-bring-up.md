@@ -1,5 +1,7 @@
 # Milestone 002: native bring-up
 
+Current continuation: [thread startup and bootstrap handoff](../research/thread-startup.md).
+
 **Status: IN PROGRESS, checkpoint 2026-10-17.** This advances the foundation probe;
 it does not complete bootstrap ABI research or produce a playable port.
 

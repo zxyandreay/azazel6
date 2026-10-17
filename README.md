@@ -8,7 +8,8 @@ compatible files from their own game copy.
 **Status: Milestone 002 native bring-up in progress. Not playable. No title screen,
 graphics, audio, controls or APK yet.** A bounded Windows headless experiment now
 executes translated ULUS10466 startup code through two settings services, creates
-an owned dormant thread, and stops at `sceKernelStartThread`. The entry probe cross-compiles for
+a thread, returns from bootstrap and executes the new thread until an uncovered
+native function. The entry probe cross-compiles for
 Android ARM64; it has not run on an Android device.
 
 ## What works
