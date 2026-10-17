@@ -14,6 +14,7 @@ Reviewed 2026-10-17. Evidence labels apply to individual claims:
 - [Progress and compatibility](project/progress.md)
 - [Roadmap](project/roadmap.md)
 - [Milestone 001](milestones/001-project-foundation.md)
+- [Milestone 002](milestones/002-native-bring-up.md)
 
 ## Architecture
 
@@ -29,6 +30,7 @@ Reviewed 2026-10-17. Evidence labels apply to individual claims:
 
 - [Source inventory and revisions](research/sources.md)
 - [Executable and PSP imports](research/executable.md)
+- [Startup imports and thread boundary](research/startup-imports.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

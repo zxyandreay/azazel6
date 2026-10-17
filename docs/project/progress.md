@@ -1,7 +1,8 @@
 # Progress and compatibility
 
-**2026-10-17 — Milestone 001 implemented.** Azazel6 is not playable. See
-[milestone evidence](../milestones/001-project-foundation.md) and
+**2026-10-17 — Milestone 002 in progress.** Azazel6 is not playable. See
+[current checkpoint](../milestones/002-native-bring-up.md),
+[foundation evidence](../milestones/001-project-foundation.md) and
 [next milestones](roadmap.md).
 
 | Area | Status |
@@ -9,13 +10,14 @@
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 13 cases passed |
+| Python/profile tools | VERIFIED, 19 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; five integrated CTest suites passed |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 13 translated instructions then first import trap |
-| Android ARM64 build | VERIFIED framework, math and entry probe compiled/linked |
+| Native entry execution | VERIFIED two modeled services completed; stopped at CreateThread |
+| Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | CI configured; see hosted run status for evidence |
 | Android device/APK | NOT TESTED / not implemented |
 | Game boot/combat/graphics/audio/input | Not implemented |

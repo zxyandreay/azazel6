@@ -2,7 +2,8 @@
 
 **VERIFIED 2026-10-17:** NDK `27.1.12297006` (r27b), Clang 18.0.2,
 CMake 4.0.3 and Ninja from SDK CMake 3.22.1 cross-compiled the math library,
-PSPRecomp core/tools and generated entry probe for `arm64-v8a`, API 26.
+PSPRecomp core/tools and generated entry probe for `arm64-v8a`, API 26. The
+Milestone 002 expanded probe, import wrappers and bootstrap HLE also compile/link.
 No Android binary was executed, and no APK was produced. NDK/CMake deprecation
 warnings and existing upstream conversion warnings did not prevent linking.
 

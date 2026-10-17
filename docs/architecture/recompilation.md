@@ -16,12 +16,16 @@ from verified metadata, not guessed. Entry arguments begin at zero for this expe
 segment as potentially executable, including data. Its 69,314 unsupported
 instruction occurrences are not 69,314 demonstrated missing gameplay opcodes.
 Overlapping functions and embedded data inflate those counts. The 1,015 generated
-units are exploratory output; this milestone compiled only a 52-byte entry slice.
+units are exploratory output. Milestone 001 compiled a 52-byte entry slice;
+Milestone 002 expands that to 69 words (276 bytes) of bounded startup control flow.
 
-The slice ends immediately after the first JAL's delay slot. PSPRecomp emits its
-C++; the host registers the code and discovered import boundaries. Two dispatches
-execute the entry and reject the import. No hand-written substitute emulates the
-entry. See [actual observations](../research/executable.md).
+The startup scanner follows branch paths and call continuations without entering
+callees. PSPRecomp emits its C++; generated import wrappers call the profile's HLE
+and return to guest RA only when the service has neither stopped nor redirected
+execution or changed the execution-context token. The native experiment completes
+two modeled services and stops at CreateThread. No hand-written substitute emulates
+the entry. See [current observations](../research/startup-imports.md) and
+[foundation observations](../research/executable.md).
 
 **PLANNED:** establish code/data ownership, repair import-aware generation for
 sectionless input, validate function boundaries and expand AOT in bounded slices.

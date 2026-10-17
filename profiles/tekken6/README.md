@@ -10,9 +10,10 @@ input, not assumed for arbitrary ELF files. The upstream section-based scanner
 does not find this sectionless module.
 
 `host/aspect.cpp` is pure logic; it has no memory writes or hooks. `host/entry_probe.cpp`
-loads and registers a tiny generated slice, then records the first import boundary.
+loads a bounded generated startup CFG and records unimplemented import boundaries.
 Its experimental stack and zero entry arguments do not establish the game's full
-startup ABI. There are no implemented PSP services behind its rejecting HLE traps.
+startup ABI. `host/bootstrap.cpp` implements two narrowly scoped SDK/compiler
+services; all other imports stop. See the [service evidence and limitations](../../docs/research/startup-imports.md).
 
 Use [the build procedure](../../docs/development/building.md). Local inputs and
 outputs belong in root `local/`; this profile contains only distributable source

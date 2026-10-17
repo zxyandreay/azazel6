@@ -5,10 +5,10 @@ ARM64 port of Tekken 6 for PSP.** Azazel6 translates verified Allegrex/MIPS code
 ahead of time to C++ and supplies the PSP runtime around it. Users must supply
 compatible files from their own game copy.
 
-**Status: Milestone 001 foundation implemented. Not playable. No title screen,
-graphics, audio, controls or APK yet.** A bounded Windows headless experiment has
-executed 13 recompiled instructions from the real ULUS10466 entry point and stopped
-at the first unimplemented PSP import. The same entry probe cross-compiles for
+**Status: Milestone 002 native bring-up in progress. Not playable. No title screen,
+graphics, audio, controls or APK yet.** A bounded Windows headless experiment now
+executes translated ULUS10466 startup code through two modeled PSP services and
+stops at `sceKernelCreateThread`. The same entry probe cross-compiles for
 Android ARM64; it has not run on an Android device.
 
 ## What works
@@ -57,7 +57,8 @@ must remain under ignored paths. No game download or decryption service is provi
 - [Documentation index](docs/README.md)
 - [Progress and compatibility](docs/project/progress.md)
 - [Roadmap](docs/project/roadmap.md)
-- [Milestone 001 evidence and next task](docs/milestones/001-project-foundation.md)
+- [Milestone 001 evidence](docs/milestones/001-project-foundation.md)
+- [Milestone 002 checkpoint and next task](docs/milestones/002-native-bring-up.md)
 - [Architecture and boundaries](docs/architecture/overview.md)
 - [Framework decision](docs/decisions/ADR-0001-framework-strategy.md)
 - [Contributing instructions](AGENTS.md)

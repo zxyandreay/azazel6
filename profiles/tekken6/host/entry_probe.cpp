@@ -3,22 +3,14 @@
 #include "psprecomp/sha256.hpp"
 #include "psprecomp/common.hpp"
 #include "probe_config.hpp"
+#include "azazel6/bootstrap.hpp"
 #include <iostream>
 #include <memory>
-#include <unordered_map>
 #include <cstdlib>
 
 namespace psprecomp { void register_generated_functions(Runtime&); }
 
-namespace {
-std::unordered_map<std::uint32_t, psprecomp::PspImport> import_stubs;
-bool import_reached = false;
-void import_boundary(psprecomp::Runtime& runtime, psprecomp::AllegrexContext& context) {
-    const auto& import = import_stubs.at(context.pc);
-    import_reached = true;
-    runtime.invoke_import(import.library, import.nid, context);
-}
-}
+namespace azazel6 { void register_profile_imports(psprecomp::Runtime&); }
 
 int main(int argc, char** argv) {
     using namespace psprecomp;
@@ -42,15 +34,9 @@ int main(int argc, char** argv) {
             mem.load32(address + 36), mem.load32(address + 40), mem.load32(address + 44),
             mem.load32(address + 48), address};
         const auto imports = elf.scan_imports(mem, module);
-        for (const auto& import : imports) {
-            import_stubs.emplace(import.stub_address, import);
-            rt->register_function(import.stub_address, &import_boundary, "import_boundary");
-            rt->register_hle(import.library, import.nid,
-                [import](Runtime& runtime, AllegrexContext&) {
-                    runtime.stop("Unimplemented PSP import " + import.library + ":" + hex32(import.nid));
-                });
-        }
         register_generated_functions(*rt);
+        azazel6::register_profile_imports(*rt);
+        const auto bootstrap = azazel6::register_bootstrap_hle(*rt);
         rt->cpu().gpr[28] = module.gp;
         // Experimental host-owned stack reservation at top of ELF-sized RAM.
         // It is not a discovered PSP thread stack requirement.
@@ -64,16 +50,23 @@ int main(int argc, char** argv) {
                   << " ram=" << mem.size() << " imports=" << imports.size()
                   << " initial_sp=" << hex32(rt->cpu().gpr[29]) << std::endl;
         if (!rt->has_function(elf.runtime_entry())) throw Error("Entry has no AOT registration");
-        // AOT entry then a registered import trap. Stop before any uncovered code.
+        // Bounded startup dispatch; all unimplemented imports remain rejecting.
         set_runtime_pre_dispatch_hook([](Runtime& runtime, AllegrexContext& context,
                                          std::uint32_t pc, std::int32_t) {
-            std::cout << "dispatch=" << hex32(pc) << " a0=" << hex32(context.gpr[4]) << std::endl;
+            std::cout << "dispatch=" << hex32(pc) << " a0=" << hex32(context.gpr[4])
+                      << " a1=" << hex32(context.gpr[5]) << " a2=" << hex32(context.gpr[6])
+                      << " a3=" << hex32(context.gpr[7]) << " t0=" << hex32(context.gpr[8])
+                      << " t1=" << hex32(context.gpr[9]) << std::endl;
             if (!runtime.has_function(pc)) runtime.stop("Uncovered guest address " + hex32(pc));
         });
-        rt->run(elf.runtime_entry(), 2);
+        rt->run(elf.runtime_entry(), 64);
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
-        return import_reached ? 3 : 1; // Never report an unexpected stop as the expected boundary.
+        std::cout << "hle_completed=" << bootstrap->completed_calls
+                  << " sdk_argument=" << hex32(bootstrap->last_sdk_argument)
+                  << " game_info_flags=" << hex32(bootstrap->game_info_flags)
+                  << " compiler_version=" << hex32(bootstrap->compiler_version) << std::endl;
+        return rt->stop_reason().starts_with("Missing HLE import ") ? 3 : 1;
     } catch (const std::exception& error) {
         std::cerr << "entry_probe: " << error.what() << '\n';
         return 1;

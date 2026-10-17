@@ -8,6 +8,7 @@ There is no vendored Monster Hunter host, game code or commercial resource.
 | --- | --- | --- |
 | [Yakumo](https://github.com/TeamGDB/Yakumo/tree/39ac05f1a166703430d18826bc5877f4feb6b511) | `39ac05f1a166703430d18826bc5877f4feb6b511` | Framework source compiled locally; MIT, PSPRecomp and Yakumo contributors |
 | [PSPRecomp](https://github.com/jessicanataliagta/PSPRecomp/tree/f6e7d415c7f447b934cc3865a31eb725f353d659) | `f6e7d415c7f447b934cc3865a31eb725f353d659` | Read-only architectural comparison; MIT; not separately linked |
+| [uOFW](https://github.com/uofw/uofw/tree/28306bb5bd4fcdcc0c1d469bf1f3bdb885dde3e9) | `28306bb5bd4fcdcc0c1d469bf1f3bdb885dde3e9` | Read-only SysMem/ThreadMan contract research; MIT with PSPSDK BSD notices in COPYING; no source copied or linked |
 | [Tekken 6 Ultrawide](https://github.com/zxyandreay/tekken6-ultrawide/tree/d50cd5f19053a2f0aeda7f2970619b984aebad8f) | `d50cd5f19053a2f0aeda7f2970619b984aebad8f` | Research facts and formulas; no PRX source copied |
 | [Tekken 6 Jin8](https://github.com/zxyandreay/tekken6-jin8/tree/dd3894fe72c09e67226f5482ca1ef5afa9c0d1a0) | `dd3894fe72c09e67226f5482ca1ef5afa9c0d1a0` | Research findings only; no payload or code copied |
 

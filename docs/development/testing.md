@@ -1,16 +1,23 @@
 # Testing and debugging
 
-**Executed 2026-10-17 on Windows x64:** 13 Python test cases, the C++ aspect contract
-test, and three upstream CTest suites all passed. Python cases include every
+**Executed 2026-10-17 on Windows x64:** 19 Python test cases and five integrated
+CTest suites (aspect math, bootstrap HLE and three upstream suites) all passed.
+Python cases include every
 truncation of a synthetic ELF, invalid format/headers/segments, BSS/offset conversion,
 overflow/overlap, hash mismatch, missing input, profile validation, output confinement,
-module/import parsing and malformed descriptor/name/table rejection.
+module/import parsing and malformed descriptor/name/table rejection. Six startup
+CFG cases cover calls, returns, both branch paths, loops, instruction budgets,
+invalid targets, unsupported transfers and malformed delay slots.
 
 The C++ test checks 16:9 identity, 20:9 results, symmetry and anchors over five
 ratios, and invalid values. It throws on failure rather than relying on `assert`,
 so Release builds still execute checks. Upstream suites cover framework instructions,
 generation/runtime contracts and memory-watch contracts. Original game data is not
 used in any CI test. Test fixtures are constructed at runtime and removed locally.
+Bootstrap contracts cover SDK-family acceptance/rejection, compiler state, register
+and memory preservation, per-runtime state ownership, unknown-library rejection,
+and preservation of HLE-directed PC/context switches. These are synthetic tests,
+not execution of the game or a complete PSP scheduler.
 
 Use [build commands](building.md) to reproduce. The workflow in
 `.github/workflows/ci.yml` fetches the pinned framework, builds root integration,

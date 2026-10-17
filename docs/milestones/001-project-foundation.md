@@ -49,7 +49,10 @@ Code/data separation and import-aware full generation are incomplete. The ELF's
 32 MiB fit is not a gameplay/mod memory requirement. ISO PRXs are present; game
 overlays and runtime code generation remain unresolved.
 
-**Highest-priority Milestone 002 task:** establish and implement the first reached
+The following next-task record is historical; its first-import checkpoint is now
+implemented in [Milestone 002](002-native-bring-up.md).
+
+**Highest-priority Milestone 002 task at foundation completion:** establish and implement the first reached
 PSP import contract, then extend verified AOT entry coverage through its return.
 Use authoritative library/NID evidence, tests for return/state semantics, and a
 bounded real-input trace. Prerequisites are the same verified EBOOT, pinned native
@@ -58,5 +61,5 @@ blanket successful stubs.
 
 Resume with `python tools/run_probe.py local/game/EBOOT.BIN --binary
 local/build/probe/profiles/tekken6/Release/azazel6_entry_probe.exe` after following
-the [entry build procedure](../development/building.md). The current stop is the
-expected baseline, not a failure to be suppressed.
+the [entry build procedure](../development/building.md). The foundation stop was
+the expected baseline, not a failure to be suppressed.
