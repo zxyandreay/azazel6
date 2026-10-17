@@ -40,6 +40,9 @@ tests exercise those conditions; this does not implement thread scheduling.
 
 ## Native observation
 
+This section records the initial settings-service checkpoint. The newer
+[dormant-thread checkpoint](dormant-threads.md) advances to StartThread.
+
 **VERIFIED 2026-10-17, Windows x64/MSVC:** exact supported executable hash was
 checked before generation and again before execution. The bounded startup CFG
 contains 69 instruction words across `[0x08804124, 0x08804238)`, including branch
@@ -81,8 +84,7 @@ The external timeout remains 15 seconds, outer dispatch budget 64, and interpret
 fallback is disabled. Both limits are necessary because generated loops may stay
 inside one dispatch.
 
-**PLANNED:** establish CreateThread's argument validation, guest UID ownership,
-stack allocation/alignment, GP inheritance and error returns with synthetic cases.
-Then inspect StartThread and module-start argument transfer before permitting the
-new thread's entry to execute. Expand only verified code ranges. Do not return a
-fake successful thread ID just to reach a later import.
+The bounded CreateThread subset now owns dormant objects and reserved stacks; see
+[its contracts and remaining work](dormant-threads.md). StartThread and module-start
+argument transfer still require investigation before permitting the new thread's
+entry to execute. Expand only verified code ranges.

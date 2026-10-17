@@ -1,7 +1,7 @@
 # Testing and debugging
 
-**Executed 2026-10-17 on Windows x64:** 19 Python test cases and five integrated
-CTest suites (aspect math, bootstrap HLE and three upstream suites) all passed.
+**Executed 2026-10-17 on Windows x64:** 19 Python test cases and six integrated
+CTest suites (aspect math, bootstrap HLE, dormant threads and three upstream suites) all passed.
 Python cases include every
 truncation of a synthetic ELF, invalid format/headers/segments, BSS/offset conversion,
 overflow/overlap, hash mismatch, missing input, profile validation, output confinement,
@@ -18,6 +18,11 @@ Bootstrap contracts cover SDK-family acceptance/rejection, compiler state, regis
 and memory preservation, per-runtime state ownership, unknown-library rejection,
 and preservation of HLE-directed PC/context switches. These are synthetic tests,
 not execution of the game or a complete PSP scheduler.
+
+Dormant-thread tests cover pointer boundaries, name truncation, stack rounding and
+overflow, pool exhaustion, reusable holes, stale UIDs, per-runtime ownership,
+stack fill/clear behavior and unsupported-option stops. CreateThread is also
+reached by the bounded real-input experiment; deletion is synthetic-only evidence.
 
 Use [build commands](building.md) to reproduce. The workflow in
 `.github/workflows/ci.yml` fetches the pinned framework, builds root integration,

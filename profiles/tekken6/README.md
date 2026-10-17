@@ -13,7 +13,10 @@ does not find this sectionless module.
 loads a bounded generated startup CFG and records unimplemented import boundaries.
 Its experimental stack and zero entry arguments do not establish the game's full
 startup ABI. `host/bootstrap.cpp` implements two narrowly scoped SDK/compiler
-services; all other imports stop. See the [service evidence and limitations](../../docs/research/startup-imports.md).
+services. `host/threads.cpp` owns a bounded dormant-thread registry and guest stack
+arena with CreateThread/DeleteThread handlers; StartThread is not implemented.
+See [service evidence](../../docs/research/startup-imports.md) and
+[thread limitations](../../docs/research/dormant-threads.md).
 
 Use [the build procedure](../../docs/development/building.md). Local inputs and
 outputs belong in root `local/`; this profile contains only distributable source

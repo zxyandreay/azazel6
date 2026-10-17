@@ -29,9 +29,10 @@ registers or let a Java/UI callback mutate guest memory during execution.
 Use runtime registrations for verified native overrides. Overlay loading must
 invalidate registrations for the replaced guest range, validate the new bytes,
 then install matching functions. A fallback has to record coverage and maintain
-scheduler boundaries. The entry probe disables interpretation, models two verified
-SDK/compiler service contracts and rejects every other import. No default-success
-syscall behavior is installed. See [startup HLE](../research/startup-imports.md).
+scheduler boundaries. The entry probe disables interpretation, models two
+SDK/compiler service contracts and owns dormant thread creation/deletion. Other
+imports stop. No default-success syscall behavior is installed. See
+[startup HLE](../research/startup-imports.md) and [thread ownership](../research/dormant-threads.md).
 
 See [the decision](../decisions/ADR-0001-framework-strategy.md),
 [memory/recompilation](recompilation.md) and [Android plan](android.md).

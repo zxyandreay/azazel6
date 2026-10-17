@@ -12,11 +12,12 @@
 | Windows framework build/regressions | VERIFIED, three suites passed |
 | Python/profile tools | VERIFIED, 19 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; five integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; six integrated CTest suites passed |
+| Dormant thread ownership | VERIFIED create/delete, bounded stacks and UID lifetime; no scheduler |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED two modeled services completed; stopped at CreateThread |
+| Native entry execution | VERIFIED settings and CreateThread completed; stopped at StartThread |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | CI configured; see hosted run status for evidence |
 | Android device/APK | NOT TESTED / not implemented |

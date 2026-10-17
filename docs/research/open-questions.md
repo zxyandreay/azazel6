@@ -3,7 +3,7 @@
 | Question | Current evidence | Next step |
 | --- | --- | --- |
 | First PSP import behavior | VERIFIED two modeled SDK/compiler services return; public source contracts inspected | Validate against PSP observations when available; no firmware-equivalence claim |
-| First thread creation | VERIFIED CreateThread arguments at native boundary | Validate name/options, UID ownership, stack/GP rules and lifecycle before implementation |
+| First thread lifecycle | VERIFIED owned dormant thread and StartThread arguments | Establish caller priority, start-argument ownership, initial CPU/stack ABI and scheduling |
 | Module-start arguments/stack | Experimental zero args and 64 KiB guest stack | Inspect startup/thread metadata and compare PSP bootstrap state |
 | Executable/code boundaries | RWX segment mixes code/data; heuristic false positives | Feed verified import stubs and code ranges to generation |
 | Dynamic code | Two PRX resources and module imports | Trace module loads and writes followed by execution |

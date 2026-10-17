@@ -31,6 +31,7 @@ Reviewed 2026-10-17. Evidence labels apply to individual claims:
 - [Source inventory and revisions](research/sources.md)
 - [Executable and PSP imports](research/executable.md)
 - [Startup imports and thread boundary](research/startup-imports.md)
+- [Dormant threads and StartThread boundary](research/dormant-threads.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

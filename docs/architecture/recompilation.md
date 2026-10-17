@@ -23,8 +23,9 @@ The startup scanner follows branch paths and call continuations without entering
 callees. PSPRecomp emits its C++; generated import wrappers call the profile's HLE
 and return to guest RA only when the service has neither stopped nor redirected
 execution or changed the execution-context token. The native experiment completes
-two modeled services and stops at CreateThread. No hand-written substitute emulates
-the entry. See [current observations](../research/startup-imports.md) and
+two settings services and CreateThread, then stops at StartThread. No hand-written
+substitute emulates the entry. See [current observations](../research/dormant-threads.md),
+[settings checkpoint](../research/startup-imports.md) and
 [foundation observations](../research/executable.md).
 
 **PLANNED:** establish code/data ownership, repair import-aware generation for

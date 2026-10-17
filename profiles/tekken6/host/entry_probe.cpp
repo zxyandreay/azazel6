@@ -4,6 +4,7 @@
 #include "psprecomp/common.hpp"
 #include "probe_config.hpp"
 #include "azazel6/bootstrap.hpp"
+#include "azazel6/threads.hpp"
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -46,6 +47,18 @@ int main(int argc, char** argv) {
                 throw Error("Experimental stack overlaps loaded segment");
         }
         rt->cpu().gpr[29] = stack_top - 16u;
+        // This profile currently accepts exactly one loaded image; do not guess overlays.
+        const ElfSegment* image_segment = nullptr;
+        for (const auto& segment : elf.segments()) if (segment.type == 1) {
+            if (image_segment) throw Error("Thread arena requires one loaded image");
+            image_segment = &segment;
+        }
+        if (!image_segment || !(image_segment->flags & 1u)) throw Error("No executable image");
+        const auto image_end = image_segment->vaddr + image_segment->memory_size;
+        const auto threads = azazel6::register_thread_hle(*rt, {
+            (image_end + 255u) & ~255u, stack_top - 65536u,
+            image_segment->vaddr, image_end, image_segment->vaddr,
+            image_segment->vaddr + image_segment->file_size, module.gp});
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
                   << " initial_sp=" << hex32(rt->cpu().gpr[29]) << std::endl;
@@ -62,10 +75,14 @@ int main(int argc, char** argv) {
         rt->run(elf.runtime_entry(), 64);
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
-        std::cout << "hle_completed=" << bootstrap->completed_calls
+        std::cout << "settings_completed=" << bootstrap->completed_calls
                   << " sdk_argument=" << hex32(bootstrap->last_sdk_argument)
                   << " game_info_flags=" << hex32(bootstrap->game_info_flags)
                   << " compiler_version=" << hex32(bootstrap->compiler_version) << std::endl;
+        for (const auto& thread : threads->snapshot())
+            std::cout << "dormant_thread=" << thread.uid << " entry=" << hex32(thread.entry)
+                      << " priority=" << thread.priority << " stack_base=" << hex32(thread.stack_base)
+                      << " stack_size=" << thread.stack_size << " gp=" << hex32(thread.gp) << std::endl;
         return rt->stop_reason().starts_with("Missing HLE import ") ? 3 : 1;
     } catch (const std::exception& error) {
         std::cerr << "entry_probe: " << error.what() << '\n';
