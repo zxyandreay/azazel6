@@ -1,5 +1,6 @@
 #pragma once
 #include "psprecomp/runtime.hpp"
+#include "azazel6/memory.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -26,13 +27,14 @@ struct GuestThread {
     ThreadStatus status = ThreadStatus::Dormant;
     psprecomp::AllegrexContext context{};
     std::uint32_t exit_status = 0;
+    std::uint64_t stack_ticket = 0;
 };
 class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
 private:
-    friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena);
+    friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena, std::shared_ptr<GuestAllocator>);
     explicit ThreadRegistry(ThreadArena arena) : arena_(arena) {}
     void create(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void erase(psprecomp::Runtime&, psprecomp::AllegrexContext&);
@@ -42,10 +44,12 @@ private:
     GuestThread* find(std::uint32_t);
     void prepare(psprecomp::Runtime&, GuestThread&, const std::vector<std::uint8_t>&);
     ThreadArena arena_;
+    std::shared_ptr<GuestAllocator> allocator_;
     std::vector<GuestThread> threads_;
     GuestThread bootstrap_{};
     std::uint32_t current_uid_ = 0;
     std::uint32_t next_uid_ = 1;
 };
-[[nodiscard]] std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena);
+[[nodiscard]] std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena,
+                                                               std::shared_ptr<GuestAllocator> = {});
 } // namespace azazel6

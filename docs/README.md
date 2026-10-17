@@ -33,6 +33,7 @@ Reviewed 2026-10-17. Evidence labels apply to individual claims:
 - [Startup imports and thread boundary](research/startup-imports.md)
 - [Dormant threads and StartThread boundary](research/dormant-threads.md)
 - [Thread startup and bootstrap handoff](research/thread-startup.md)
+- [Shared partition memory](research/partition-memory.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

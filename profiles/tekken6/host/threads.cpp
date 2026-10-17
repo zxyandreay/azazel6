@@ -13,7 +13,8 @@ bool ram_range(const psprecomp::GuestMemory& mem, std::uint32_t begin, std::uint
 }
 }
 
-std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, ThreadArena arena) {
+std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, ThreadArena arena,
+                                                 std::shared_ptr<GuestAllocator> allocator) {
     if (!ram_range(rt.memory(), arena.begin, arena.end) || ((arena.begin | arena.end) & 255u) ||
         !ram_range(rt.memory(), arena.image_begin, arena.image_end) ||
         arena.begin < arena.image_end || arena.executable_begin < arena.image_begin ||
@@ -27,6 +28,10 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         arena.image_begin <= kThreadReturnGate + 4))
         throw psprecomp::Error("Invalid bootstrap ownership");
     auto state = std::shared_ptr<ThreadRegistry>(new ThreadRegistry(arena));
+    if (!allocator) allocator = std::make_shared<GuestAllocator>(arena.begin, arena.end);
+    if (allocator->begin() != arena.begin || allocator->end() != arena.end)
+        throw psprecomp::Error("Thread allocator ownership mismatch");
+    state->allocator_ = std::move(allocator);
     rt.nids().add("ThreadManForUser", kCreateThreadNid, "sceKernelCreateThread");
     rt.nids().add("ThreadManForUser", kDeleteThreadNid, "sceKernelDeleteThread");
     rt.register_hle("ThreadManForUser", kCreateThreadNid,
@@ -86,25 +91,19 @@ void ThreadRegistry::create(psprecomp::Runtime& rt, psprecomp::AllegrexContext& 
         return;
     }
     const auto rounded = (static_cast<std::uint64_t>(ctx.gpr[7]) + 255u) & ~std::uint64_t{255u};
-    if (rounded > arena_.end - arena_.begin || next_uid_ >= kBootstrapUid) {
+    if (rounded > arena_.end - arena_.begin || next_uid_ >= 0x10000000u) {
         ctx.set_gpr(2, no_memory); return;
     }
-    // Highest free fitting range. Derive holes from live ownership so delete reclaims space.
-    auto ordered = threads_;
-    std::sort(ordered.begin(), ordered.end(), [](const auto& a, const auto& b) {
-        return a.stack_base > b.stack_base;
-    });
-    auto top = arena_.end;
-    for (const auto& thread : ordered) {
-        if (top - (thread.stack_base + thread.stack_size) >= rounded) break;
-        top = thread.stack_base;
-    }
-    if (top - arena_.begin < rounded) { ctx.set_gpr(2, no_memory); return; }
+    const auto allocation = allocator_->allocate(ctx.gpr[7], 256, true);
+    if (!allocation) { ctx.set_gpr(2, no_memory); return; }
     const auto size = static_cast<std::uint32_t>(rounded);
-    const auto base = top - size;
+    const auto base = allocation->base;
     // Allocate host metadata before guest writes: allocation failure cannot consume a UID/stack.
-    threads_.push_back({next_uid_, ctx.gpr[5], ctx.gpr[6], ctx.gpr[8] | 0x800000FFu,
-                        base, size, arena_.module_gp, std::move(name)});
+    try {
+        threads_.push_back({next_uid_, ctx.gpr[5], ctx.gpr[6], ctx.gpr[8] | 0x800000FFu,
+                            base, size, arena_.module_gp, std::move(name)});
+    } catch (...) { allocator_->release(allocation->ticket); throw; }
+    threads_.back().stack_ticket = allocation->ticket;
     if (!(ctx.gpr[8] & no_fill))
         for (std::uint32_t offset = 0; offset < size; offset += 4) mem.store32(base + offset, 0xFFFFFFFFu);
     ctx.set_gpr(2, next_uid_++);
@@ -118,6 +117,7 @@ void ThreadRegistry::erase(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c
     if (found->attributes & clear_stack)
         for (std::uint32_t offset = 0; offset < found->stack_size; offset += 4)
             rt.memory().store32(found->stack_base + offset, 0);
+    allocator_->release(found->stack_ticket);
     threads_.erase(found);
     ctx.set_gpr(2, 0);
 }

@@ -55,11 +55,14 @@ int main(int argc, char** argv) {
         }
         if (!image_segment || !(image_segment->flags & 1u)) throw Error("No executable image");
         const auto image_end = image_segment->vaddr + image_segment->memory_size;
+        const auto allocator = std::make_shared<azazel6::GuestAllocator>(
+            (image_end + 255u) & ~255u, stack_top - bootstrap_size);
+        const auto partition = azazel6::register_memory_hle(*rt, allocator);
         const auto threads = azazel6::register_thread_hle(*rt, {
             (image_end + 255u) & ~255u, stack_top - bootstrap_size,
             image_segment->vaddr, image_end, image_segment->vaddr,
             image_segment->vaddr + image_segment->file_size, module.gp,
-            AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size});
+            AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size}, allocator);
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
                   << " initial_sp=" << hex32(rt->cpu().gpr[29]) << std::endl;
@@ -85,6 +88,9 @@ int main(int argc, char** argv) {
                       << " entry=" << hex32(thread.entry)
                       << " priority=" << thread.priority << " stack_base=" << hex32(thread.stack_base)
                       << " stack_size=" << thread.stack_size << " gp=" << hex32(thread.gp) << std::endl;
+        for (const auto& [uid, block] : partition->blocks)
+            std::cout << "partition_block=" << uid << " base=" << hex32(block.base)
+                      << " size=" << hex32(block.size) << std::endl;
         return rt->stop_reason().starts_with("Missing HLE import ") ? 3 : 1;
     } catch (const std::exception& error) {
         std::cerr << "entry_probe: " << error.what() << '\n';
