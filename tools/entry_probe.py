@@ -22,7 +22,9 @@ def main():
     elf = validate(args.input, profile)
     module = module_report(elf)
     startup = json.loads((ROOT / "profiles/tekken6/config/startup.json").read_text())
-    cfg = {root: discover_entry(elf, startup["max_instructions_per_root"], int(root, 16))
+    cfg = {root: discover_entry(elf, startup["max_instructions_per_root"], int(root, 16),
+                               constant_branches=root in startup.get("constant_branch_roots", []),
+                               import_stubs=(int(imp["stub"], 16) for imp in module["imports"]))
            for root in startup["roots"]}
     ranges = sorted(pair for graph in cfg.values() for pair in graph["ranges"])
     if any(a + size > b for (a, size), (b, _) in zip(ranges, ranges[1:])):

@@ -36,6 +36,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Shared partition memory](research/partition-memory.md)
 - [Resident module identity](research/module-identity.md)
 - [Startup interrupt state](research/interrupt-state.md)
+- [Startup coverage and reachability](research/startup-coverage.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

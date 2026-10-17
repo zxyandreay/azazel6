@@ -8,8 +8,13 @@
     "0x08B7AFD0",
     "0x08B78BCC",
     "0x08B7AEE0",
-    "0x08804018"
+    "0x08804018",
+    "0x088040C4",
+    "0x08B778FC"
   ],
   "max_instructions_per_root": 4096,
-  "evidence": "Exact-hash ELF entry, observed thread entry and direct call reached after bootstrap return; no recursive callee discovery."
+  "evidence": "Exact-hash ELF entry, observed thread entry and direct call reached after bootstrap return; no recursive callee discovery.",
+  "constant_branch_roots": [
+    "0x088040C4"
+  ]
 }

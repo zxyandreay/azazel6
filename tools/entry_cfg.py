@@ -6,12 +6,48 @@ read from executable file-backed segments; no guessed contiguous function end.
 from elf import ValidationError
 
 
-def discover_entry(elf, max_instructions=256, entry=None):
-    pending = [elf.entry if entry is None else entry]
+def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=()):
+    unknown = (0,) + (None,) * 31
+    pending = []
+    states = {}
     words = set()
     instructions = set()
     delays = set()
     calls = {}
+    imports = frozenset(import_stubs)
+    if any(type(address) is not int or address < 0 or address > 0xFFFFFFFC or address % 4 for address in imports):
+        raise ValidationError("Import stubs must be aligned 32-bit guest addresses")
+    tail_calls = {}
+
+    def enqueue(pc, registers):
+        previous = states.get(pc)
+        merged = registers if previous is None else tuple(
+            a if a == b else None for a, b in zip(previous, registers))
+        if previous != merged:
+            states[pc] = merged
+            pending.append(pc)
+
+    def transfer(word, registers):
+        # A deliberately tiny, conservative lattice: unknown instructions kill
+        # every fact, calls kill all facts, and joins retain only equal constants.
+        if not constant_branches or word == 0:
+            return registers
+        op, rs, rt = word >> 26, (word >> 21) & 31, (word >> 16) & 31
+        immediate = word & 0xFFFF
+        result = list(registers)
+        if op == 15 and rs == 0:  # LUI
+            result[rt] = immediate << 16
+        elif op in (9, 13):  # ADDIU (wraps), ORI (zero extends)
+            value = registers[rs]
+            signed = immediate - (0x10000 if immediate & 0x8000 else 0)
+            result[rt] = None if value is None else (
+                (value + signed) & 0xFFFFFFFF if op == 9 else value | immediate)
+        else:
+            return unknown
+        result[0] = 0
+        return tuple(result)
+
+    enqueue(elf.entry if entry is None else entry, unknown)
 
     def read(pc):
         if pc % 4 or not any(s.flags & 1 and s.vaddr <= pc and pc + 4 <= s.vaddr + s.filesz for s in elf.segments):
@@ -37,8 +73,7 @@ def discover_entry(elf, max_instructions=256, entry=None):
 
     while pending:
         pc = pending.pop()
-        if pc in instructions:
-            continue
+        registers = states[pc]
         if pc in delays:
             raise ValidationError("Branch into a delay slot requires explicit handling")
         word = read(pc)
@@ -54,22 +89,35 @@ def discover_entry(elf, max_instructions=256, entry=None):
         if len(words) > max_instructions:
             raise ValidationError("Startup CFG exceeds instruction budget")
         if kind == "ordinary":
-            pending.append(pc + 4)
+            enqueue(pc + 4, transfer(word, registers))
         elif kind == "branch":
             signed = (word & 0xFFFF) - (0x10000 if word & 0x8000 else 0)
-            pending.extend([pc + 8, pc + 4 + signed * 4])
+            op, rs, rt = word >> 26, (word >> 21) & 31, (word >> 16) & 31
+            taken = None
+            if constant_branches and op in (4, 5, 20, 21) and registers[rs] is not None and registers[rt] is not None:
+                taken = (registers[rs] == registers[rt]) == (op in (4, 20))
+            delayed = transfer(read(pc + 4), registers)
+            if taken is not True:
+                # Branch-likely annuls the delay slot on the not-taken edge.
+                likely = op in (20, 21, 22, 23) or (op == 1 and rt in (2, 3))
+                enqueue(pc + 8, registers if likely else delayed)
+            if taken is not False:
+                enqueue(pc + 4 + signed * 4, delayed)
         elif kind in ("jump", "call"):
             target = ((pc + 4) & 0xF0000000) | ((word & 0x3FFFFFF) << 2)
             if kind == "jump":
-                pending.append(target)
+                if target in imports:
+                    tail_calls[pc] = target
+                else:
+                    enqueue(target, transfer(read(pc + 4), registers))
             else:
                 calls[pc] = target
-                pending.append(pc + 8)
+                enqueue(pc + 8, unknown)
     ranges = []
     for pc in sorted(words):
         if ranges and ranges[-1][0] + ranges[-1][1] == pc:
             ranges[-1][1] += 4
         else:
             ranges.append([pc, 4])
-    return {"ranges": ranges, "instruction_words": len(words), "calls": calls,
+    return {"ranges": ranges, "instruction_words": len(words), "calls": calls, "tail_calls": tail_calls,
             "instruction_addresses": sorted(instructions)}
