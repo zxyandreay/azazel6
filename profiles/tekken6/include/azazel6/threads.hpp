@@ -33,6 +33,7 @@ class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
+    [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
 private:
     friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena, std::shared_ptr<GuestAllocator>);
     explicit ThreadRegistry(ThreadArena arena) : arena_(arena) {}
@@ -49,6 +50,7 @@ private:
     GuestThread bootstrap_{};
     std::uint32_t current_uid_ = 0;
     std::uint32_t next_uid_ = 1;
+    bool interrupts_enabled_ = true;
 };
 [[nodiscard]] std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena,
                                                                std::shared_ptr<GuestAllocator> = {});

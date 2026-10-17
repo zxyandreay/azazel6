@@ -192,9 +192,31 @@ void start_arguments() {
     Scheduled large; const auto l = large.create(40); large.start(l, 900, 0x08004000u);
     check(large.rt->stopped() && large.threads->snapshot()[0].status == ThreadStatus::Dormant, "Oversized argument mutation");
 }
+void interrupt_state() {
+    Scheduled f;
+    auto& c = f.rt->cpu();
+    auto call = [&](std::uint32_t nid, std::uint32_t arg = 0) {
+        c.pc = 0x08001900u; c.gpr[31] = 0x08001800u; c.gpr[4] = arg;
+        invoke_returning_import(*f.rt, c, "Kernel_Library", nid);
+    };
+    call(0x092968F4u); check(c.gpr[2] == 1 && !f.threads->interrupts_enabled(), "Suspend previous state");
+    call(0x092968F4u); check(c.gpr[2] == 0, "Nested suspend token");
+    c.gpr[2] = 0x12345678u; call(0x5F10D406u, 0);
+    check(!f.threads->interrupts_enabled() && c.gpr[2] == 0x12345678u, "Nested restore/void ABI");
+    call(0x3B84732Du, 1);
+    check(f.threads->interrupts_enabled() && c.pc == c.gpr[31], "Synchronized restore return");
+    call(0x5F10D406u, 0xFFFFFFFFu);
+    check(f.rt->stopped() && f.threads->interrupts_enabled() && c.pc == 0x08001900u, "Unsupported flags mutated state");
+    Scheduled other; const auto uid = other.create(8);
+    other.rt->invoke_import("Kernel_Library", 0x092968F4u, other.rt->cpu());
+    other.start(uid);
+    check(other.rt->stopped() && other.threads->current_uid() == kBootstrapUid &&
+          other.threads->snapshot()[0].status == ThreadStatus::Dormant, "Disabled-interrupt scheduling accepted");
+    Scheduled independent; check(independent.threads->interrupts_enabled(), "Interrupt state leaked across runtimes");
+}
 }
 int main() {
-    try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments();
+    try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

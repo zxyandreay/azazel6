@@ -35,6 +35,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Thread startup and bootstrap handoff](research/thread-startup.md)
 - [Shared partition memory](research/partition-memory.md)
 - [Resident module identity](research/module-identity.md)
+- [Startup interrupt state](research/interrupt-state.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

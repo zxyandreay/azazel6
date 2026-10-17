@@ -16,7 +16,8 @@ generation/runtime contracts and memory-watch contracts. Original game data is n
 used in any CI test. Test fixtures are constructed at runtime and removed locally.
 Bootstrap contracts cover SDK-family acceptance/rejection, compiler state, register
 and memory preservation, per-runtime state ownership, unknown-library rejection,
-and preservation of HLE-directed PC/context switches. These are synthetic tests,
+and preservation of HLE-directed PC/context switches. Thread tests also cover
+nested interrupt suspend/restore and fail-closed mutations in critical sections. These are synthetic tests,
 not execution of the game or a complete PSP scheduler.
 
 Dormant-thread tests cover pointer boundaries, name truncation, stack rounding and

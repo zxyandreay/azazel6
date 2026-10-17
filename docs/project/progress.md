@@ -18,7 +18,7 @@
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition allocation and module lookup completed; missing interrupt suspension at 0x08B88D38 |
+| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; AOT reachability boundary at 0x088040C4 |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED preceding thread and memory checkpoints passed hosted CI |
 | Android device/APK | NOT TESTED / not implemented |

@@ -32,6 +32,18 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     if (allocator->begin() != arena.begin || allocator->end() != arena.end)
         throw psprecomp::Error("Thread allocator ownership mismatch");
     state->allocator_ = std::move(allocator);
+    rt.register_hle("Kernel_Library", 0x092968F4u, [state](auto&, auto& ctx) {
+        ctx.set_gpr(2, state->interrupts_enabled_ ? 1u : 0u);
+        state->interrupts_enabled_ = false;
+    });
+    const auto resume = [state](auto& runtime, auto& ctx) {
+        if (ctx.gpr[4] > 1) { runtime.stop("Unsupported interrupt controller flags"); return; }
+        state->interrupts_enabled_ = ctx.gpr[4] != 0;
+        // Firmware's resume service is void and leaves v0 untouched.
+        // No asynchronous interrupt sources exist in this bounded runtime yet.
+    };
+    rt.register_hle("Kernel_Library", 0x5F10D406u, resume);
+    rt.register_hle("Kernel_Library", 0x3B84732Du, resume);
     rt.nids().add("ThreadManForUser", kCreateThreadNid, "sceKernelCreateThread");
     rt.nids().add("ThreadManForUser", kDeleteThreadNid, "sceKernelDeleteThread");
     rt.register_hle("ThreadManForUser", kCreateThreadNid,
@@ -62,6 +74,7 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
 }
 
 void ThreadRegistry::create(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {
+    if (!interrupts_enabled_) { rt.stop("Thread mutation with interrupts suspended is unsupported"); return; }
     auto& mem = rt.memory();
     // Unsupported valid PSP configurations are research stops, never fabricated guest errors.
     if (ctx.gpr[9] != 0 || (ctx.gpr[8] & ~(0x80000000u | no_fill | clear_stack)) != 0) {
@@ -110,6 +123,7 @@ void ThreadRegistry::create(psprecomp::Runtime& rt, psprecomp::AllegrexContext& 
 }
 
 void ThreadRegistry::erase(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {
+    if (!interrupts_enabled_) { rt.stop("Thread mutation with interrupts suspended is unsupported"); return; }
     const auto found = std::find_if(threads_.begin(), threads_.end(),
         [&](const auto& thread) { return thread.uid == ctx.gpr[4]; });
     if (found == threads_.end()) { ctx.set_gpr(2, ctx.gpr[4] ? 0x80020198u : 0x80020197u); return; }
@@ -155,6 +169,7 @@ void ThreadRegistry::prepare(psprecomp::Runtime& rt, GuestThread& thread,
 }
 
 void ThreadRegistry::start(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {
+    if (!interrupts_enabled_) { rt.stop("Thread mutation with interrupts suspended is unsupported"); return; }
     if (!current_uid_) { rt.stop("Bootstrap scheduler is not configured"); return; }
     auto* thread = find(ctx.gpr[4]);
     if (!thread) { ctx.set_gpr(2, ctx.gpr[4] ? 0x80020198u : 0x80020197u); return; }
@@ -202,6 +217,7 @@ void ThreadRegistry::schedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext
 
 void ThreadRegistry::finish(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx,
                             bool remove, bool from_return) {
+    if (!interrupts_enabled_) { rt.stop("Thread exit with interrupts suspended is unsupported"); return; }
     auto* current = find(current_uid_);
     if (!current || current->status != ThreadStatus::Running) { rt.stop("No running thread to exit"); return; }
     const auto uid = current_uid_;
