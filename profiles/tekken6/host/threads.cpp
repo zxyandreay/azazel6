@@ -61,6 +61,22 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         }
         ctx.set_gpr(2, current->priority);
     });
+    rt.register_hle("ThreadManForUser", 0x20FFF560u,
+        [state](auto& runtime, auto& ctx) { state->create_timer(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0x328F9E52u, [state](auto& runtime, auto& ctx) {
+        if (!state->current_uid_ || !state->interrupts_enabled_) {
+            runtime.stop("Timer deletion requires a running thread with interrupts enabled"); return;
+        }
+        ctx.set_gpr(2, state->timers_.erase(ctx.gpr[4]) ? 0 : 0x800201BEu);
+    });
+    rt.register_hle("ThreadManForUser", 0xC68D9437u, [state](auto& runtime, auto& ctx) {
+        if (!state->current_uid_ || !state->interrupts_enabled_) {
+            runtime.stop("Timer start requires a running thread with interrupts enabled"); return;
+        }
+        if (!ctx.gpr[4]) { ctx.set_gpr(2, 0x800201BFu); return; }
+        if (!state->timers_.contains(ctx.gpr[4])) { ctx.set_gpr(2, 0x800201BEu); return; }
+        runtime.stop("Virtual timer start requires a verified guest clock and callback scheduler");
+    });
     rt.nids().add("ThreadManForUser", kCreateThreadNid, "sceKernelCreateThread");
     rt.nids().add("ThreadManForUser", kDeleteThreadNid, "sceKernelDeleteThread");
     rt.register_hle("ThreadManForUser", kCreateThreadNid,
@@ -312,5 +328,25 @@ void ThreadRegistry::unlock_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexCon
     if (m.owner != current_uid_ || !m.count) { c.set_gpr(2, 0x800201C5u); return; }
     if (count > m.count) { c.set_gpr(2, 0x800201C7u); return; }
     m.count -= count; if (!m.count) m.owner = 0; c.set_gpr(2, 0);
+}
+void ThreadRegistry::create_timer(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!current_uid_ || !interrupts_enabled_) {
+        rt.stop("Timer creation requires a running thread with interrupts enabled"); return;
+    }
+    if (c.gpr[5]) { rt.stop("Virtual timer options are unsupported"); return; }
+    if (!c.gpr[4]) { c.set_gpr(2, 0x80020001u); return; }
+    std::string name;
+    for (std::uint32_t i = 0; i < 31; ++i) {
+        const auto address = static_cast<std::uint64_t>(c.gpr[4]) + i;
+        if (address < 0x08000000u || address >= 0x08000000ull + rt.memory().size()) {
+            rt.stop("Unsupported virtual timer name address"); return;
+        }
+        const auto byte = rt.memory().load8(static_cast<std::uint32_t>(address));
+        if (!byte) break;
+        name.push_back(static_cast<char>(byte));
+    }
+    if (timers_.size() >= 4096 || next_timer_uid_ >= 0x50000000u) { c.set_gpr(2, no_memory); return; }
+    timers_.emplace(next_timer_uid_, GuestVTimer{std::move(name)});
+    c.set_gpr(2, next_timer_uid_++);
 }
 } // namespace azazel6

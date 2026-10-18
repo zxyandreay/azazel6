@@ -94,6 +94,7 @@ int main(int argc, char** argv) {
             std::cout << "partition_block=" << uid << " base=" << hex32(block.base)
                       << " size=" << hex32(block.size) << std::endl;
         std::cout << "mutex_count=" << threads->mutexes().size() << std::endl;
+        std::cout << "inactive_timer_count=" << threads->timers().size() << std::endl;
         return rt->stop_reason().starts_with("Missing HLE import ") ? 3 : 1;
     } catch (const std::exception& error) {
         std::cerr << "entry_probe: " << error.what() << '\n';

@@ -273,6 +273,46 @@ void current_priority() {
     check(inactive.rt->stopped() && inactive.rt->cpu().gpr[2] == 0xDEADBEEFu &&
           inactive.rt->cpu().pc == 0x08001900u, "Missing running context fabricated a priority");
 }
+void inactive_timers() {
+    Scheduled f;
+    auto call = [](Scheduled& fixture, std::uint32_t nid, std::uint32_t arg, std::uint32_t option = 0) {
+        auto& c = fixture.rt->cpu(); c.gpr[4] = arg; c.gpr[5] = option;
+        c.gpr[2] = 0xDEADBEEFu; c.gpr[31] = 0x08001800u; c.pc = 0x08001900u;
+        invoke_returning_import(*fixture.rt, c, "ThreadManForUser", nid); return c.gpr[2];
+    };
+    check(call(f, 0x20FFF560u, 0) == 0x80020001u && f.threads->timers().empty(), "Null timer name");
+    const auto first = call(f, 0x20FFF560u, 0x08004000u);
+    check(first == 0x40000000u && f.threads->timers().at(first).name.empty(), "Empty timer name/UID");
+    for (unsigned i = 0; i < 40; ++i) f.rt->memory().store8(0x08004000u + i, 'v');
+    const auto second = call(f, 0x20FFF560u, 0x08004000u);
+    check(f.threads->timers().at(second).name.size() == 31, "Timer name truncation");
+    check(call(f, 0x20FFF560u, 0x08004000u) > second, "Duplicate timer names/UIDs");
+    check(call(f, 0x328F9E52u, first) == 0 && call(f, 0x328F9E52u, first) == 0x800201BEu, "Timer delete/stale UID");
+    check(call(f, 0xC68D9437u, first) == 0x800201BEu && call(f, 0xC68D9437u, 0) == 0x800201BFu,
+          "Invalid timer start IDs");
+    const auto count = f.threads->timers().size();
+    check(call(f, 0xC68D9437u, second) == 0xDEADBEEFu && f.rt->stopped() &&
+          f.rt->cpu().pc == 0x08001900u && f.threads->timers().size() == count, "Timer start fabricated clock progress");
+    for (auto address : {0xFFFFFFFFu, 0x88004000u, 0x09FFFFFFu}) {
+        Scheduled bad; bad.rt->memory().store8(0x09FFFFFFu, 'v');
+        check(call(bad, 0x20FFF560u, address) == 0xDEADBEEFu && bad.rt->stopped() &&
+              bad.threads->timers().empty(), "Invalid timer name changed registry");
+    }
+    Scheduled options;
+    check(call(options, 0x20FFF560u, 0x08004000u, 0x08004100u) == 0xDEADBEEFu &&
+          options.rt->stopped() && options.threads->timers().empty(), "Unsupported timer options accepted");
+    Scheduled isolated;
+    check(call(isolated, 0x20FFF560u, 0x08004000u) == first, "Timer registry leaked across runtimes");
+    for (unsigned i = 1; i < 4096; ++i)
+        check(call(isolated, 0x20FFF560u, 0x08004000u) == first + i, "Timer UID allocation");
+    check(call(isolated, 0x20FFF560u, 0x08004000u) == 0x80020190u, "Timer metadata limit");
+    check(call(isolated, 0x328F9E52u, first) == 0 &&
+          call(isolated, 0x20FFF560u, 0x08004000u) == first + 4096, "Timer exhaustion consumed/reused UID");
+    Scheduled suspended;
+    suspended.rt->invoke_import("Kernel_Library", 0x092968F4u, suspended.rt->cpu());
+    check(call(suspended, 0x20FFF560u, 0x08004000u) == 0xDEADBEEFu && suspended.rt->stopped() &&
+          suspended.threads->timers().empty(), "Timer mutation while interrupts suspended");
+}
 void mutex_boundaries() {
     Scheduled wait;
     const auto uid = mutex_call(wait, 0xB7D098C6u, 0x08004000u, 0, 1);
@@ -289,7 +329,7 @@ void mutex_boundaries() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); current_priority();
+          mutex_ownership(); mutex_boundaries(); current_priority(); inactive_timers();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

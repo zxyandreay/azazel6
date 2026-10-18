@@ -33,12 +33,15 @@ struct GuestMutex {
     std::string name;
     std::uint32_t attributes, initial_count, count, owner;
 };
+// Only inactive timers are supported until a guest clock is established.
+struct GuestVTimer { std::string name; };
 class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestMutex>& mutexes() const { return mutexes_; }
+    [[nodiscard]] const std::map<std::uint32_t, GuestVTimer>& timers() const { return timers_; }
 private:
     friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena, std::shared_ptr<GuestAllocator>);
     explicit ThreadRegistry(ThreadArena arena) : arena_(arena) {}
@@ -54,6 +57,7 @@ private:
     void delete_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void lock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
     void unlock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void create_timer(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     ThreadArena arena_;
     std::shared_ptr<GuestAllocator> allocator_;
     std::vector<GuestThread> threads_;
@@ -63,6 +67,8 @@ private:
     bool interrupts_enabled_ = true;
     std::map<std::uint32_t, GuestMutex> mutexes_;
     std::uint32_t next_mutex_uid_ = 0x30000000u;
+    std::map<std::uint32_t, GuestVTimer> timers_;
+    std::uint32_t next_timer_uid_ = 0x40000000u;
 };
 [[nodiscard]] std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena,
                                                                std::shared_ptr<GuestAllocator> = {});
