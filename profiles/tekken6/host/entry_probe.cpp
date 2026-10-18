@@ -81,6 +81,15 @@ int main(int argc, char** argv) {
         rt->run(elf.runtime_entry(), 4096);
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
+        if (rt->stop_reason().starts_with("Unverified indirect target ")) {
+            const auto arg0 = rt->cpu().gpr[4];
+            std::cout << "indirect_arg0=" << hex32(arg0) << " v0=" << hex32(rt->cpu().gpr[2])
+                      << " v1=" << hex32(rt->cpu().gpr[3]) << " t9=" << hex32(rt->cpu().gpr[25]);
+            if (!(arg0 & 3u) && arg0 >= GuestMemory::kPhysicalBase && static_cast<std::uint64_t>(arg0) + 4 <=
+                static_cast<std::uint64_t>(GuestMemory::kPhysicalBase) + mem.size())
+                std::cout << " arg0_word=" << hex32(mem.load32(arg0));
+            std::cout << std::endl;
+        }
         std::cout << "settings_completed=" << bootstrap->completed_calls
                   << " sdk_argument=" << hex32(bootstrap->last_sdk_argument)
                   << " game_info_flags=" << hex32(bootstrap->game_info_flags)

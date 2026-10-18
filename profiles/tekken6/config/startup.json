@@ -103,10 +103,29 @@
     "0x08ACD8B8",
     "0x08ACC0A0",
     "0x08ACD1BC",
-    "0x08ACC214"
+    "0x08ACC214",
+    "0x08AEBB70",
+    "0x08ACDAEC",
+    "0x08ACC738",
+    "0x08ACD234",
+    "0x08AEBB78",
+    "0x08AEBC80",
+    "0x08B5FF50",
+    "0x08B5EDB0",
+    "0x08AC3904",
+    "0x08ADB718",
+    "0x08AC8EF0",
+    "0x08ADF648",
+    "0x08AC5E54",
+    "0x08AC2F1C",
+    "0x08AC5CE0",
+    "0x08ACDF90",
+    "0x08AC64B4",
+    "0x08AC3CA0",
+    "0x08B80D00"
   ],
   "max_instructions_per_root": 4096,
-  "evidence": "Exact-hash ELF entry, observed startup calls, explicit shared ranges and validated constructor-table targets; no recursive callee discovery.",
+  "evidence": "Exact-hash ELF entry, investigated startup and direct-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
   "constant_branch_roots": [
     "0x088040C4",
     "0x08B033BC"
@@ -152,14 +171,22 @@
       "site": "0x08ACC368",
       "register": 3,
       "pointers": [
-        "0x08BCFB18"
+        "0x08BCFB18",
+        "0x08BCFB40"
       ]
     },
     {
       "site": "0x08ACC3DC",
       "register": 3,
       "pointers": [
-        "0x08BCFAE0"
+        "0x08BCFAE0",
+        "0x08BCF960",
+        "0x08BCF920",
+        "0x08BCF8E0",
+        "0x08BCFA60",
+        "0x08BCF9A0",
+        "0x08BCFAA0",
+        "0x08BCF9E0"
       ]
     }
   ],
@@ -169,7 +196,15 @@
       "register": 25,
       "pointers": [
         "0x08BCFB20",
-        "0x08BCFAE8"
+        "0x08BCFB48",
+        "0x08BCFAE8",
+        "0x08BCF968",
+        "0x08BCF928",
+        "0x08BCF8E8",
+        "0x08BCFA68",
+        "0x08BCF9A8",
+        "0x08BCFAA8",
+        "0x08BCF9E8"
       ]
     },
     {
@@ -177,7 +212,15 @@
       "register": 25,
       "pointers": [
         "0x08BCFB20",
-        "0x08BCFAE8"
+        "0x08BCFB48",
+        "0x08BCFAE8",
+        "0x08BCF968",
+        "0x08BCF928",
+        "0x08BCF8E8",
+        "0x08BCFA68",
+        "0x08BCF9A8",
+        "0x08BCFAA8",
+        "0x08BCF9E8"
       ]
     },
     {
@@ -185,7 +228,15 @@
       "register": 25,
       "pointers": [
         "0x08BCFB20",
-        "0x08BCFAE8"
+        "0x08BCFB48",
+        "0x08BCFAE8",
+        "0x08BCF968",
+        "0x08BCF928",
+        "0x08BCF8E8",
+        "0x08BCFA68",
+        "0x08BCF9A8",
+        "0x08BCFAA8",
+        "0x08BCF9E8"
       ]
     },
     {
@@ -193,7 +244,15 @@
       "register": 25,
       "pointers": [
         "0x08BCFB20",
-        "0x08BCFAE8"
+        "0x08BCFB48",
+        "0x08BCFAE8",
+        "0x08BCF968",
+        "0x08BCF928",
+        "0x08BCF8E8",
+        "0x08BCFA68",
+        "0x08BCF9A8",
+        "0x08BCFAA8",
+        "0x08BCF9E8"
       ]
     },
     {
@@ -201,7 +260,15 @@
       "register": 25,
       "pointers": [
         "0x08BCFB20",
-        "0x08BCFAE8"
+        "0x08BCFB48",
+        "0x08BCFAE8",
+        "0x08BCF968",
+        "0x08BCF928",
+        "0x08BCF8E8",
+        "0x08BCFA68",
+        "0x08BCF9A8",
+        "0x08BCFAA8",
+        "0x08BCF9E8"
       ]
     }
   ]
