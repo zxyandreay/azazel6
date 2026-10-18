@@ -94,7 +94,16 @@
     "0x08867998",
     "0x08865C10",
     "0x088642E8",
-    "0x088618F0"
+    "0x088618F0",
+    "0x08B61438",
+    "0x08AC5900",
+    "0x08ACF434",
+    "0x08ACD424",
+    "0x08ACC318",
+    "0x08ACD8B8",
+    "0x08ACC0A0",
+    "0x08ACD1BC",
+    "0x08ACC214"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, observed startup calls, explicit shared ranges and validated constructor-table targets; no recursive callee discovery.",
@@ -116,6 +125,12 @@
       "register": 4,
       "table_start": "0x08BD93EC",
       "count": 89
+    },
+    {
+      "site": "0x08ACC34C",
+      "register": 4,
+      "table_start": "0x08BCF828",
+      "count": 8
     }
   ],
   "trapped_calls": [
@@ -130,6 +145,64 @@
     {
       "site": "0x08B79238",
       "register": 2
+    }
+  ],
+  "pointer_calls": [
+    {
+      "site": "0x08ACC368",
+      "register": 3,
+      "pointers": [
+        "0x08BCFB18"
+      ]
+    },
+    {
+      "site": "0x08ACC3DC",
+      "register": 3,
+      "pointers": [
+        "0x08BCFAE0"
+      ]
+    }
+  ],
+  "pointer_tails": [
+    {
+      "site": "0x08ACC26C",
+      "register": 25,
+      "pointers": [
+        "0x08BCFB20",
+        "0x08BCFAE8"
+      ]
+    },
+    {
+      "site": "0x08ACC2AC",
+      "register": 25,
+      "pointers": [
+        "0x08BCFB20",
+        "0x08BCFAE8"
+      ]
+    },
+    {
+      "site": "0x08ACC2CC",
+      "register": 25,
+      "pointers": [
+        "0x08BCFB20",
+        "0x08BCFAE8"
+      ]
+    },
+    {
+      "site": "0x08ACC2F4",
+      "register": 25,
+      "pointers": [
+        "0x08BCFB20",
+        "0x08BCFAE8"
+      ]
+    },
+    {
+      "site": "0x08ACC308",
+      "register": 25,
+      "pointers": [
+        "0x08BCFB20",
+        "0x08BCFAE8"
+      ]
     }
   ]
 }

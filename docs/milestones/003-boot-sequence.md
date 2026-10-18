@@ -1,9 +1,9 @@
 # Milestone 003: boot sequence
 
 **IN PROGRESS, 2026-10-18.** Native bring-up is implemented; title-screen boot is
-not. The current bounded experiment completes the first twelve constructors, creates
-three mutexes and eight inactive timers, and reaches the thirteenth constructor. See
-[constructor coverage evidence](../research/constructor-coverage.md).
+not. The current bounded experiment completes the first fourteen constructors, creates
+three mutexes and eight inactive timers, and reaches guarded object dispatch in the fifteenth constructor. See
+[guarded object-dispatch evidence](../research/virtual-dispatch.md).
 
 Implemented foundations include thread lifecycle and priority handoff, shared
 stack/partition allocation, resident module identity, nested interrupt state,

@@ -1,7 +1,7 @@
 import unittest
 from elf import ValidationError
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, jump_maps, trap_maps, guard_generated
+from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated
 from test_entry_cfg import program
 
 BASE = 0x08804000
@@ -70,6 +70,42 @@ class IndirectCallTests(unittest.TestCase):
     def test_jump_table_cannot_enter_delay_slot(self):
         with self.assertRaises(ValidationError):
             discover_entry(program([0x00800008, 0]), indirect_jumps={BASE: [BASE + 4]})
+
+    def test_pointer_slots_are_validated_before_authorizing_calls(self):
+        elf = self.fixture()
+        descriptor = dict(site=hex(BASE), register=4, pointers=[hex(BASE + 20)])
+        maps = pointer_maps(elf, [descriptor])
+        self.assertEqual(maps[BASE]['targets'], [BASE + 24])
+        self.assertEqual(maps[BASE]['pointers'], [BASE + 20])
+        self.assertEqual(discover_entry(elf, indirect_calls={BASE: maps[BASE]['targets']})['ranges'], [[BASE, 16]])
+        for changes in ({'register': 5}, {'register': 0}, {'site': hex(BASE + 1)},
+                        {'pointers': []}, {'pointers': [hex(BASE + 20)] * 129},
+                        {'pointers': [hex(BASE + 21)]}, {'pointers': ['0xFFFFFFFC']},
+                        {'pointers': [hex(BASE + 16)]}):
+            with self.subTest(changes=changes), self.assertRaises(ValidationError):
+                pointer_maps(elf, [descriptor | changes])
+        with self.assertRaises(ValidationError):
+            pointer_maps(elf, [descriptor, descriptor])
+        for target in (0, BASE + 1, BASE + 32, 0x88804000):
+            with self.subTest(target=target), self.assertRaises(ValidationError):
+                pointer_maps(self.fixture(target), [descriptor])
+
+    def test_pointer_tails_preserve_function_boundaries(self):
+        elf = program([0x00800008, 0, BASE + 16, 0xFFFFFFFF, 0x03E00008, 0])
+        descriptor = dict(site=hex(BASE), register=4, pointers=[hex(BASE + 8)])
+        maps = pointer_maps(elf, [descriptor], tail=True)
+        cfg = discover_entry(elf, indirect_tails={BASE: maps[BASE]['targets']})
+        self.assertEqual(cfg['ranges'], [[BASE, 8]])
+        self.assertEqual(cfg['indirect_tails'], {BASE: [BASE + 16]})
+        self.assertFalse(cfg['indirect_calls'])
+        with self.assertRaises(ValidationError):
+            pointer_maps(elf, [descriptor])
+        with self.assertRaises(ValidationError):
+            pointer_maps(elf, [descriptor | {'register': 31}], tail=True)
+        with self.assertRaises(ValidationError):
+            discover_entry(elf, indirect_tails={BASE: []})
+        with self.assertRaises(ValidationError):
+            discover_entry(elf, indirect_tails={BASE: [BASE + 16]}, trapped_calls=[BASE])
 
     def test_trap_is_terminal_and_authorizes_no_target(self):
         # The word after the delay slot deliberately has no supported CFG form.

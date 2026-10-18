@@ -2,6 +2,31 @@
 from elf import ValidationError
 
 
+def pointer_maps(elf, descriptors, *, tail=False):
+    """Resolve explicit file-backed function-pointer slots, never literal targets."""
+    result = {}
+    for descriptor in descriptors:
+        site, register = int(descriptor['site'], 16), descriptor['register']
+        pointers = [int(value, 16) for value in descriptor['pointers']]
+        if not 1 <= register <= (30 if tail else 31) or site % 4 or not 1 <= len(pointers) <= 128 or any(p % 4 for p in pointers):
+            raise ValidationError('Invalid function-pointer call descriptor')
+        offset = elf.guest_to_offset(site, 4)
+        word = int.from_bytes(elf.data[offset:offset + 4], 'little')
+        expected = (register << 21) | (8 if tail else (31 << 11) | 9)
+        if site in result or word != expected:
+            raise ValidationError('Duplicate or mismatched function-pointer transfer site')
+        targets = []
+        for pointer in pointers:
+            offset = elf.guest_to_offset(pointer, 4)
+            target = int.from_bytes(elf.data[offset:offset + 4], 'little')
+            if target % 4 or not any(s.flags & 1 and s.vaddr <= target and target + 4 <= s.vaddr + s.filesz
+                                     for s in elf.segments):
+                raise ValidationError('Function pointer outside executable file-backed range')
+            targets.append(target)
+        result[site] = {'register': register, 'targets': targets, 'pointers': pointers}
+    return result
+
+
 def trap_maps(elf, descriptors):
     """Declare terminal JALR boundaries; these never authorize a target."""
     result = {}

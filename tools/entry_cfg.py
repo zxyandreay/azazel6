@@ -7,7 +7,7 @@ from elf import ValidationError
 
 
 def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=(),
-                   indirect_calls=None, external_entries=(), indirect_jumps=None, trapped_calls=()):
+                   indirect_calls=None, external_entries=(), indirect_jumps=None, trapped_calls=(), indirect_tails=None):
     unknown = (0,) + (None,) * 31
     pending = []
     states = {}
@@ -23,10 +23,14 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     used_indirect = {}
     jumps = indirect_jumps or {}
     used_jumps = {}
+    tails = indirect_tails or {}
+    used_tails = {}
     traps = frozenset(trapped_calls)
     used_traps = set()
-    if traps & (indirect.keys() | jumps.keys()):
+    if traps & (indirect.keys() | jumps.keys() | tails.keys()):
         raise ValidationError('Trapped sites cannot also authorize targets')
+    if tails.keys() & (indirect.keys() | jumps.keys()):
+        raise ValidationError('Indirect tail sites cannot also be call/jump sites')
     external_boundaries = set()
     root = elf.entry if entry is None else entry
     if root in imports:
@@ -86,6 +90,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
                 return "trap"
             if function == 9 and pc in indirect and indirect[pc] and word == (rs << 21) | (31 << 11) | 9:
                 return "indirect_call"
+            if function == 8 and pc in tails and tails[pc] and word == (rs << 21) | 8:
+                return "indirect_tail"
             if function == 8 and pc in jumps and jumps[pc] and word == (rs << 21) | 8:
                 return "indirect_jump"
             raise ValidationError(f"Indirect control transfer at 0x{pc:08X} requires a verified target map")
@@ -138,6 +144,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         elif kind == "indirect_call":
             used_indirect[pc] = indirect[pc]
             enqueue(pc + 8, unknown)
+        elif kind == "indirect_tail":
+            used_tails[pc] = tails[pc]
         elif kind == "indirect_jump":
             used_jumps[pc] = jumps[pc]
             for target in jumps[pc]:
@@ -161,6 +169,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     return {"ranges": ranges, "instruction_words": len(words), "calls": calls, "tail_calls": tail_calls,
             "indirect_calls": used_indirect,
             "indirect_jumps": used_jumps,
+            "indirect_tails": used_tails,
             "trapped_calls": sorted(used_traps),
             "external_boundaries": sorted(external_boundaries),
             "instruction_addresses": sorted(instructions)}
