@@ -27,8 +27,17 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     used_traps = set()
     if traps & (indirect.keys() | jumps.keys()):
         raise ValidationError('Trapped sites cannot also authorize targets')
+    external_boundaries = set()
+    root = elf.entry if entry is None else entry
+    if root in imports:
+        raise ValidationError('CFG root cannot also be an external entry')
 
     def enqueue(pc, registers):
+        if pc in delays:
+            raise ValidationError('Branch into a delay slot requires explicit handling')
+        if pc in imports:
+            external_boundaries.add(pc)
+            return
         previous = states.get(pc)
         merged = registers if previous is None else tuple(
             a if a == b else None for a, b in zip(previous, registers))
@@ -60,7 +69,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         result[0] = 0
         return tuple(result)
 
-    enqueue(elf.entry if entry is None else entry, unknown)
+    enqueue(root, unknown)
 
     def read(pc):
         if pc % 4 or not any(s.flags & 1 and s.vaddr <= pc and pc + 4 <= s.vaddr + s.filesz for s in elf.segments):
@@ -103,7 +112,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         words.add(pc)
         if kind != "ordinary":
             delay = pc + 4
-            if delay in instructions or flow(read(delay), delay) != "ordinary":
+            if delay in instructions or delay in external_boundaries or flow(read(delay), delay) != "ordinary":
                 raise ValidationError("Overlapping/control-transfer delay slot")
             delays.add(delay)
             words.add(delay)
@@ -153,4 +162,5 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
             "indirect_calls": used_indirect,
             "indirect_jumps": used_jumps,
             "trapped_calls": sorted(used_traps),
+            "external_boundaries": sorted(external_boundaries),
             "instruction_addresses": sorted(instructions)}

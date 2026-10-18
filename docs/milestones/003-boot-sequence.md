@@ -2,7 +2,7 @@
 
 **IN PROGRESS, 2026-10-18.** Native bring-up is implemented; title-screen boot is
 not. The current bounded experiment completes the first twelve constructors, creates
-two mutexes and eight inactive timers, and reaches the thirteenth constructor. See
+three mutexes and eight inactive timers, and reaches the thirteenth constructor. See
 [constructor coverage evidence](../research/constructor-coverage.md).
 
 Implemented foundations include thread lifecycle and priority handoff, shared

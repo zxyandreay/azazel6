@@ -122,6 +122,21 @@ class EntryCfgTests(unittest.TestCase):
         # A previously discovered function is also an external tail boundary.
         self.assertEqual(discover_entry(elf, external_entries=[stub])['ranges'], [[0x08804000, 8]])
 
+    def test_external_entries_bound_all_edges_without_hiding_delay_errors(self):
+        base = 0x08804000
+        for words, boundary, size in (([0, 0x03E00008, 0], base + 4, 4),
+                                     ([0x0C000040, 0, 0x03E00008, 0], base + 8, 8),
+                                     ([0x10000003, 0, 0x03E00008, 0, 0x03E00008, 0], base + 16, 16)):
+            cfg = discover_entry(program(words), external_entries=[boundary])
+            self.assertEqual(cfg['ranges'], [[base, size]])
+            self.assertEqual(cfg['external_boundaries'], [boundary])
+        with self.assertRaises(ValidationError):
+            discover_entry(program([0x03E00008, 0]), external_entries=[base])
+        with self.assertRaises(ValidationError):
+            discover_entry(program([0x10000000, 0, 0x03E00008, 0]), external_entries=[base + 4])
+        with self.assertRaises(ValidationError):
+            discover_entry(program([0x10000002, 0, 0x03E00008, 0]), external_entries=[base + 12])
+
 
 if __name__ == '__main__':
     unittest.main()
