@@ -74,6 +74,15 @@ class EntryCfgTests(unittest.TestCase):
                 discover_entry(program([0x24020000, *middle, 0x10400003, 0,
                                         0x03200008, 0, 0x03E00008, 0]), constant_branches=True)
 
+    def test_stack_save_preserves_constants_but_load_kills_destination(self):
+        for memory_op in (0xAFA20000, 0x8FA30000):
+            cfg = discover_entry(program([0x24020000, memory_op, 0x10400003, 0,
+                                          0x03200008, 0, 0x03E00008, 0]), constant_branches=True)
+            self.assertNotIn(0x08804010, cfg['instruction_addresses'])
+        with self.assertRaises(ValidationError):
+            discover_entry(program([0x24020000, 0x8FA20000, 0x10400003, 0,
+                                    0x03200008, 0, 0x03E00008, 0]), constant_branches=True)
+
     def test_conflicting_join_revisits_branch(self):
         # Unknown a0 chooses zero or one; both reach a conditional indirect edge.
         words = [0x10800004, 0, 0x24020001, 0x10000002, 0, 0x24020000,
@@ -91,6 +100,8 @@ class EntryCfgTests(unittest.TestCase):
         for invalid in ['0x08804008', -4, 0x100000000, stub + 1]:
             with self.subTest(stub=invalid), self.assertRaises(ValidationError):
                 discover_entry(elf, import_stubs=[invalid])
+        # A previously discovered function is also an external tail boundary.
+        self.assertEqual(discover_entry(elf, external_entries=[stub])['ranges'], [[0x08804000, 8]])
 
 
 if __name__ == '__main__':

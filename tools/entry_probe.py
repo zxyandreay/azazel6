@@ -27,6 +27,7 @@ def main():
     cfg = {root: discover_entry(elf, startup["max_instructions_per_root"], int(root, 16),
                                constant_branches=root in startup.get("constant_branch_roots", []),
                                import_stubs=(int(imp["stub"], 16) for imp in module["imports"]),
+                               external_entries=(int(other, 16) for other in startup["roots"] if other != root),
                                indirect_calls={site: mapping['targets'] for site, mapping in indirect.items()})
            for root in startup["roots"]}
     ranges = sorted(pair for graph in cfg.values() for pair in graph["ranges"])

@@ -1,7 +1,7 @@
 # Milestone 003: boot sequence
 
 **IN PROGRESS, 2026-10-18.** Native bring-up is implemented; title-screen boot is
-not. The current bounded experiment completes the first constructor and reaches the second. See
+not. The current bounded experiment completes the first constructor and executes the second through formatted-name setup. See
 [mutex ownership evidence](../research/mutexes.md).
 
 Implemented foundations include thread lifecycle and priority handoff, shared

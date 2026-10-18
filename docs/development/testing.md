@@ -1,11 +1,11 @@
 # Testing and debugging
 
-**Executed 2026-10-18 on Windows x64:** 31 Python test cases and nine integrated
+**Executed 2026-10-18 on Windows x64:** 32 Python test cases and nine integrated
 CTest suites (aspect math, bootstrap HLE, threads, shared memory, module identity, indirect guards and three upstream suites) all passed.
 Python cases include every
 truncation of a synthetic ELF, invalid format/headers/segments, BSS/offset conversion,
 overflow/overlap, hash mismatch, missing input, profile validation, output confinement,
-module/import parsing and malformed descriptor/name/table rejection. Twelve startup
+module/import parsing and malformed descriptor/name/table rejection. Thirteen startup
 CFG cases cover calls, returns, both branch paths, loops, instruction budgets,
 invalid targets, unsupported transfers and malformed delay slots.
 

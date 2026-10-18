@@ -6,7 +6,8 @@ read from executable file-backed segments; no guessed contiguous function end.
 from elf import ValidationError
 
 
-def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=(), indirect_calls=None):
+def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=(),
+                   indirect_calls=None, external_entries=()):
     unknown = (0,) + (None,) * 31
     pending = []
     states = {}
@@ -14,9 +15,9 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     instructions = set()
     delays = set()
     calls = {}
-    imports = frozenset(import_stubs)
+    imports = frozenset(import_stubs) | frozenset(external_entries)
     if any(type(address) is not int or address < 0 or address > 0xFFFFFFFC or address % 4 for address in imports):
-        raise ValidationError("Import stubs must be aligned 32-bit guest addresses")
+        raise ValidationError("External entries must be aligned 32-bit guest addresses")
     tail_calls = {}
     indirect = indirect_calls or {}
     used_indirect = {}
@@ -44,6 +45,10 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
             signed = immediate - (0x10000 if immediate & 0x8000 else 0)
             result[rt] = None if value is None else (
                 (value + signed) & 0xFFFFFFFF if op == 9 else value | immediate)
+        elif op in (40, 41, 42, 43, 46):  # SB, SH, SWL, SW, SWR do not write GPRs.
+            return registers
+        elif op in (32, 33, 34, 35, 36, 37, 38, 48):  # Integer loads / LL.
+            result[rt] = None
         else:
             return unknown
         result[0] = 0
@@ -64,7 +69,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
                 return "return"
             if function == 9 and pc in indirect and indirect[pc] and word == (rs << 21) | (31 << 11) | 9:
                 return "indirect_call"
-            raise ValidationError("Indirect control transfer requires a verified target map")
+            raise ValidationError(f"Indirect control transfer at 0x{pc:08X} requires a verified target map")
         if op == 0 and function in (12, 13):
             raise ValidationError("Inline syscall/break requires explicit profile handling")
         if op in (2, 3):

@@ -12,12 +12,19 @@
     "0x088040C4",
     "0x08B778FC",
     "0x08B88BF8",
-    "0x08B03CE4"
+    "0x08B03CE4",
+    "0x08B033BC",
+    "0x08B0B9B8",
+    "0x08B034EC",
+    "0x08B01C0C",
+    "0x08B7C444",
+    "0x08B793A4"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, observed thread entry and direct call reached after bootstrap return; no recursive callee discovery.",
   "constant_branch_roots": [
-    "0x088040C4"
+    "0x088040C4",
+    "0x08B033BC"
   ],
   "constructor_calls": [
     {

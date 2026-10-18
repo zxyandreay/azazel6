@@ -22,3 +22,22 @@ indirect targets. The next task is a checked target map and per-call runtime gua
 synthetic cases cover joins, call clobbers, arithmetic wrapping, zero-extension,
 delay slots, constant branch proofs and import tail boundaries. Raw instructions,
 table contents and generated translations remain local.
+
+## Shared constructor path and helper checkpoint
+
+**VERIFIED continuation, 2026-10-18:** constant tracking preserves GPR facts
+across integer stores and invalidates only integer-load destinations. Synthetic
+checks prove both properties. This lets the second constructor's literal arguments
+select construction in a shared constructor/destructor routine; opaque destructor
+calls remain outside this startup slice. Tail jumps to already declared roots now
+remain separate AOT dispatch boundaries, avoiding duplicate ownership of helpers.
+
+Nineteen roots / 991 words execute into formatted-name setup, reaching the uncovered
+formatter at `0x08B7E7B4`. Its jump at `0x08B7E924` indexes an 89-entry table at
+`0x08BD93EC`, after an unsigned index bound. That table still requires validated
+CFG destinations and runtime guards. No host formatting shortcut was added.
+
+The old 64-dispatch diagnostic budget was reached normally during this expansion.
+The probe now permits 4096 dispatches while retaining its 15-second external
+limit; this changes no game timing/FPS policy. 32 Python tests, nine CTest suites
+and Android ARM64 compilation passed.
