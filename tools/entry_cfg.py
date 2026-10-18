@@ -7,7 +7,7 @@ from elf import ValidationError
 
 
 def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=(),
-                   indirect_calls=None, external_entries=()):
+                   indirect_calls=None, external_entries=(), indirect_jumps=None):
     unknown = (0,) + (None,) * 31
     pending = []
     states = {}
@@ -21,6 +21,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     tail_calls = {}
     indirect = indirect_calls or {}
     used_indirect = {}
+    jumps = indirect_jumps or {}
+    used_jumps = {}
 
     def enqueue(pc, registers):
         previous = states.get(pc)
@@ -69,6 +71,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
                 return "return"
             if function == 9 and pc in indirect and indirect[pc] and word == (rs << 21) | (31 << 11) | 9:
                 return "indirect_call"
+            if function == 8 and pc in jumps and jumps[pc] and word == (rs << 21) | 8:
+                return "indirect_jump"
             raise ValidationError(f"Indirect control transfer at 0x{pc:08X} requires a verified target map")
         if op == 0 and function in (12, 13):
             raise ValidationError("Inline syscall/break requires explicit profile handling")
@@ -115,6 +119,10 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         elif kind == "indirect_call":
             used_indirect[pc] = indirect[pc]
             enqueue(pc + 8, unknown)
+        elif kind == "indirect_jump":
+            used_jumps[pc] = jumps[pc]
+            for target in jumps[pc]:
+                enqueue(target, unknown)
         elif kind in ("jump", "call"):
             target = ((pc + 4) & 0xF0000000) | ((word & 0x3FFFFFF) << 2)
             if kind == "jump":
@@ -133,4 +141,5 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
             ranges.append([pc, 4])
     return {"ranges": ranges, "instruction_words": len(words), "calls": calls, "tail_calls": tail_calls,
             "indirect_calls": used_indirect,
+            "indirect_jumps": used_jumps,
             "instruction_addresses": sorted(instructions)}

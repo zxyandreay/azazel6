@@ -1,4 +1,4 @@
-"""Validate profile-declared constructor tables and guard generated JALR sites."""
+"""Validate profile-declared indirect tables and guard generated transfers."""
 from elf import ValidationError
 
 
@@ -32,6 +32,28 @@ def constructor_maps(elf, descriptors):
         if not targets:
             raise ValidationError('Empty constructor target map')
         result[site] = {'register': register, 'targets': targets, 'table_start': address, 'table_end': end}
+    return result
+
+
+def jump_maps(elf, descriptors):
+    result = {}
+    for descriptor in descriptors:
+        site = int(descriptor['site'], 16)
+        start = int(descriptor['table_start'], 16)
+        register, count = descriptor['register'], descriptor['count']
+        if not 1 <= register < 31 or not 1 <= count <= 1024 or site % 4 or start % 4:
+            raise ValidationError('Invalid jump-table descriptor')
+        site_offset = elf.guest_to_offset(site, 4)
+        word = int.from_bytes(elf.data[site_offset:site_offset + 4], 'little')
+        if site in result or word != ((register << 21) | 8):
+            raise ValidationError('Duplicate or mismatched jump-table JR site')
+        table_offset = elf.guest_to_offset(start, count * 4)
+        targets = [int.from_bytes(elf.data[offset:offset + 4], 'little')
+                   for offset in range(table_offset, table_offset + count * 4, 4)]
+        if any(target % 4 or not any(s.flags & 1 and s.vaddr <= target and target + 4 <= s.vaddr + s.filesz
+                                     for s in elf.segments) for target in targets):
+            raise ValidationError('Jump-table target outside executable file-backed range')
+        result[site] = {'register': register, 'targets': targets, 'table_start': start, 'table_end': start + count * 4}
     return result
 
 

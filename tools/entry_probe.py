@@ -8,7 +8,7 @@ from analyze import ROOT, execute, local_output
 from elf import load_profile, validate
 from psp_module import module_report
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, guard_generated
+from indirect_calls import constructor_maps, jump_maps, guard_generated
 
 
 def main():
@@ -24,11 +24,15 @@ def main():
     module = module_report(elf)
     startup = json.loads((ROOT / "profiles/tekken6/config/startup.json").read_text())
     indirect = constructor_maps(elf, startup.get("constructor_calls", []))
+    jumps = jump_maps(elf, startup.get("jump_tables", []))
+    if indirect.keys() & jumps.keys():
+        raise ValueError("Call and jump maps must own different sites")
     cfg = {root: discover_entry(elf, startup["max_instructions_per_root"], int(root, 16),
                                constant_branches=root in startup.get("constant_branch_roots", []),
                                import_stubs=(int(imp["stub"], 16) for imp in module["imports"]),
                                external_entries=(int(other, 16) for other in startup["roots"] if other != root),
-                               indirect_calls={site: mapping['targets'] for site, mapping in indirect.items()})
+                               indirect_calls={site: mapping['targets'] for site, mapping in indirect.items()},
+                               indirect_jumps={site: mapping['targets'] for site, mapping in jumps.items()})
            for root in startup["roots"]}
     ranges = sorted(pair for graph in cfg.values() for pair in graph["ranges"])
     if any(a + size > b for (a, size), (b, _) in zip(ranges, ranges[1:])):
@@ -44,8 +48,10 @@ def main():
     used_sites = {site for graph in cfg.values() for site in graph['indirect_calls']}
     if used_sites != indirect.keys():
         raise ValueError("Declared constructor call sites are not covered by startup roots")
+    if {site for graph in cfg.values() for site in graph['indirect_jumps']} != jumps.keys():
+        raise ValueError("Declared jump-table sites are not covered by startup roots")
     generated = output / "entry.cpp"
-    generated.write_text(guard_generated(generated.read_text(), indirect), encoding="utf-8")
+    generated.write_text(guard_generated(generated.read_text(), indirect | jumps), encoding="utf-8")
     wrappers = ['#include "azazel6/bootstrap.hpp"', 'namespace azazel6 {']
     for index, imp in enumerate(module["imports"]):
         wrappers.append(f'void import_{index}(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {{ '
@@ -61,7 +67,7 @@ def main():
         f'#define AZAZEL6_BOOTSTRAP_PRIORITY {start_thread["priority"]}u\n'
         f'#define AZAZEL6_BOOTSTRAP_STACK_SIZE {start_thread["stack_size"]}u\n', encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps({"input_sha256": profile["executable"]["sha256"],
-        "cfg": cfg, "module": module, "indirect_maps": indirect,
+        "cfg": cfg, "module": module, "indirect_maps": indirect, "jump_maps": jumps,
         "scope": "Bounded startup CFG, guarded constructor calls and returning imports; no fallback"}, indent=2) + "\n")
     print(f"Generated {sum(g['instruction_words'] for g in cfg.values())} startup instruction words in {output}")
 

@@ -1,7 +1,7 @@
 import unittest
 from elf import ValidationError
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, guard_generated
+from indirect_calls import constructor_maps, jump_maps, guard_generated
 from test_entry_cfg import program
 
 BASE = 0x08804000
@@ -48,6 +48,28 @@ class IndirectCallTests(unittest.TestCase):
         for source in ('', label + label):
             with self.assertRaises(ValidationError):
                 guard_generated(source, maps)
+
+    def test_jump_table_targets_are_followed_without_scanning_data(self):
+        elf = program([0x00800008, 0, BASE + 16, BASE + 24, 0x03E00008, 0, 0x03E00008, 0])
+        descriptor = dict(site=hex(BASE), register=4, table_start=hex(BASE + 8), count=2)
+        maps = jump_maps(elf, [descriptor])
+        cfg = discover_entry(elf, indirect_jumps={BASE: maps[BASE]['targets']})
+        self.assertEqual(cfg['ranges'], [[BASE, 8], [BASE + 16, 16]])
+        self.assertEqual(cfg['indirect_jumps'], {BASE: [BASE + 16, BASE + 24]})
+        for changes in ({'count': 0}, {'count': 1025}, {'count': 100}, {'register': 31},
+                        {'register': 5}, {'table_start': hex(BASE + 1)}, {'site': hex(BASE + 4)}):
+            with self.subTest(changes=changes), self.assertRaises(ValidationError):
+                jump_maps(elf, [descriptor | changes])
+        with self.assertRaises(ValidationError):
+            jump_maps(elf, [descriptor, descriptor])
+        for target in (0, BASE + 1, 0xFFFFFFFF):
+            bad = program([0x00800008, 0, target, BASE + 24, 0x03E00008, 0, 0x03E00008, 0])
+            with self.subTest(target=target), self.assertRaises(ValidationError):
+                jump_maps(bad, [descriptor])
+
+    def test_jump_table_cannot_enter_delay_slot(self):
+        with self.assertRaises(ValidationError):
+            discover_entry(program([0x00800008, 0]), indirect_jumps={BASE: [BASE + 4]})
 
 
 if __name__ == '__main__':
