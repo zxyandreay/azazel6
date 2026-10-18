@@ -43,6 +43,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Guarded formatter jump table](research/jump-tables.md)
 - [Formatter callback boundaries](research/formatter-callbacks.md)
 - [Current thread priority](research/thread-priority.md)
+- [Current-thread VFPU attributes](research/thread-attributes.md)
 - [Inactive virtual timers](research/virtual-timers.md)
 - [Constructor coverage and FPU branches](research/constructor-coverage.md)
 - [Guarded object dispatch](research/virtual-dispatch.md)

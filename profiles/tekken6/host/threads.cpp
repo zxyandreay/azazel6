@@ -87,6 +87,22 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         [state](auto& runtime, auto& ctx) { state->start(runtime, ctx); });
     rt.register_hle("ThreadManForUser", 0x71BC9871u,
         [state](auto& runtime, auto& ctx) { state->change_priority(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0xEA748E31u, [state](auto& runtime, auto& ctx) {
+        auto* current = state->find(state->current_uid_);
+        if (!current || current->status != ThreadStatus::Running || !state->interrupts_enabled_) {
+            runtime.stop("Attribute change requires a running thread with interrupts enabled"); return;
+        }
+        constexpr std::uint32_t vfpu = 0x4000u;
+        const auto remove = ctx.gpr[4], add = ctx.gpr[5];
+        if ((remove | add) & ~vfpu) { ctx.set_gpr(2, 0x80020191u); return; }
+        if (remove & add) {
+            runtime.stop("Overlapping thread attribute masks require verified precedence"); return;
+        }
+        // The scheduler already saves every VFPU lane and control register with
+        // the owning CPU context. Attribute changes must not reset that state.
+        current->attributes = (current->attributes & ~remove) | add;
+        ctx.set_gpr(2, 0);
+    });
     rt.register_hle("ThreadManForUser", 0xAA73C935u,
         [state](auto& runtime, auto& ctx) { state->finish(runtime, ctx, false, false); });
     rt.register_hle("ThreadManForUser", 0x809CE29Bu,

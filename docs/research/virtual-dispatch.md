@@ -59,3 +59,18 @@ coverage remains distinct from execution. There are now 123 roots/8013 words.
 Native execution passes the observed variant and reaches uncovered `0x08ACD3C4`
 at return `0x08AEBB8C`, still inside constructor 15. 39 Python cases, nine CTest
 suites and Android ARM64 compilation pass. Execution bounds are unchanged.
+
+## Additional format dispatch and VFPU initialization
+
+**VERIFIED, 2026-10-18:** the next bounded direct-call batch adds 13 roots and
+1482 words. Observed helper `0x08AEC970` then reaches `0x08ACCD40`. Its four
+virtual tail sites (`0x08ACCD8C`, `0x08ACCDD0`, `0x08ACCDE8`, `0x08ACCE04`)
+read offset `0x18` from the same object pointer. Of the selector's known tables,
+three have `0x08ACCD40` at offset `0x10`; the new tail guards therefore derive
+only from their slots `0x08BCF928`, `0x08BCFA68`, `0x08BCFAA8`.
+The observed tail `0x08ACCE0C` and helpers `0x08AC3C80`/`0x08AE6EE4` are covered.
+
+With the [VFPU attribute service](thread-attributes.md), the first 23 constructor
+calls return. Constructor 24 reaches uncovered `0x08AA3778`, return `0x08AA2FD8`.
+There are 141 roots/9583 words, three mutexes and eight inactive timers. This is
+bounded native game-code execution; it does not establish title-screen boot.

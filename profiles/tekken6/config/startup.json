@@ -122,7 +122,25 @@
     "0x08ACDF90",
     "0x08AC64B4",
     "0x08AC3CA0",
-    "0x08B80D00"
+    "0x08B80D00",
+    "0x08ACD3C4",
+    "0x08B7B6BC",
+    "0x08B79E58",
+    "0x08B805A0",
+    "0x08B79638",
+    "0x08B72AB8",
+    "0x08B72A30",
+    "0x08B8081C",
+    "0x08B79664",
+    "0x08B8075C",
+    "0x08B8460C",
+    "0x08B70CDC",
+    "0x08B72C80",
+    "0x08AEC970",
+    "0x08ACCD40",
+    "0x08ACCE0C",
+    "0x08AC3C80",
+    "0x08AE6EE4"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup and direct-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -269,6 +287,42 @@
         "0x08BCF9A8",
         "0x08BCFAA8",
         "0x08BCF9E8"
+      ]
+    },
+    {
+      "site": "0x08ACCD8C",
+      "register": 25,
+      "pointers": [
+        "0x08BCF928",
+        "0x08BCFA68",
+        "0x08BCFAA8"
+      ]
+    },
+    {
+      "site": "0x08ACCDD0",
+      "register": 25,
+      "pointers": [
+        "0x08BCF928",
+        "0x08BCFA68",
+        "0x08BCFAA8"
+      ]
+    },
+    {
+      "site": "0x08ACCDE8",
+      "register": 25,
+      "pointers": [
+        "0x08BCF928",
+        "0x08BCFA68",
+        "0x08BCFAA8"
+      ]
+    },
+    {
+      "site": "0x08ACCE04",
+      "register": 25,
+      "pointers": [
+        "0x08BCF928",
+        "0x08BCFA68",
+        "0x08BCFAA8"
       ]
     }
   ]

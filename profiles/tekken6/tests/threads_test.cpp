@@ -304,6 +304,50 @@ void priority_changes() {
     same.rt->invoke_import("ThreadManForUser", 0x94AA61EEu, same.rt->cpu());
     check(same.rt->cpu().gpr[2] == 8, "Priority query ignored mutation");
 }
+void vfpu_attributes() {
+    auto change = [](auto& f, std::uint32_t remove, std::uint32_t add) {
+        auto& c = f.rt->cpu(); c.gpr[4] = remove; c.gpr[5] = add;
+        c.gpr[2] = 0xDEADBEEFu; c.gpr[31] = 0x08001800u; c.pc = 0x08001900u;
+        invoke_returning_import(*f.rt, c, "ThreadManForUser", 0xEA748E31u);
+    };
+    Scheduled f; const auto child = f.create(8); f.start(child);
+    auto& c = f.rt->cpu();
+    for (unsigned i = 0; i < c.vfpu.size(); ++i) c.vfpu[i] = static_cast<float>(i) + 0.5f;
+    for (unsigned i = 0; i < c.vfpu_ctrl.size(); ++i) c.vfpu_ctrl[i] = i + 1;
+    const auto lanes = c.vfpu; const auto controls = c.vfpu_ctrl;
+    for (auto masks : {std::pair{0u, 0x4000u}, {0u, 0x4000u}, {0u, 0u}, {0x4000u, 0u}, {0x4000u, 0u}}) {
+        const auto previous = f.threads->snapshot()[0].attributes;
+        change(f, masks.first, masks.second);
+        check(c.gpr[2] == 0 && c.pc == c.gpr[31] &&
+              f.threads->snapshot()[0].attributes == ((previous & ~masks.first) | masks.second),
+              "VFPU attribute transition/return");
+        check(c.vfpu == lanes && c.vfpu_ctrl == controls, "Attribute change reset VFPU state");
+    }
+    for (unsigned bit = 0; bit < 32; ++bit) {
+        if (bit == 14) continue;
+        for (bool remove : {false, true}) {
+            change(f, remove ? 1u << bit : 0, remove ? 0 : 1u << bit);
+            check(c.gpr[2] == 0x80020191u && f.threads->snapshot()[0].attributes == 0x800000FFu,
+                  "Invalid attribute bit changed ownership");
+        }
+    }
+    change(f, 0, 0x4000u);
+    const auto before = c.gpr;
+    f.rt->invoke_import("ThreadManForUser", 0xEA748E31u, c);
+    check(c.gpr == before && c.vfpu == lanes && c.vfpu_ctrl == controls, "Attribute ABI clobber");
+    change(f, 0x4000u, 0x4000u);
+    check(f.rt->stopped() && c.gpr[2] == 0xDEADBEEFu && c.pc == 0x08001900u &&
+          f.threads->snapshot()[0].attributes == 0x800040FFu, "Unverified overlap changed attributes");
+    Fixture missing; change(missing, 0, 0x4000u);
+    check(missing.rt->stopped() && missing.rt->cpu().gpr[2] == 0xDEADBEEFu, "Missing current thread accepted");
+    Scheduled suspended; const auto uid = suspended.create(8); suspended.start(uid);
+    suspended.rt->invoke_import("Kernel_Library", 0x092968F4u, suspended.rt->cpu());
+    change(suspended, 0, 0x4000u);
+    check(suspended.rt->stopped() && suspended.threads->snapshot()[0].attributes == 0x800000FFu,
+          "Suspended attribute mutation");
+    Scheduled isolated; const auto other = isolated.create(8); isolated.start(other);
+    check(isolated.threads->snapshot()[0].attributes == 0x800000FFu, "Attribute state leaked");
+}
 void inactive_timers() {
     Scheduled f;
     auto call = [](Scheduled& fixture, std::uint32_t nid, std::uint32_t arg, std::uint32_t option = 0) {
@@ -360,7 +404,7 @@ void mutex_boundaries() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); inactive_timers();
+          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); vfpu_attributes(); inactive_timers();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
