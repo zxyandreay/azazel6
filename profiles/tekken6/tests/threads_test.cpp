@@ -252,6 +252,27 @@ void mutex_ownership() {
     const auto named = mutex_call(f, 0xB7D098C6u, 0x08004000u);
     check(f.threads->mutexes().at(named).name.size() == 31, "Unbounded name");
 }
+void current_priority() {
+    Scheduled f;
+    const auto query = [&](std::uint32_t expected) {
+        auto& c = f.rt->cpu(); c.pc = 0x08001900u; c.gpr[31] = 0x08001800u;
+        const auto before = c.gpr;
+        invoke_returning_import(*f.rt, c, "ThreadManForUser", 0x94AA61EEu);
+        check(!f.rt->stopped() && c.gpr[2] == expected && c.pc == before[31], "Current priority query/return");
+        for (std::size_t i = 0; i < before.size(); ++i)
+            if (i != 2) check(c.gpr[i] == before[i], "Priority query clobbered registers");
+    };
+    query(32);
+    const auto high = f.create(8); f.start(high); query(8);
+    f.exit(); query(32);
+    const auto low = f.create(119); f.start(low); query(32);
+    f.exit(); query(119);
+    f.rt->invoke_import("Kernel_Library", 0x092968F4u, f.rt->cpu()); query(119);
+    Fixture inactive; inactive.args();
+    invoke_returning_import(*inactive.rt, inactive.rt->cpu(), "ThreadManForUser", 0x94AA61EEu);
+    check(inactive.rt->stopped() && inactive.rt->cpu().gpr[2] == 0xDEADBEEFu &&
+          inactive.rt->cpu().pc == 0x08001900u, "Missing running context fabricated a priority");
+}
 void mutex_boundaries() {
     Scheduled wait;
     const auto uid = mutex_call(wait, 0xB7D098C6u, 0x08004000u, 0, 1);
@@ -268,7 +289,7 @@ void mutex_boundaries() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries();
+          mutex_ownership(); mutex_boundaries(); current_priority();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

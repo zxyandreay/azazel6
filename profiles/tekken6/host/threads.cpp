@@ -54,6 +54,13 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         [state](auto& runtime, auto& ctx) { state->lock_mutex(runtime, ctx, true); });
     rt.register_hle("ThreadManForUser", 0x6B30100Fu,
         [state](auto& runtime, auto& ctx) { state->unlock_mutex(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0x94AA61EEu, [state](auto& runtime, auto& ctx) {
+        const auto* current = state->find(state->current_uid_);
+        if (!current || current->status != ThreadStatus::Running) {
+            runtime.stop("Current priority query requires a running thread"); return;
+        }
+        ctx.set_gpr(2, current->priority);
+    });
     rt.nids().add("ThreadManForUser", kCreateThreadNid, "sceKernelCreateThread");
     rt.nids().add("ThreadManForUser", kDeleteThreadNid, "sceKernelDeleteThread");
     rt.register_hle("ThreadManForUser", kCreateThreadNid,

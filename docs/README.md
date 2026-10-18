@@ -42,6 +42,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Startup mutex ownership](research/mutexes.md)
 - [Guarded formatter jump table](research/jump-tables.md)
 - [Formatter callback boundaries](research/formatter-callbacks.md)
+- [Current thread priority](research/thread-priority.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)
