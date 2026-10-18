@@ -24,7 +24,12 @@
     "0x08B7E758",
     "0x08B78EA4",
     "0x08B7A100",
-    "0x08B03630"
+    "0x08B03630",
+    "0x08B03650",
+    "0x08B7C8DC",
+    "0x08B00F7C",
+    "0x08B01DA0",
+    "0x08B01E14"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, observed thread entry and direct call reached after bootstrap return; no recursive callee discovery.",

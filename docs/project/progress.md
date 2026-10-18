@@ -13,16 +13,16 @@
 | Python/profile tools | VERIFIED, 35 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; nine integrated CTest suites passed |
-| Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling |
+| Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; second constructor completes string formatting; creates an inactive timer and stops at priority change 0x71BC9871 |
+| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; first three constructors return, with two mutexes and eight inactive timers; fourth target 0x08AF2A10 awaits coverage |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
-| Linux execution | VERIFIED preceding thread and memory checkpoints passed hosted CI |
+| Linux execution | VERIFIED preceding formatter, priority-query and inactive-timer checkpoints passed hosted CI |
 | Android device/APK | NOT TESTED / not implemented |
 | Game boot/combat/graphics/audio/input | Not implemented |
 | Ultrawide gameplay hooks / moveset packages | PLANNED; reference research only |

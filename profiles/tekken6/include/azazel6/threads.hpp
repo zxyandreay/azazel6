@@ -48,6 +48,7 @@ private:
     void create(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void erase(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void start(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void change_priority(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void finish(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool remove, bool from_return);
     void schedule(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     GuestThread* find(std::uint32_t);

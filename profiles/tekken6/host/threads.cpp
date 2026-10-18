@@ -85,6 +85,8 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         [state](auto& runtime, auto& ctx) { state->erase(runtime, ctx); });
     rt.register_hle("ThreadManForUser", kStartThreadNid,
         [state](auto& runtime, auto& ctx) { state->start(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0x71BC9871u,
+        [state](auto& runtime, auto& ctx) { state->change_priority(runtime, ctx); });
     rt.register_hle("ThreadManForUser", 0xAA73C935u,
         [state](auto& runtime, auto& ctx) { state->finish(runtime, ctx, false, false); });
     rt.register_hle("ThreadManForUser", 0x809CE29Bu,
@@ -223,6 +225,29 @@ void ThreadRegistry::start(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c
     for (std::uint32_t i = 0; i < size; ++i) args[i] = rt.memory().load8(ctx.gpr[6] + i);
     prepare(rt, *thread, args);
     thread->status = ThreadStatus::Ready;
+    ctx.set_gpr(2, 0);
+    ctx.pc = ctx.gpr[31];
+    schedule(rt, ctx);
+}
+
+void ThreadRegistry::change_priority(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {
+    auto* current = find(current_uid_);
+    if (!current || current->status != ThreadStatus::Running || !interrupts_enabled_) {
+        rt.stop("Priority mutation requires a running thread with interrupts enabled"); return;
+    }
+    auto* target = ctx.gpr[4] ? find(ctx.gpr[4]) : current;
+    if (!target) { ctx.set_gpr(2, 0x80020198u); return; }
+    if (target->status == ThreadStatus::Dormant) { ctx.set_gpr(2, 0x800201A2u); return; }
+    const auto priority = ctx.gpr[5] ? ctx.gpr[5] : current->priority;
+    if (priority < 8 || priority > 119) { ctx.set_gpr(2, 0x80020193u); return; }
+    const auto tied = [&](const GuestThread& other) {
+        return other.uid != target->uid && other.priority == priority &&
+            (other.status == ThreadStatus::Ready || other.status == ThreadStatus::Running);
+    };
+    if (tied(bootstrap_) || std::any_of(threads_.begin(), threads_.end(), tied)) {
+        rt.stop("Equal-priority queue rotation is not implemented"); return;
+    }
+    target->priority = priority;
     ctx.set_gpr(2, 0);
     ctx.pc = ctx.gpr[31];
     schedule(rt, ctx);

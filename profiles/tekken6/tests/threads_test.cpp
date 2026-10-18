@@ -273,6 +273,37 @@ void current_priority() {
     check(inactive.rt->stopped() && inactive.rt->cpu().gpr[2] == 0xDEADBEEFu &&
           inactive.rt->cpu().pc == 0x08001900u, "Missing running context fabricated a priority");
 }
+void priority_changes() {
+    const auto change = [](Scheduled& f, std::uint32_t uid, std::uint32_t priority) {
+        auto& c = f.rt->cpu(); c.gpr[4] = uid; c.gpr[5] = priority; c.gpr[2] = 0xDEADBEEFu;
+        c.pc = 0x08001900u; c.gpr[31] = 0x08001800u;
+        invoke_returning_import(*f.rt, c, "ThreadManForUser", 0x71BC9871u);
+    };
+    Scheduled f; const auto low = f.create(40);
+    change(f, low, 19); check(f.rt->cpu().gpr[2] == 0x800201A2u, "Dormant priority mutation");
+    change(f, 0xFFFFFFFFu, 19); check(f.rt->cpu().gpr[2] == 0x80020198u, "Invalid priority UID");
+    f.start(low);
+    for (auto p : {1u, 7u, 120u, 0xFFFFFFFFu}) {
+        change(f, low, p);
+        check(f.rt->cpu().gpr[2] == 0x80020193u && f.threads->snapshot()[0].priority == 40,
+              "Invalid priority mutated ready thread");
+    }
+    change(f, low, 8);
+    check(f.threads->current_uid() == low && f.rt->cpu().pc == arena.executable_begin,
+          "Raising ready thread did not preempt");
+    change(f, 0, 119);
+    check(f.threads->current_uid() == kBootstrapUid && f.rt->cpu().gpr[2] == 0 &&
+          f.rt->cpu().pc == 0x08001800u && f.threads->snapshot()[0].priority == 119,
+          "Lowering current priority did not resume caller");
+    change(f, 0, 0); check(f.rt->cpu().gpr[2] == 0, "Current priority zero inheritance");
+    change(f, low, 0);
+    check(f.rt->stopped() && f.rt->cpu().gpr[2] == 0xDEADBEEFu &&
+          f.threads->snapshot()[0].priority == 119, "Unsupported tie mutated priority");
+    Scheduled same;
+    change(same, 0, 8);
+    same.rt->invoke_import("ThreadManForUser", 0x94AA61EEu, same.rt->cpu());
+    check(same.rt->cpu().gpr[2] == 8, "Priority query ignored mutation");
+}
 void inactive_timers() {
     Scheduled f;
     auto call = [](Scheduled& fixture, std::uint32_t nid, std::uint32_t arg, std::uint32_t option = 0) {
@@ -329,7 +360,7 @@ void mutex_boundaries() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); current_priority(); inactive_timers();
+          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); inactive_timers();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
