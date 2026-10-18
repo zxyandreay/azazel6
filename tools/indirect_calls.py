@@ -2,6 +2,21 @@
 from elf import ValidationError
 
 
+def trap_maps(elf, descriptors):
+    """Declare terminal JALR boundaries; these never authorize a target."""
+    result = {}
+    for descriptor in descriptors:
+        site, register = int(descriptor['site'], 16), descriptor['register']
+        if not 1 <= register <= 31 or site % 4:
+            raise ValidationError('Invalid indirect-call trap descriptor')
+        offset = elf.guest_to_offset(site, 4)
+        word = int.from_bytes(elf.data[offset:offset + 4], 'little')
+        if site in result or word != ((register << 21) | (31 << 11) | 9):
+            raise ValidationError('Duplicate or mismatched indirect-call trap site')
+        result[site] = {'register': register, 'targets': []}
+    return result
+
+
 def constructor_maps(elf, descriptors):
     result = {}
 

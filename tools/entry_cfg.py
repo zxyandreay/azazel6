@@ -7,7 +7,7 @@ from elf import ValidationError
 
 
 def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=False, import_stubs=(),
-                   indirect_calls=None, external_entries=(), indirect_jumps=None):
+                   indirect_calls=None, external_entries=(), indirect_jumps=None, trapped_calls=()):
     unknown = (0,) + (None,) * 31
     pending = []
     states = {}
@@ -23,6 +23,10 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     used_indirect = {}
     jumps = indirect_jumps or {}
     used_jumps = {}
+    traps = frozenset(trapped_calls)
+    used_traps = set()
+    if traps & (indirect.keys() | jumps.keys()):
+        raise ValidationError('Trapped sites cannot also authorize targets')
 
     def enqueue(pc, registers):
         previous = states.get(pc)
@@ -69,6 +73,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         if op == 0 and function in (8, 9):
             if function == 8 and rs == 31:
                 return "return"
+            if function == 9 and pc in traps and word == (rs << 21) | (31 << 11) | 9:
+                return "trap"
             if function == 9 and pc in indirect and indirect[pc] and word == (rs << 21) | (31 << 11) | 9:
                 return "indirect_call"
             if function == 8 and pc in jumps and jumps[pc] and word == (rs << 21) | 8:
@@ -116,6 +122,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
                 enqueue(pc + 8, registers if likely else delayed)
             if taken is not False:
                 enqueue(pc + 4 + signed * 4, delayed)
+        elif kind == "trap":
+            used_traps.add(pc)  # Terminal: the guard stops before JALR or its delay slot.
         elif kind == "indirect_call":
             used_indirect[pc] = indirect[pc]
             enqueue(pc + 8, unknown)
@@ -142,4 +150,5 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     return {"ranges": ranges, "instruction_words": len(words), "calls": calls, "tail_calls": tail_calls,
             "indirect_calls": used_indirect,
             "indirect_jumps": used_jumps,
+            "trapped_calls": sorted(used_traps),
             "instruction_addresses": sorted(instructions)}

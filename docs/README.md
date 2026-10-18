@@ -41,6 +41,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Guarded constructor calls](research/constructor-calls.md)
 - [Startup mutex ownership](research/mutexes.md)
 - [Guarded formatter jump table](research/jump-tables.md)
+- [Formatter callback boundaries](research/formatter-callbacks.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)
