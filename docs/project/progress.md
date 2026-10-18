@@ -16,11 +16,12 @@
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
+| Data-cache ranges | VERIFIED checked coherent startup RAM operations; code/alias/large-range requests reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; first 31 constructors return; constructor 32 reaches uncovered helper 0x089CC480; 59/59 table entries have bounded code coverage |
+| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; first 32 constructors return; constructor 33 reaches uncovered helper 0x089B6DB8; 59/59 table entries have bounded code coverage |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED preceding formatter, priority-query and inactive-timer checkpoints passed hosted CI |
 | Android device/APK | NOT TESTED / not implemented |

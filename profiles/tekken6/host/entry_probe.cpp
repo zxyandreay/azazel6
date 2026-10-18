@@ -60,6 +60,8 @@ int main(int argc, char** argv) {
         const auto allocator = std::make_shared<azazel6::GuestAllocator>(
             (image_end + 255u) & ~255u, stack_top - bootstrap_size);
         const auto partition = azazel6::register_memory_hle(*rt, allocator);
+        const auto data_cache = azazel6::register_data_cache_hle(*rt,
+            (image_segment->vaddr + image_segment->file_size + 63u) & ~63u, stack_top);
         const auto threads = azazel6::register_thread_hle(*rt, {
             (image_end + 255u) & ~255u, stack_top - bootstrap_size,
             image_segment->vaddr, image_end, image_segment->vaddr,
@@ -81,6 +83,7 @@ int main(int argc, char** argv) {
         rt->run(elf.runtime_entry(), 4096);
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
+        std::cout << "data_cache_ranges=" << data_cache->completed_ranges << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {
             const auto arg0 = rt->cpu().gpr[4];
             std::cout << "indirect_arg0=" << hex32(arg0) << " v0=" << hex32(rt->cpu().gpr[2])

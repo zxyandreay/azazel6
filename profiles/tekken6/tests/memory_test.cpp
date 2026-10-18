@@ -1,5 +1,6 @@
 #include "azazel6/memory.hpp"
 #include "azazel6/threads.hpp"
+#include "azazel6/bootstrap.hpp"
 #include <iostream>
 #include <stdexcept>
 using namespace azazel6;
@@ -50,7 +51,42 @@ void hle_contracts() {
     c.gpr[4] = 2; c.gpr[5] = 0xFFFFFFFFu; c.gpr[6] = 0; c.gpr[7] = 256;
     rt->invoke_import("SysMemUserForUser", 0x237DBD4Fu, c); check(c.gpr[2] == 0x800200D3u, "Name pointer check");
 }
+void cache_contracts() {
+    constexpr std::uint32_t begin = 0x08010000u, end = 0x08030000u;
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    const auto state = register_data_cache_hle(*rt, begin, end);
+    auto call = [](auto& runtime, std::uint32_t address, std::uint32_t size) {
+        auto& c = runtime.cpu(); c.gpr[4] = address; c.gpr[5] = size;
+        c.gpr[2] = 0xDEADBEEFu; c.gpr[31] = 0x08001800u; c.pc = 0x08001900u;
+        invoke_returning_import(runtime, c, "UtilsForUser", 0x34B9FA9Eu);
+    };
+    auto view = rt->memory().aot_fast_view(); view.aot_store32(begin, 0x12345678u);
+    call(*rt, begin + 1, 3);
+    check(state->completed_ranges == 1 && state->last_address == begin + 1 && state->last_size == 3 &&
+          rt->cpu().gpr[2] == 0 && rt->cpu().pc == 0x08001800u &&
+          rt->memory().load32(begin) == 0x12345678u, "Cache range lost coherent AOT data");
+    const auto registers = rt->cpu().gpr;
+    rt->invoke_import("UtilsForUser", 0x34B9FA9Eu, rt->cpu());
+    check(registers == rt->cpu().gpr, "Cache ABI clobber");
+    call(*rt, end, 0); call(*rt, end - 1, 1); call(*rt, begin + 1, 65535);
+    check(!rt->stopped() && state->completed_ranges == 5, "Cache range boundary");
+    for (auto [address, size] : {std::pair{begin - 1, 1u}, {end, 1u}, {0xFFFFFFFFu, 2u},
+         {begin, 0xFFFFFFFFu}, {begin, 65536u}, {0x88010000u, 4u}, {0u, 0u}}) {
+        auto bad = std::make_unique<psprecomp::Runtime>();
+        const auto rejected = register_data_cache_hle(*bad, begin, end);
+        call(*bad, address, size);
+        check(bad->stopped() && bad->cpu().gpr[2] == 0xDEADBEEFu && bad->cpu().pc == 0x08001900u &&
+              !rejected->completed_ranges, "Unsupported cache range accepted");
+    }
+    rt->register_function(begin + 4, [](auto&, auto&) {}, "synthetic_code");
+    call(*rt, begin + 63, 1);
+    check(rt->stopped() && state->completed_ranges == 5, "Cache-line code overlap accepted");
+    bool rejected = false;
+    try { register_data_cache_hle(*rt, begin + 1, end); }
+    catch (const std::exception&) { rejected = true; }
+    check(rejected, "Unaligned cache ownership accepted");
+}
 int main() {
-    try { allocator_contracts(); hle_contracts(); std::cout << "Shared guest allocation contracts passed\n"; }
+    try { allocator_contracts(); hle_contracts(); cache_contracts(); std::cout << "Shared guest allocation contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

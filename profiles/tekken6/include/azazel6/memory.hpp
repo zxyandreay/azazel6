@@ -29,4 +29,11 @@ struct PartitionMemory {
     std::uint32_t next_uid = 0x10000000u;
 };
 std::shared_ptr<PartitionMemory> register_memory_hle(psprecomp::Runtime&, std::shared_ptr<GuestAllocator>);
+struct DataCacheState {
+    std::uint64_t completed_ranges = 0;
+    std::uint32_t last_address = 0, last_size = 0;
+};
+// Single-threaded coherent RAM only, outside the file-backed executable image.
+std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime&,
+                                                     std::uint32_t data_begin, std::uint32_t data_end);
 } // namespace azazel6

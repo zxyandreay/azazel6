@@ -160,7 +160,15 @@
     "0x089E9958",
     "0x089F36AC",
     "0x089CB038",
-    "0x089CE470"
+    "0x089CE470",
+    "0x089CC480",
+    "0x089CE700",
+    "0x089CC210",
+    "0x0887C818",
+    "0x089CB1A8",
+    "0x089CB164",
+    "0x089CB188",
+    "0x089CB21C"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup and direct-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",

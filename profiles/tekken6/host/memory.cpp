@@ -3,6 +3,36 @@
 #include <algorithm>
 
 namespace azazel6 {
+std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
+                                                      std::uint32_t begin, std::uint32_t end) {
+    if (begin < psprecomp::GuestMemory::kPhysicalBase || begin >= end || ((begin | end) & 63u) ||
+        static_cast<std::uint64_t>(end) > psprecomp::GuestMemory::kPhysicalBase +
+            static_cast<std::uint64_t>(rt.memory().size()))
+        throw psprecomp::Error("Invalid coherent data-cache range");
+    auto state = std::make_shared<DataCacheState>();
+    rt.register_hle("UtilsForUser", 0x34B9FA9Eu, [state, begin, end](auto& runtime, auto& c) {
+        const auto address = c.gpr[4], size = c.gpr[5];
+        const auto finish = static_cast<std::uint64_t>(address) + size;
+        if (size >= 0x10000u || address < begin || finish > end) {
+            runtime.stop("Data-cache range outside verified coherent startup memory"); return;
+        }
+        if (size) {
+            const auto line_end = (finish + 63u) & ~std::uint64_t{63u};
+            for (auto pc = static_cast<std::uint64_t>(address & ~63u); pc < line_end; pc += 4) {
+                if (runtime.has_function(static_cast<std::uint32_t>(pc))) {
+                    runtime.stop("Data-cache range intersects registered guest code"); return;
+                }
+            }
+        }
+        // AOT stores and HLE accesses share the same RAM backing. There is no
+        // separate CPU data cache or asynchronous device copy in this probe.
+        ++state->completed_ranges;
+        state->last_address = address; state->last_size = size;
+        c.set_gpr(2, 0); // Verified small-range L1 routine leaves v0 zero.
+    });
+    return state;
+}
+
 GuestAllocator::GuestAllocator(std::uint32_t begin, std::uint32_t end) : begin_(begin), end_(end) {
     if (begin < 0x08000000u || end > 0x0C000000u || begin >= end || ((begin | end) & 255u))
         throw psprecomp::Error("Invalid canonical guest allocation arena");
