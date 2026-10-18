@@ -30,6 +30,25 @@ class EntryCfgTests(unittest.TestCase):
         cfg = discover_entry(program([0x1000FFFF, 0, 0x03E00008, 0]))
         self.assertEqual(cfg['instruction_words'], 4)
 
+    def test_fpu_branches_cover_both_edges_and_annul_likely_delay(self):
+        for rt in range(4):
+            word = 0x45000000 | (rt << 16) | 5
+            cfg = discover_entry(program([word, 0, 0x03E00008, 0, 0xFFFFFFFF, 0xFFFFFFFF,
+                                          0x03E00008, 0]), constant_branches=True)
+            self.assertEqual(cfg['ranges'], [[0x08804000, 16], [0x08804018, 8]])
+            # Only a likely not-taken edge annuls the v0=1 delay-slot write.
+            words = [0x24020000, 0x45000006 | (rt << 16), 0x24020001,
+                     0x10400004, 0, 0x03200008, 0, 0xFFFFFFFF, 0x03E00008, 0]
+            if rt >= 2:
+                cfg = discover_entry(program(words), constant_branches=True)
+                self.assertNotIn(0x08804014, cfg['instruction_addresses'])
+            else:
+                with self.assertRaises(ValidationError):
+                    discover_entry(program(words), constant_branches=True)
+        for word in (0x45040001, 0x49010001, 0x45010000):
+            with self.subTest(word=word), self.assertRaises(ValidationError):
+                discover_entry(program([word, 0, 0x03E00008, 0]))
+
     def test_rejects_unknown_targets_delay_slots_and_truncation(self):
         for words in [[0x00200008, 0], [0x03E00008], [0x10000000, 0, 0x03E00008, 0],
                       [0x03E00008, 0x03E00008], [0x1000007F, 0, 0x03E00008, 0],

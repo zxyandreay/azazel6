@@ -10,7 +10,7 @@
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 35 cases passed |
+| Python/profile tools | VERIFIED, 36 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; nine integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes |
@@ -20,7 +20,7 @@
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; first three constructors return, with two mutexes and eight inactive timers; fourth target 0x08AF2A10 awaits coverage |
+| Native entry execution | VERIFIED bootstrap returns and child entry executes; partition/module lookup and nested interrupt state completed; first twelve constructors return; thirteenth reaches uncovered helper 0x08B61174; 42/59 table entries have bounded code coverage |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED preceding formatter, priority-query and inactive-timer checkpoints passed hosted CI |
 | Android device/APK | NOT TESTED / not implemented |

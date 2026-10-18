@@ -86,6 +86,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
             return "jump" if op == 2 else "call"
         if op in (4, 5, 6, 7, 20, 21, 22, 23) or (op == 1 and rt in (0, 1, 2, 3)):
             return "branch"
+        if op == 17 and rs == 8 and rt in (0, 1, 2, 3):  # BC1F/T/FL/TL, condition 0.
+            return "branch"
         if op == 1 or (op in (16, 17, 18) and rs == 8):
             raise ValidationError("Unsupported branch form in startup CFG")
         return "ordinary"
@@ -118,7 +120,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
             delayed = transfer(read(pc + 4), registers)
             if taken is not True:
                 # Branch-likely annuls the delay slot on the not-taken edge.
-                likely = op in (20, 21, 22, 23) or (op == 1 and rt in (2, 3))
+                likely = op in (20, 21, 22, 23) or (op in (1, 17) and rt in (2, 3))
                 enqueue(pc + 8, registers if likely else delayed)
             if taken is not False:
                 enqueue(pc + 4 + signed * 4, delayed)
