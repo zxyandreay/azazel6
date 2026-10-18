@@ -1,8 +1,8 @@
 # Milestone 003: boot sequence
 
-**IN PROGRESS, 2026-10-18.** Native bring-up is implemented; title-screen boot is
-not. The current bounded experiment completes the first 23 constructors, creates
-three mutexes and eight inactive timers, and reaches uncovered helper `0x08AA3778` in constructor 24. See
+**IN PROGRESS, 2026-10-19.** Native bring-up is implemented; title-screen boot is
+not. The current bounded experiment completes the first 26 constructors, creates
+three mutexes and eight inactive timers, and reaches uncovered helper `0x08A9504C` in constructor 27. See
 [guarded object-dispatch evidence](../research/virtual-dispatch.md).
 
 Implemented foundations include thread lifecycle and priority handoff, shared
