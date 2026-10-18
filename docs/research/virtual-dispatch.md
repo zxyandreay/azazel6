@@ -74,3 +74,20 @@ With the [VFPU attribute service](thread-attributes.md), the first 23 constructo
 calls return. Constructor 24 reaches uncovered `0x08AA3778`, return `0x08AA2FD8`.
 There are 141 roots/9583 words, three mutexes and eight inactive timers. This is
 bounded native game-code execution; it does not establish title-screen boot.
+
+## Reused object initializer
+
+**VERIFIED, 2026-10-19:** observed helper `0x08A9504C` directly calls
+`0x0897DAF8`. That initializer writes vtable `0x08BB16E8` before its two virtual
+calls at `0x0897DBBC`/`0x0897DBD8`; the corresponding offset `0x6C`/`0x48` slots
+are `0x08BB1754`/`0x08BB1730`. Both targets were already covered for the sibling
+initializer. Exact site/slot guards allow this variant to complete, and native
+execution subsequently returns from constructor 29. No broader vtable family or
+arbitrary object dispatch is authorized.
+
+The next helper `0x089CB038` shares a range at `0x089CE470` with `0x089CA3D8`.
+An explicit root now owns that range; generation rejects duplicate ownership.
+The first 31 constructors return, and constructor 32 reaches uncovered
+`0x089CC480`, return `0x089CB06C`. The profile has 161 roots/15720 words. All
+39 Python cases, nine native suites and Android ARM64 compilation pass. The
+4096-dispatch and 15-second execution bounds remain unchanged.

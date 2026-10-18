@@ -151,7 +151,16 @@
     "0x0898706C",
     "0x08939FE8",
     "0x08936020",
-    "0x0897DBF4"
+    "0x0897DBF4",
+    "0x08A9504C",
+    "0x08B5FEA4",
+    "0x0897DAF8",
+    "0x08878930",
+    "0x089ECBC0",
+    "0x089E9958",
+    "0x089F36AC",
+    "0x089CB038",
+    "0x089CE470"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup and direct-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -244,6 +253,20 @@
     },
     {
       "site": "0x0897DCD4",
+      "register": 2,
+      "pointers": [
+        "0x08BB1730"
+      ]
+    },
+    {
+      "site": "0x0897DBBC",
+      "register": 2,
+      "pointers": [
+        "0x08BB1754"
+      ]
+    },
+    {
+      "site": "0x0897DBD8",
       "register": 2,
       "pointers": [
         "0x08BB1730"
