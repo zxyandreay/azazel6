@@ -1,6 +1,6 @@
 # Azazel6 technical knowledge base
 
-Reviewed 2026-10-18. Evidence labels apply to individual claims:
+Reviewed 2026-10-20. Evidence labels apply to individual claims:
 
 - **VERIFIED:** inspected source/bytes or reproduced execution/test in this project.
 - **DOCUMENTED:** reported by a reference project, not reproduced here.
@@ -16,6 +16,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Milestone 001](milestones/001-project-foundation.md)
 - [Milestone 002](milestones/002-native-bring-up.md)
 - [Milestone 003](milestones/003-boot-sequence.md)
+- [Milestone 004](milestones/004-graphics-input.md)
 
 ## Architecture
 
@@ -55,6 +56,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Startup event flags](research/event-flags.md)
 - [Worker entry and immediate address guards](research/worker-dispatch.md)
 - [Graphics memory startup boundary](research/graphics-memory.md)
+- [GE callback ownership and VBLANK handoff](research/ge-callbacks.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

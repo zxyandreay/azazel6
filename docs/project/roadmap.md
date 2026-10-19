@@ -6,8 +6,8 @@ These are dependency-ordered research milestones, not delivery promises.
 | --- | --- | --- |
 | 001 Foundation | Implemented | Pinned framework, validation, analysis, native entry slice, Android cross-build |
 | 002 Native bring-up | Implemented: bounded native bootstrap and child execution | First import semantics, wider verified AOT coverage, bootstrap ABI, explicit failure boundaries |
-| 003 Boot sequence | In progress: resident module and kernel services | Kernel threads, scheduler, I/O, module loading and title-screen progression |
-| 004 Graphics/input | Planned | GE/Vulkan correctness, menus, gamepads and multitouch |
+| 003 Boot sequence | In progress: startup reaches VBLANK registration; title gate remains open | Kernel threads, scheduler, I/O, module loading and title-screen progression |
+| 004 Graphics/input | Ready to start: [GE/display handoff](../milestones/004-graphics-input.md) | GE/Vulkan correctness, menus, gamepads and multitouch |
 | 005 Stock combat | Planned | Character selection, training, advancing simulation, audio and stable stock matches |
 | 006 Ultrawide | Planned | Verified 3D projection and semantic HUD ownership, round-win matrix |
 | 007 Textures/mod platform | Planned | Compatible texture keys, safe resource packages, conflict management |
@@ -19,3 +19,7 @@ Do not migrate gameplay modifications before unmodified combat works. Dynamic co
 discoveries can change the split between milestones 002 and 003. Record those
 changes in progress and architecture notes rather than claiming static analysis
 proved there are no overlays.
+
+The observed VBLANK/GE startup dependency means Milestone 004 integration must
+begin before Milestone 003's title-screen gate can close. Neither gate is waived;
+the current handoff is documented with exact execution evidence.

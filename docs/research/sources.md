@@ -29,3 +29,7 @@ framework logs and analyzer reports remain in ignored `local/`.
 was read through GitHub's API at that fixed revision. Only language-mode API
 behavior was used as reference evidence. No PPSSPP implementation was copied into
 Azazel6 or linked; this is emulator behavior, not a reproduced hardware result.
+
+**Additional inspection, 2026-10-20:** the same pinned PSPSDK GE/display and
+interrupt headers/export tables, and uOFW GE callback registration/unset behavior
+were inspected for the graphics handoff. No source implementation was copied.
