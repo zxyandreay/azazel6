@@ -13,6 +13,20 @@ def program(words):
 
 
 class EntryCfgTests(unittest.TestCase):
+    def test_break_is_terminal_without_delay_or_fallthrough(self):
+        for word in (0x0000000D, 0x000001CD, 0x03FFFFCD):
+            cfg = discover_entry(program([word]))
+            self.assertEqual(cfg['ranges'], [[0x08804000, 4]])
+            self.assertEqual(cfg['break_traps'], {0x08804000: word})
+        # The branch skips the exception path; both outcomes remain represented.
+        cfg = discover_entry(program([0x14800002, 0, 0x1CD, 0x03E00008, 0]))
+        self.assertEqual(cfg['break_traps'], {0x08804008: 0x1CD})
+        self.assertEqual(cfg['instruction_words'], 5)
+        with self.assertRaises(ValidationError):
+            discover_entry(program([0x03E00008, 0x1CD]))
+        with self.assertRaises(ValidationError):
+            discover_entry(program([0xC]))  # Syscalls still require a contract.
+
     def test_return_and_delay(self):
         cfg = discover_entry(program([0x03E00008, 0]))
         self.assertEqual(cfg['ranges'], [[0x08804000, 8]])

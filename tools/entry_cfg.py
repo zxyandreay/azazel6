@@ -27,6 +27,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
     used_tails = {}
     traps = frozenset(trapped_calls)
     used_traps = set()
+    break_traps = {}
     if traps & (indirect.keys() | jumps.keys() | tails.keys()):
         raise ValidationError('Trapped sites cannot also authorize targets')
     if tails.keys() & (indirect.keys() | jumps.keys()):
@@ -95,8 +96,10 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
             if function == 8 and pc in jumps and jumps[pc] and word == (rs << 21) | 8:
                 return "indirect_jump"
             raise ValidationError(f"Indirect control transfer at 0x{pc:08X} requires a verified target map")
-        if op == 0 and function in (12, 13):
-            raise ValidationError("Inline syscall/break requires explicit profile handling")
+        if op == 0 and function == 13:
+            return "break"  # Pinned codegen emits an unconditional unsupported stop.
+        if op == 0 and function == 12:
+            raise ValidationError(f"Inline syscall at 0x{pc:08X} requires explicit profile handling")
         if op in (2, 3):
             return "jump" if op == 2 else "call"
         if op in (4, 5, 6, 7, 20, 21, 22, 23) or (op == 1 and rt in (0, 1, 2, 3)):
@@ -116,7 +119,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         kind = flow(word, pc)
         instructions.add(pc)
         words.add(pc)
-        if kind != "ordinary":
+        if kind not in ("ordinary", "break"):
             delay = pc + 4
             if delay in instructions or delay in external_boundaries or flow(read(delay), delay) != "ordinary":
                 raise ValidationError("Overlapping/control-transfer delay slot")
@@ -139,6 +142,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
                 enqueue(pc + 8, registers if likely else delayed)
             if taken is not False:
                 enqueue(pc + 4 + signed * 4, delayed)
+        elif kind == "break":
+            break_traps[pc] = word  # No delay slot and no successor.
         elif kind == "trap":
             used_traps.add(pc)  # Terminal: the guard stops before JALR or its delay slot.
         elif kind == "indirect_call":
@@ -171,5 +176,6 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
             "indirect_jumps": used_jumps,
             "indirect_tails": used_tails,
             "trapped_calls": sorted(used_traps),
+            "break_traps": break_traps,
             "external_boundaries": sorted(external_boundaries),
             "instruction_addresses": sorted(instructions)}

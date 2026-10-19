@@ -8,7 +8,7 @@ from analyze import ROOT, execute, local_output
 from elf import load_profile, validate
 from psp_module import module_report
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated
+from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated, verify_break_stops
 
 
 def main():
@@ -64,7 +64,10 @@ def main():
     if {site for graph in cfg.values() for site in graph['indirect_tails']} != tails.keys():
         raise ValueError("Declared indirect tail sites are not covered by startup roots")
     generated = output / "entry.cpp"
-    generated.write_text(guard_generated(generated.read_text(), indirect | jumps | traps | tails), encoding="utf-8")
+    source = generated.read_text()
+    verify_break_stops(source, {site: word for graph in cfg.values()
+                               for site, word in graph['break_traps'].items()})
+    generated.write_text(guard_generated(source, indirect | jumps | traps | tails), encoding="utf-8")
     wrappers = ['#include "azazel6/bootstrap.hpp"', 'namespace azazel6 {']
     for index, imp in enumerate(module["imports"]):
         wrappers.append(f'void import_{index}(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {{ '

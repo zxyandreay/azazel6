@@ -1,13 +1,23 @@
 import unittest
 from elf import ValidationError
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated
+from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated, verify_break_stops
 from test_entry_cfg import program
 
 BASE = 0x08804000
 
 
 class IndirectCallTests(unittest.TestCase):
+    def test_generated_break_must_stop_before_any_successor(self):
+        label = f'L_{BASE:08X}:\n'
+        stop = f'    rt.unsupported(0x{BASE:08X}u, 0x000001CDu, "guest break trap"); return;\n'
+        verify_break_stops(label + stop, {BASE: 0x1CD})
+        for source in ('', label, label + stop + label, label + stop.replace(' return;', ''),
+                       label + '    ctx.gpr[2] = 0;\n' + stop,
+                       label + stop.replace('000001CD', '0000000D')):
+            with self.subTest(source=source), self.assertRaises(ValidationError):
+                verify_break_stops(source, {BASE: 0x1CD})
+
     def descriptor(self, **changes):
         return dict(site=hex(BASE), register=4, table_end=hex(BASE + 24), max_entries=8) | changes
 

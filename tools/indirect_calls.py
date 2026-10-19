@@ -97,6 +97,16 @@ def jump_maps(elf, descriptors):
     return result
 
 
+def verify_break_stops(source, traps):
+    """Require the pinned emitter's terminal stop for each discovered BREAK."""
+    for site, word in traps.items():
+        label = f'L_{site:08X}:\n'
+        stop = (f'    rt.unsupported(0x{site:08X}u, 0x{word:08X}u, '
+                '"guest break trap"); return;\n')
+        if source.count(label) != 1 or label + stop not in source:
+            raise ValidationError('Generated BREAK stop missing, changed or duplicated')
+
+
 def guard_generated(source, maps):
     for site, mapping in maps.items():
         label = f'L_{site:08X}:\n'

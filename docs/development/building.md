@@ -67,13 +67,13 @@ optimized, and kernel tests/framework settings are unchanged.
 On Linux remove `/Release` and `.exe`. The generator discovers a bounded startup
 control-flow graph, follows both branch paths and call continuations, and excludes
 callees. Unsupported indirect transfers and invalid delay slots fail closed. The
-current startup profile yields 17122 instruction words, including delay slots. Regenerate
+current startup profile yields 19293 instruction words, including delay slots. Regenerate
 older probe outputs: the current host requires generated `imports.cpp` wrappers.
 The native process
 returns 3 at a research boundary; the runner records it and returns 0 only to mark
 the experiment as completed. Inspect `execution.log` and `execution.json`; this is
 never a game-boot success. The runner limits native execution to 15 seconds, the
-host to 4096 dispatches, and interpreter fallback is explicitly disabled. The two
+host to 32768 dispatches, and interpreter fallback is explicitly disabled. The two
 [settings services](../research/startup-imports.md) and bounded
 [dormant thread creation/deletion](../research/dormant-threads.md) are implemented;
 StartThread and exit services now support bounded priority handoff; waiting, timers and general scheduling remain unimplemented. Dispatch exhaustion, uncovered code and rejected

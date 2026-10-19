@@ -80,7 +80,9 @@ int main(int argc, char** argv) {
                       << " t1=" << hex32(context.gpr[9]) << std::endl;
             if (!runtime.has_function(pc)) runtime.stop("Uncovered guest address " + hex32(pc));
         });
-        rt->run(elf.runtime_entry(), 4096);
+        // Startup initializes 2048 records through six dispatch boundaries each.
+        // Keep a finite diagnostic allowance; run_probe.py also enforces 15 seconds.
+        rt->run(elf.runtime_entry(), 32768);
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
         std::cout << "data_cache_ranges=" << data_cache->completed_ranges << std::endl;

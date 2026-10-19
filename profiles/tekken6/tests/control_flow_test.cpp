@@ -21,6 +21,19 @@ int main() {
                 rt->cpu().pc != before.pc || rt->cpu().gpr != before.gpr)
                 throw std::runtime_error("Terminal indirect trap did not preserve guest state");
         }
+        // The pinned BREAK emitter uses this exact runtime path and returns.
+        {
+            auto rt = std::make_unique<psprecomp::Runtime>();
+            rt->cpu().pc = 0x08804000u;
+            rt->cpu().gpr[2] = 123;
+            rt->cpu().hi = 17; rt->cpu().lo = 19;
+            const auto before = rt->cpu();
+            rt->unsupported(before.pc, 0x000001CDu, "guest break trap");
+            if (!rt->stopped() || rt->cpu().pc != before.pc || rt->cpu().gpr != before.gpr ||
+                rt->cpu().hi != before.hi || rt->cpu().lo != before.lo ||
+                rt->stop_reason().find("guest break trap") == std::string::npos)
+                throw std::runtime_error("Guest BREAK did not stop without register mutation");
+        }
         std::cout << "Indirect target guard contracts passed\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
