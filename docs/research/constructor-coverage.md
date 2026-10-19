@@ -87,3 +87,25 @@ slots; unknown targets still stop. No game binaries or translations are committe
 uncovered helper `0x08A9504C`, return `0x08A954F8`, after passing the new object
 calls. Three mutexes/eight inactive timers remain. All 39 Python cases, nine
 CTest suites, Windows native execution and Android ARM64 compilation pass.
+
+## All 59 constructors return
+
+**VERIFIED, 2026-10-19:** the bounded native run now returns from every one of
+the 59 validated constructor-table calls. The trace contains 59 returns to
+`0x08B88C2C`, then exits the constructor loop through `0x08804030` and resumes
+child startup at `0x08804320`. It stops at uncovered `0x088044F8`, return
+`0x0880432C`, after 3063 dispatches. The interpreter stays disabled; the existing
+4096-dispatch and 15-second limits are unchanged. Three mutexes, eight inactive
+timers and three coherent data-cache operations are recorded.
+
+The final batch adds the observed helper `0x089B6DB8` and eight direct-call roots.
+Candidates come from already-executed functions, the newly observed missing root,
+or the fixed 59-entry constructor table. Each batch is limited to one callee
+level, 16 roots and 2048 additional words; no recursive callee walk occurs within
+a batch. All candidates still pass the per-root budget and global overlap checks.
+Coverage totals 178 roots/16292 words. Coverage of error paths or unused callees
+does not mean they ran. All 39 Python cases, nine CTest suites and Android ARM64
+compilation pass. Full startup, title-screen boot and gameplay remain unverified.
+
+**PLANNED:** investigate the next startup wrapper and reject unresolved indirect
+transfers until their pointer sources or runtime targets are verified.
