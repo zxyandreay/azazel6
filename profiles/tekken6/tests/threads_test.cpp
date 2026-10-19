@@ -348,6 +348,61 @@ void vfpu_attributes() {
     Scheduled isolated; const auto other = isolated.create(8); isolated.start(other);
     check(isolated.threads->snapshot()[0].attributes == 0x800000FFu, "Attribute state leaked");
 }
+void callback_lifecycle() {
+    auto call = [](Scheduled& f, const char* library, std::uint32_t nid,
+                   std::uint32_t a0, std::uint32_t a1 = 0, std::uint32_t a2 = 0) {
+        auto& c = f.rt->cpu(); c.gpr[4] = a0; c.gpr[5] = a1; c.gpr[6] = a2;
+        c.gpr[2] = 0xDEADBEEFu; c.gpr[31] = 0x08001800u; c.pc = 0x08001900u;
+        invoke_returning_import(*f.rt, c, library, nid); return c.gpr[2];
+    };
+    auto create = [&](Scheduled& f, std::uint32_t name = 0x08004000u,
+                       std::uint32_t function = arena.executable_begin, std::uint32_t common = 0) {
+        return call(f, "ThreadManForUser", 0xE81CAF8Fu, name, function, common);
+    };
+    auto select = [&](Scheduled& f, std::uint32_t uid) { return call(f, "LoadExecForUser", 0x4AC57943u, uid); };
+    auto erase = [&](Scheduled& f, std::uint32_t uid) { return call(f, "ThreadManForUser", 0xEDBA5844u, uid); };
+    Scheduled f;
+    check(create(f, 0) == 0x80020001u && f.threads->callbacks().empty(), "Null callback name");
+    const auto first = create(f, 0x08004000u, 0, 0xDEADBEEFu);
+    check(first == 0x50000000u && f.threads->callbacks().at(first).owner == kBootstrapUid &&
+          f.threads->callbacks().at(first).function == 0 &&
+          f.threads->callbacks().at(first).common == 0xDEADBEEFu, "Callback metadata ownership");
+    for (unsigned i = 0; i < 40; ++i) f.rt->memory().store8(0x08004000u + i, 'c');
+    const auto second = create(f); const auto third = create(f);
+    f.rt->memory().store8(0x08004000u, 'x');
+    check(third > second && f.threads->callbacks().at(second).name == std::string(31, 'c'), "Copied callback name/duplicates");
+    check(select(f, first) == 0 && select(f, second) == 0 && f.threads->exit_callback() == second,
+          "Exit callback replacement");
+    for (auto uid : {0u, 1u, 0xFFFFFFFFu})
+        check(select(f, uid) == 0x800200D2u && f.threads->exit_callback() == second, "Invalid exit callback changed registration");
+    const auto child = f.create(8); f.start(child);
+    check(erase(f, second) == 0 && f.threads->exit_callback() == 0 &&
+          erase(f, second) == 0x800201A1u && erase(f, 0) == 0x800201A1u, "Cross-thread callback deletion/stale UID");
+    const auto owned = create(f); select(f, owned);
+    check(f.threads->callbacks().at(owned).owner == child, "Child callback owner");
+    f.rt->invoke_import("ThreadManForUser", 0x809CE29Bu, f.rt->cpu());
+    check(f.threads->current_uid() == kBootstrapUid && !f.threads->callbacks().contains(owned) &&
+          f.threads->exit_callback() == 0 && f.threads->callbacks().contains(first), "Thread deletion callback cleanup");
+    const auto count = f.threads->callbacks().size(); f.exit();
+    check(f.rt->stopped() && f.threads->current_uid() == kBootstrapUid &&
+          f.threads->callbacks().size() == count, "Unverified owner-exit lifetime mutated state");
+    for (auto function : {arena.executable_begin + 1, arena.executable_end, 0xFFFFFFFFu}) {
+        Scheduled bad; check(create(bad, 0x08004000u, function) == 0xDEADBEEFu && bad.rt->stopped() &&
+                             bad.threads->callbacks().empty(), "Unsupported callback entry accepted");
+    }
+    for (auto address : {0xFFFFFFFFu, 0x88004000u, 0x09FFFFFFu}) {
+        Scheduled bad; bad.rt->memory().store8(0x09FFFFFFu, 'c');
+        check(create(bad, address) == 0xDEADBEEFu && bad.rt->stopped() && bad.threads->callbacks().empty(),
+              "Invalid callback name mutated registry");
+    }
+    Scheduled suspended; suspended.rt->invoke_import("Kernel_Library", 0x092968F4u, suspended.rt->cpu());
+    check(create(suspended) == 0xDEADBEEFu && suspended.rt->stopped() && suspended.threads->callbacks().empty(),
+          "Suspended callback creation");
+    Scheduled capacity;
+    for (unsigned i = 0; i < 4096; ++i) check(create(capacity) == first + i, "Callback capacity/isolated UIDs");
+    check(create(capacity) == 0x80020190u && erase(capacity, first) == 0 &&
+          create(capacity) == first + 4096, "Callback exhaustion consumed or reused UID");
+}
 void inactive_timers() {
     Scheduled f;
     auto call = [](Scheduled& fixture, std::uint32_t nid, std::uint32_t arg, std::uint32_t option = 0) {
@@ -404,7 +459,7 @@ void mutex_boundaries() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); vfpu_attributes(); inactive_timers();
+          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

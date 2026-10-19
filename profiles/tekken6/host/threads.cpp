@@ -63,6 +63,24 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     });
     rt.register_hle("ThreadManForUser", 0x20FFF560u,
         [state](auto& runtime, auto& ctx) { state->create_timer(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0xE81CAF8Fu,
+        [state](auto& runtime, auto& ctx) { state->create_callback(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0xEDBA5844u, [state](auto& runtime, auto& ctx) {
+        if (!state->callback_context(runtime)) return;
+        const auto uid = ctx.gpr[4];
+        if (!state->callbacks_.erase(uid)) { ctx.set_gpr(2, 0x800201A1u); return; }
+        if (state->exit_callback_ == uid) state->exit_callback_ = 0;
+        ctx.set_gpr(2, 0);
+    });
+    rt.register_hle("LoadExecForUser", 0x4AC57943u, [state](auto& runtime, auto& ctx) {
+        if (!state->callback_context(runtime)) return;
+        // This exact game profile uses SDK 5.05: invalid IDs are not accepted.
+        if (!state->callbacks_.contains(ctx.gpr[4])) { ctx.set_gpr(2, 0x800200D2u); return; }
+        state->exit_callback_ = ctx.gpr[4];
+        ctx.set_gpr(2, 0);
+        // No exit event is pending in this bounded host; registration never
+        // executes guest code or treats a callback as an ordinary thread.
+    });
     rt.register_hle("ThreadManForUser", 0x328F9E52u, [state](auto& runtime, auto& ctx) {
         if (!state->current_uid_ || !state->interrupts_enabled_) {
             runtime.stop("Timer deletion requires a running thread with interrupts enabled"); return;
@@ -183,6 +201,11 @@ void ThreadRegistry::erase(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c
         for (std::uint32_t offset = 0; offset < found->stack_size; offset += 4)
             rt.memory().store32(found->stack_base + offset, 0);
     allocator_->release(found->stack_ticket);
+    std::erase_if(callbacks_, [this, uid = found->uid](const auto& item) {
+        if (item.second.owner != uid) return false;
+        if (exit_callback_ == item.first) exit_callback_ = 0;
+        return true;
+    });
     threads_.erase(found);
     ctx.set_gpr(2, 0);
 }
@@ -295,6 +318,11 @@ void ThreadRegistry::finish(psprecomp::Runtime& rt, psprecomp::AllegrexContext& 
     auto* current = find(current_uid_);
     if (!current || current->status != ThreadStatus::Running) { rt.stop("No running thread to exit"); return; }
     const auto uid = current_uid_;
+    if ((!remove || uid == kBootstrapUid) && std::any_of(callbacks_.begin(), callbacks_.end(), [uid](const auto& item) {
+            return item.second.owner == uid;
+        })) {
+        rt.stop("Callback owner exit without deletion requires verified lifetime semantics"); return;
+    }
     current->exit_status = ctx.gpr[from_return ? 2 : 4];
     current->context = ctx;
     current->status = ThreadStatus::Dormant;
@@ -389,5 +417,32 @@ void ThreadRegistry::create_timer(psprecomp::Runtime& rt, psprecomp::AllegrexCon
     if (timers_.size() >= 4096 || next_timer_uid_ >= 0x50000000u) { c.set_gpr(2, no_memory); return; }
     timers_.emplace(next_timer_uid_, GuestVTimer{std::move(name)});
     c.set_gpr(2, next_timer_uid_++);
+}
+bool ThreadRegistry::callback_context(psprecomp::Runtime& rt) {
+    const auto* current = find(current_uid_);
+    if (current && current->status == ThreadStatus::Running && interrupts_enabled_) return true;
+    rt.stop("Callback operation requires a running thread with interrupts enabled"); return false;
+}
+void ThreadRegistry::create_callback(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!callback_context(rt)) return;
+    if (!c.gpr[4]) { c.set_gpr(2, 0x80020001u); return; }
+    const auto function = c.gpr[5];
+    if (function && ((function & 3u) || function < arena_.executable_begin ||
+                    static_cast<std::uint64_t>(function) + 4 > arena_.executable_end)) {
+        rt.stop("Callback function outside verified executable layout"); return;
+    }
+    std::string name;
+    for (std::uint32_t i = 0; i < 31; ++i) {
+        const auto address = static_cast<std::uint64_t>(c.gpr[4]) + i;
+        if (address < 0x08000000u || address >= 0x08000000ull + rt.memory().size()) {
+            rt.stop("Unsupported callback name address"); return;
+        }
+        const auto byte = rt.memory().load8(static_cast<std::uint32_t>(address));
+        if (!byte) break;
+        name.push_back(static_cast<char>(byte));
+    }
+    if (callbacks_.size() >= 4096 || next_callback_uid_ >= 0x60000000u) { c.set_gpr(2, no_memory); return; }
+    callbacks_.emplace(next_callback_uid_, GuestCallback{std::move(name), current_uid_, function, c.gpr[6]});
+    c.set_gpr(2, next_callback_uid_++);
 }
 } // namespace azazel6

@@ -84,6 +84,8 @@ int main(int argc, char** argv) {
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
         std::cout << "data_cache_ranges=" << data_cache->completed_ranges << std::endl;
+        std::cout << "callback_count=" << threads->callbacks().size()
+                  << " exit_callback=" << hex32(threads->exit_callback()) << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {
             const auto arg0 = rt->cpu().gpr[4];
             std::cout << "indirect_arg0=" << hex32(arg0) << " v0=" << hex32(rt->cpu().gpr[2])

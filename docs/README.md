@@ -48,6 +48,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Constructor coverage and FPU branches](research/constructor-coverage.md)
 - [Guarded object dispatch](research/virtual-dispatch.md)
 - [Coherent startup data-cache ranges](research/data-cache.md)
+- [Callback ownership and exit registration](research/callbacks.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

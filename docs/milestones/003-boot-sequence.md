@@ -2,7 +2,7 @@
 
 **IN PROGRESS, 2026-10-19.** Native bring-up is implemented; title-screen boot is
 not. The current bounded experiment completes the full 59-entry constructor loop, creates
-three mutexes and eight inactive timers, and reaches uncovered startup wrapper `0x088044F8`. See
+three mutexes and eight inactive timers, and registers its exit callback and reaches uncovered helper `0x0889DB64`. See
 [constructor-completion evidence](../research/constructor-coverage.md).
 
 Implemented foundations include thread lifecycle and priority handoff, shared

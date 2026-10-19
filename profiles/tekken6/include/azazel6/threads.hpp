@@ -35,6 +35,7 @@ struct GuestMutex {
 };
 // Only inactive timers are supported until a guest clock is established.
 struct GuestVTimer { std::string name; };
+struct GuestCallback { std::string name; std::uint32_t owner, function, common; };
 class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
@@ -42,6 +43,8 @@ public:
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestMutex>& mutexes() const { return mutexes_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestVTimer>& timers() const { return timers_; }
+    [[nodiscard]] const std::map<std::uint32_t, GuestCallback>& callbacks() const { return callbacks_; }
+    [[nodiscard]] std::uint32_t exit_callback() const { return exit_callback_; }
 private:
     friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena, std::shared_ptr<GuestAllocator>);
     explicit ThreadRegistry(ThreadArena arena) : arena_(arena) {}
@@ -59,6 +62,8 @@ private:
     void lock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
     void unlock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void create_timer(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void create_callback(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    bool callback_context(psprecomp::Runtime&);
     ThreadArena arena_;
     std::shared_ptr<GuestAllocator> allocator_;
     std::vector<GuestThread> threads_;
@@ -70,6 +75,8 @@ private:
     std::uint32_t next_mutex_uid_ = 0x30000000u;
     std::map<std::uint32_t, GuestVTimer> timers_;
     std::uint32_t next_timer_uid_ = 0x40000000u;
+    std::map<std::uint32_t, GuestCallback> callbacks_;
+    std::uint32_t next_callback_uid_ = 0x50000000u, exit_callback_ = 0;
 };
 [[nodiscard]] std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena,
                                                                std::shared_ptr<GuestAllocator> = {});
