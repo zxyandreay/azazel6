@@ -5,14 +5,15 @@ not. The current bounded experiment completes the full 59-entry constructor loop
 four mutexes and eight inactive timers, registers its exit callback and completes
 the post-constructor object's 2048-record initialization loop. It allocates a
 single-block fixed pool, completes language get/set and creates an event flag.
-Both workers reach Ready while the main thread continues, then stops at a guarded
-object call after 15833 dispatches. See
+Both workers reach Ready while the main thread enters its display setup path,
+reads EDRAM size, then stops at uncovered helper `0x08AC6A78` after 16788 dispatches. See
 [constructor-completion evidence](../research/constructor-coverage.md) and
 [object/exception-boundary evidence](../research/startup-objects.md) and
 [fixed-pool evidence](../research/fixed-pools.md) and
 [language-mode evidence](../research/language-mode.md) and
 [event-flag evidence](../research/event-flags.md) and
-[worker dispatch evidence](../research/worker-dispatch.md).
+[worker dispatch evidence](../research/worker-dispatch.md) and
+[graphics memory evidence](../research/graphics-memory.md).
 
 Implemented foundations include thread lifecycle and priority handoff, shared
 stack/partition allocation, resident module identity, nested interrupt state,

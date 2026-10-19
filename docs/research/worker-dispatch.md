@@ -14,14 +14,24 @@ code inspection. The argument records themselves are runtime data, not file-back
 function-pointer slots.
 
 `immediate_calls` therefore names instruction sources rather than literal allowed
-targets. Generation validates canonical JALR sites and adjacent LUI/ADDIU or
-LUI/ORI pairs with matching nonzero destination registers. Signed ADDIU and
+targets. Generation validates canonical JALR sites and LUI/ADDIU or
+LUI/ORI pairs whose lower instruction reads the LUI destination and writes a
+nonzero register. Signed ADDIU and
 zero-extended ORI resolve 32-bit addresses; source instructions and destinations
 must be aligned and file-backed executable bytes. Duplicate, malformed, conflicting
 and uncovered declarations reject. The existing generated guard permits only the
 derived destinations before executing the transfer or delay slot. It does not
 claim general data-flow analysis: each source-to-call relationship needs separate
 reviewed evidence, as above.
+
+An explicit upper/lower instruction pair may span at most eight instruction steps.
+Intervening instructions are limited to NOP, integer immediate assignments to
+other registers and byte/halfword/word stores. Calls, branches, unknown operations
+and assignments to the address register reject. This covers the constructor pair
+at `0x08861644`/`0x0886164C`, which stores initial state callback `0x088613DC` at
+object offset `0x60`. The dispatch at `0x08860FBC` loads that field; its alternate
+virtual-member path at `0x08861008` remains a terminal trap. Allowing the initial
+callback does not authorize later state transitions.
 
 Unresolved member-pointer tail calls can now use `trapped_tails`. These require
 canonical JR with a nonzero register other than RA, and authorize no destinations.

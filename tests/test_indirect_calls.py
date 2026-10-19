@@ -29,12 +29,12 @@ class IndirectCallTests(unittest.TestCase):
             discover_entry(elf, trapped_calls=maps, indirect_tails={BASE: [BASE + 8]})
 
     def test_immediate_address_pairs_and_guard(self):
-        for lower in (0x24424020, 0x34424020):  # ADDIU / ORI
+        for lower in (0x24424020, 0x34424020, 0x24434020):  # ADDIU / ORI / different destination
             elf = program([0x0080F809, 0, 0x03E00008, 0, 0x3C020880, lower, 0, 0, 0x03E00008, 0])
             desc = dict(site=hex(BASE), register=4, sources=[hex(BASE + 16)])
             mapping = immediate_maps(elf, [desc])
             self.assertEqual(mapping[BASE]['targets'], [BASE + 32])
-            self.assertEqual(mapping[BASE]['sources'], [BASE + 16])
+            self.assertEqual(mapping[BASE]['source_pairs'], [(BASE + 16, BASE + 20)])
             self.assertEqual(discover_entry(elf, indirect_calls={BASE: [BASE + 32]})['ranges'], [[BASE, 16]])
             self.assertIn('ctx.gpr[4], {0x08804020u}', guard_generated(f'L_{BASE:08X}:\n', mapping))
         data = bytearray(elf.data)
@@ -44,6 +44,21 @@ class IndirectCallTests(unittest.TestCase):
         struct.pack_into('<II', data, 0x110, 0x3C020881, 0x24428020)
         mapping = immediate_maps(Elf.parse(data), [dict(site=hex(base), register=4, sources=[hex(base + 16)])])
         self.assertEqual(mapping[base]['targets'], [base + 32])
+
+    def test_nonadjacent_address_pair_requires_preserved_register_and_flow(self):
+        desc = dict(site=hex(BASE), register=4,
+                    sources=[dict(upper=hex(BASE + 16), lower=hex(BASE + 24))])
+        for middle in (0, 0x2485005C, 0x34A50004, 0x3C030886, 0xAC820004):
+            elf = program([0x0080F809, 0, 0x03E00008, 0, 0x3C020880, middle, 0x24424020, 0, 0x03E00008, 0])
+            self.assertEqual(immediate_maps(elf, [desc])[BASE]['targets'], [BASE + 32])
+        for middle in (0x24420001, 0x3C020881, 0x34424000, 0x8C820000, 0x0C000000,
+                       0x08000000, 0x10000000, 0x03E00008, 0x0000000D, 0x00001021):
+            elf = program([0x0080F809, 0, 0x03E00008, 0, 0x3C020880, middle, 0x24424020, 0, 0x03E00008, 0])
+            with self.subTest(middle=middle), self.assertRaises(ValidationError):
+                immediate_maps(elf, [desc])
+        for lower in (BASE + 16, BASE + 25, BASE + 52):
+            with self.subTest(lower=lower), self.assertRaises(ValidationError):
+                immediate_maps(elf, [desc | {'sources': [dict(upper=hex(BASE + 16), lower=hex(lower))]}])
 
     def test_immediate_pairs_reject_unverified_sources_and_targets(self):
         def fixture(upper=0x3C020880, lower=0x24424020):
@@ -56,7 +71,7 @@ class IndirectCallTests(unittest.TestCase):
             with self.subTest(changes=changes), self.assertRaises(ValidationError):
                 immediate_maps(fixture(), [desc | changes])
         for upper, lower in ((0, 0x24424020), (0x3C000880, 0x24004020), (0x3C220880, 0x24424020),
-                             (0x3C020880, 0x24824020), (0x3C020880, 0x24434020),
+                             (0x3C020880, 0x24824020), (0x3C020880, 0x24404020),
                              (0x3C020880, 0x20424020), (0x3C020880, 0x24424021),
                              (0x3C020880, 0x24424028), (0x3C02FFFF, 0x2442FFFF)):
             with self.subTest(upper=upper, lower=lower), self.assertRaises(ValidationError):

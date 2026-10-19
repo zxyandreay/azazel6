@@ -54,6 +54,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Startup language and confirm-button settings](research/language-mode.md)
 - [Startup event flags](research/event-flags.md)
 - [Worker entry and immediate address guards](research/worker-dispatch.md)
+- [Graphics memory startup boundary](research/graphics-memory.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

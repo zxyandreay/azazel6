@@ -3,7 +3,7 @@ from elf import ValidationError
 
 
 def immediate_maps(elf, descriptors):
-    """Resolve reviewed adjacent LUI/ADDIU or LUI/ORI address constructions."""
+    """Resolve reviewed bounded LUI/ADDIU or LUI/ORI address constructions."""
     result = {}
 
     def executable(address, size):
@@ -13,7 +13,8 @@ def immediate_maps(elf, descriptors):
 
     for descriptor in descriptors:
         site, register = int(descriptor['site'], 16), descriptor['register']
-        sources = [int(value, 16) for value in descriptor['sources']]
+        sources = [(int(value['upper'], 16), int(value['lower'], 16)) if isinstance(value, dict)
+                   else (int(value, 16), int(value, 16) + 4) for value in descriptor['sources']]
         if (not 1 <= register <= 31 or not executable(site, 4) or
                 not 1 <= len(sources) <= 128 or len(set(sources)) != len(sources)):
             raise ValidationError('Invalid immediate call descriptor')
@@ -22,17 +23,27 @@ def immediate_maps(elf, descriptors):
         if site in result or word != (register << 21) | (31 << 11) | 9:
             raise ValidationError('Duplicate or mismatched immediate JALR site')
         targets = []
-        for source in sources:
-            if not executable(source, 8):
+        for source, end in sources:
+            if (end % 4 or end > 0xFFFFFFFC or not source + 4 <= end <= source + 32 or
+                    not executable(source, end - source + 4)):
                 raise ValidationError('Immediate source outside executable file-backed range')
-            offset = elf.guest_to_offset(source, 8)
+            offset = elf.guest_to_offset(source, end - source + 4)
             upper = int.from_bytes(elf.data[offset:offset + 4], 'little')
-            lower = int.from_bytes(elf.data[offset + 4:offset + 8], 'little')
+            lower_offset = offset + end - source
+            lower = int.from_bytes(elf.data[lower_offset:lower_offset + 4], 'little')
             dest = (upper >> 16) & 31
             opcode = lower >> 26
             if (upper >> 21 != 15 << 5 or not dest or opcode not in (9, 13) or
-                    (lower >> 21) & 31 != dest or (lower >> 16) & 31 != dest):
+                    (lower >> 21) & 31 != dest or (lower >> 16) & 31 == 0):
                 raise ValidationError('Immediate source is not a canonical address pair')
+            for middle in range(offset + 4, lower_offset, 4):
+                word = int.from_bytes(elf.data[middle:middle + 4], 'little')
+                op, rt = word >> 26, (word >> 16) & 31
+                # A small whitelist: no control flow, unknown effects or writes to
+                # the address register. Other forms require separate investigation.
+                if not (word == 0 or (op in (9, 13) and rt != dest) or
+                        (op == 15 and (word >> 21) & 31 == 0 and rt != dest) or op in (40, 41, 43)):
+                    raise ValidationError('Intervening instruction invalidates immediate address proof')
             low = lower & 0xFFFF
             if opcode == 9 and low & 0x8000:
                 low -= 0x10000
@@ -40,7 +51,7 @@ def immediate_maps(elf, descriptors):
             if not executable(target, 4):
                 raise ValidationError('Immediate target outside executable file-backed range')
             targets.append(target)
-        result[site] = {'register': register, 'targets': targets, 'sources': sources}
+        result[site] = {'register': register, 'targets': targets, 'source_pairs': sources}
     return result
 
 
