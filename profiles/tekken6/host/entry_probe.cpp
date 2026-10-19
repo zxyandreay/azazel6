@@ -111,6 +111,10 @@ int main(int argc, char** argv) {
                       << " size=" << hex32(block.size) << std::endl;
         std::cout << "mutex_count=" << threads->mutexes().size() << std::endl;
         std::cout << "inactive_timer_count=" << threads->timers().size() << std::endl;
+        std::cout << "fixed_pool_count=" << threads->fixed_pools().size() << std::endl;
+        for (const auto& [uid, pool] : threads->fixed_pools())
+            std::cout << "fixed_pool=" << hex32(uid) << " base=" << hex32(pool.allocation.base)
+                      << " block_size=" << pool.block_size << " allocated=" << pool.allocated << std::endl;
         return rt->stop_reason().starts_with("Missing HLE import ") ? 3 : 1;
     } catch (const std::exception& error) {
         std::cerr << "entry_probe: " << error.what() << '\n';

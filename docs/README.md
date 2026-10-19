@@ -50,6 +50,7 @@ Reviewed 2026-10-18. Evidence labels apply to individual claims:
 - [Coherent startup data-cache ranges](research/data-cache.md)
 - [Callback ownership and exit registration](research/callbacks.md)
 - [Post-constructor objects and exception boundaries](research/startup-objects.md)
+- [Startup fixed memory pools](research/fixed-pools.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

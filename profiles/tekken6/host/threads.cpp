@@ -32,6 +32,16 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     if (allocator->begin() != arena.begin || allocator->end() != arena.end)
         throw psprecomp::Error("Thread allocator ownership mismatch");
     state->allocator_ = std::move(allocator);
+    rt.register_hle("ThreadManForUser", 0xC07BB470u,
+        [state](auto& runtime, auto& c) { state->create_pool(runtime, c); });
+    rt.register_hle("ThreadManForUser", 0xED1410E0u,
+        [state](auto& runtime, auto& c) { state->delete_pool(runtime, c); });
+    rt.register_hle("ThreadManForUser", 0x623AE665u,
+        [state](auto& runtime, auto& c) { state->allocate_pool(runtime, c, true); });
+    rt.register_hle("ThreadManForUser", 0xD979E9BFu,
+        [state](auto& runtime, auto& c) { state->allocate_pool(runtime, c, false); });
+    rt.register_hle("ThreadManForUser", 0xF6414A71u,
+        [state](auto& runtime, auto& c) { state->free_pool(runtime, c); });
     rt.register_hle("Kernel_Library", 0x092968F4u, [state](auto&, auto& ctx) {
         ctx.set_gpr(2, state->interrupts_enabled_ ? 1u : 0u);
         state->interrupts_enabled_ = false;

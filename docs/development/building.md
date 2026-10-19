@@ -67,7 +67,7 @@ optimized, and kernel tests/framework settings are unchanged.
 On Linux remove `/Release` and `.exe`. The generator discovers a bounded startup
 control-flow graph, follows both branch paths and call continuations, and excludes
 callees. Unsupported indirect transfers and invalid delay slots fail closed. The
-current startup profile yields 19293 instruction words, including delay slots. Regenerate
+current startup profile yields 19443 instruction words, including delay slots. Regenerate
 older probe outputs: the current host requires generated `imports.cpp` wrappers.
 The native process
 returns 3 at a research boundary; the runner records it and returns 0 only to mark
