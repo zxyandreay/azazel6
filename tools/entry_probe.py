@@ -8,7 +8,7 @@ from analyze import ROOT, execute, local_output
 from elf import load_profile, validate
 from psp_module import module_report
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated, verify_break_stops
+from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, immediate_maps, guard_generated, verify_break_stops
 
 
 def language_mode(startup):
@@ -39,9 +39,17 @@ def main():
     if indirect.keys() & pointers.keys():
         raise ValueError("Constructor and pointer call maps must own different sites")
     indirect |= pointers
+    immediates = immediate_maps(elf, startup.get("immediate_calls", []))
+    if indirect.keys() & immediates.keys():
+        raise ValueError("Immediate and table call maps must own different sites")
+    indirect |= immediates
     jumps = jump_maps(elf, startup.get("jump_tables", []))
     tails = pointer_maps(elf, startup.get("pointer_tails", []), tail=True)
     traps = trap_maps(elf, startup.get("trapped_calls", []))
+    tail_traps = trap_maps(elf, startup.get("trapped_tails", []), tail=True)
+    if traps.keys() & tail_traps.keys():
+        raise ValueError("Call and tail traps must own different sites")
+    traps |= tail_traps
     if (indirect.keys() & jumps.keys() or tails.keys() & (indirect.keys() | jumps.keys()) or
             traps.keys() & (indirect.keys() | jumps.keys() | tails.keys())):
         raise ValueError("Call, jump and trap maps must own different sites")

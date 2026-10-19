@@ -2,6 +2,48 @@
 from elf import ValidationError
 
 
+def immediate_maps(elf, descriptors):
+    """Resolve reviewed adjacent LUI/ADDIU or LUI/ORI address constructions."""
+    result = {}
+
+    def executable(address, size):
+        return 0 <= address <= 0xFFFFFFFF and address % 4 == 0 and any(
+            s.flags & 1 and s.vaddr <= address and address + size <= s.vaddr + s.filesz
+            for s in elf.segments)
+
+    for descriptor in descriptors:
+        site, register = int(descriptor['site'], 16), descriptor['register']
+        sources = [int(value, 16) for value in descriptor['sources']]
+        if (not 1 <= register <= 31 or not executable(site, 4) or
+                not 1 <= len(sources) <= 128 or len(set(sources)) != len(sources)):
+            raise ValidationError('Invalid immediate call descriptor')
+        offset = elf.guest_to_offset(site, 4)
+        word = int.from_bytes(elf.data[offset:offset + 4], 'little')
+        if site in result or word != (register << 21) | (31 << 11) | 9:
+            raise ValidationError('Duplicate or mismatched immediate JALR site')
+        targets = []
+        for source in sources:
+            if not executable(source, 8):
+                raise ValidationError('Immediate source outside executable file-backed range')
+            offset = elf.guest_to_offset(source, 8)
+            upper = int.from_bytes(elf.data[offset:offset + 4], 'little')
+            lower = int.from_bytes(elf.data[offset + 4:offset + 8], 'little')
+            dest = (upper >> 16) & 31
+            opcode = lower >> 26
+            if (upper >> 21 != 15 << 5 or not dest or opcode not in (9, 13) or
+                    (lower >> 21) & 31 != dest or (lower >> 16) & 31 != dest):
+                raise ValidationError('Immediate source is not a canonical address pair')
+            low = lower & 0xFFFF
+            if opcode == 9 and low & 0x8000:
+                low -= 0x10000
+            target = (((upper & 0xFFFF) << 16) + low) & 0xFFFFFFFF
+            if not executable(target, 4):
+                raise ValidationError('Immediate target outside executable file-backed range')
+            targets.append(target)
+        result[site] = {'register': register, 'targets': targets, 'sources': sources}
+    return result
+
+
 def pointer_maps(elf, descriptors, *, tail=False):
     """Resolve explicit file-backed function-pointer slots, never literal targets."""
     result = {}
@@ -27,16 +69,16 @@ def pointer_maps(elf, descriptors, *, tail=False):
     return result
 
 
-def trap_maps(elf, descriptors):
-    """Declare terminal JALR boundaries; these never authorize a target."""
+def trap_maps(elf, descriptors, *, tail=False):
+    """Declare terminal JALR/JR boundaries; these never authorize a target."""
     result = {}
     for descriptor in descriptors:
         site, register = int(descriptor['site'], 16), descriptor['register']
-        if not 1 <= register <= 31 or site % 4:
+        if not 1 <= register <= (30 if tail else 31) or site % 4:
             raise ValidationError('Invalid indirect-call trap descriptor')
         offset = elf.guest_to_offset(site, 4)
         word = int.from_bytes(elf.data[offset:offset + 4], 'little')
-        if site in result or word != ((register << 21) | (31 << 11) | 9):
+        if site in result or word != ((register << 21) | (8 if tail else (31 << 11) | 9)):
             raise ValidationError('Duplicate or mismatched indirect-call trap site')
         result[site] = {'register': register, 'targets': []}
     return result

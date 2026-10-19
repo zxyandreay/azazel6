@@ -89,6 +89,8 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
                 return "return"
             if function == 9 and pc in traps and word == (rs << 21) | (31 << 11) | 9:
                 return "trap"
+            if function == 8 and rs != 31 and pc in traps and word == (rs << 21) | 8:
+                return "trap"
             if function == 9 and pc in indirect and indirect[pc] and word == (rs << 21) | (31 << 11) | 9:
                 return "indirect_call"
             if function == 8 and pc in tails and tails[pc] and word == (rs << 21) | 8:
@@ -145,7 +147,7 @@ def discover_entry(elf, max_instructions=256, entry=None, *, constant_branches=F
         elif kind == "break":
             break_traps[pc] = word  # No delay slot and no successor.
         elif kind == "trap":
-            used_traps.add(pc)  # Terminal: the guard stops before JALR or its delay slot.
+            used_traps.add(pc)  # Terminal: the guard stops before transfer or delay slot.
         elif kind == "indirect_call":
             used_indirect[pc] = indirect[pc]
             enqueue(pc + 8, unknown)

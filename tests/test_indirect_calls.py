@@ -1,13 +1,73 @@
+import struct
 import unittest
-from elf import ValidationError
+from elf import Elf, ValidationError
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated, verify_break_stops
+from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, immediate_maps, guard_generated, verify_break_stops
 from test_entry_cfg import program
 
 BASE = 0x08804000
 
 
 class IndirectCallTests(unittest.TestCase):
+    def test_tail_traps_stop_before_delay_without_authorizing_targets(self):
+        elf = program([0x03200008, 0x24040001, 0xFFFFFFFF])
+        desc = dict(site=hex(BASE), register=25)
+        maps = trap_maps(elf, [desc], tail=True)
+        self.assertEqual(maps[BASE]['targets'], [])
+        cfg = discover_entry(elf, trapped_calls=maps)
+        self.assertEqual(cfg['ranges'], [[BASE, 8]])
+        self.assertEqual(cfg['trapped_calls'], [BASE])
+        source = guard_generated(f'L_{BASE:08X}:\n    ctx.gpr[4] = 1;\n', maps)
+        self.assertIn('ctx.gpr[25], {}', source)
+        self.assertLess(source.index('guard_indirect_call'), source.index('ctx.gpr[4]'))
+        for changes in ({'register': 31}, {'register': 0}, {'register': 24}, {'site': hex(BASE + 1)}):
+            with self.subTest(changes=changes), self.assertRaises(ValidationError):
+                trap_maps(elf, [desc | changes], tail=True)
+        with self.assertRaises(ValidationError):
+            trap_maps(elf, [desc])
+        with self.assertRaises(ValidationError):
+            discover_entry(elf, trapped_calls=maps, indirect_tails={BASE: [BASE + 8]})
+
+    def test_immediate_address_pairs_and_guard(self):
+        for lower in (0x24424020, 0x34424020):  # ADDIU / ORI
+            elf = program([0x0080F809, 0, 0x03E00008, 0, 0x3C020880, lower, 0, 0, 0x03E00008, 0])
+            desc = dict(site=hex(BASE), register=4, sources=[hex(BASE + 16)])
+            mapping = immediate_maps(elf, [desc])
+            self.assertEqual(mapping[BASE]['targets'], [BASE + 32])
+            self.assertEqual(mapping[BASE]['sources'], [BASE + 16])
+            self.assertEqual(discover_entry(elf, indirect_calls={BASE: [BASE + 32]})['ranges'], [[BASE, 16]])
+            self.assertIn('ctx.gpr[4], {0x08804020u}', guard_generated(f'L_{BASE:08X}:\n', mapping))
+        data = bytearray(elf.data)
+        base = 0x08808000
+        struct.pack_into('<I', data, 24, base)
+        struct.pack_into('<I', data, 60, base)
+        struct.pack_into('<II', data, 0x110, 0x3C020881, 0x24428020)
+        mapping = immediate_maps(Elf.parse(data), [dict(site=hex(base), register=4, sources=[hex(base + 16)])])
+        self.assertEqual(mapping[base]['targets'], [base + 32])
+
+    def test_immediate_pairs_reject_unverified_sources_and_targets(self):
+        def fixture(upper=0x3C020880, lower=0x24424020):
+            return program([0x0080F809, 0, 0x03E00008, 0, upper, lower, 0, 0, 0x03E00008, 0])
+        desc = dict(site=hex(BASE), register=4, sources=[hex(BASE + 16)])
+        for changes in ({'register': 0}, {'register': 32}, {'register': 5}, {'site': hex(BASE + 1)},
+                        {'site': '0xFFFFFFFF'}, {'sources': []}, {'sources': [hex(BASE + 16)] * 129},
+                        {'sources': [hex(BASE + 16)] * 2}, {'sources': [hex(BASE + 17)]},
+                        {'sources': [hex(BASE + 36)]}, {'sources': ['0x88004010']}):
+            with self.subTest(changes=changes), self.assertRaises(ValidationError):
+                immediate_maps(fixture(), [desc | changes])
+        for upper, lower in ((0, 0x24424020), (0x3C000880, 0x24004020), (0x3C220880, 0x24424020),
+                             (0x3C020880, 0x24824020), (0x3C020880, 0x24434020),
+                             (0x3C020880, 0x20424020), (0x3C020880, 0x24424021),
+                             (0x3C020880, 0x24424028), (0x3C02FFFF, 0x2442FFFF)):
+            with self.subTest(upper=upper, lower=lower), self.assertRaises(ValidationError):
+                immediate_maps(fixture(upper, lower), [desc])
+        with self.assertRaises(ValidationError):
+            immediate_maps(fixture(), [desc, desc])
+        data = bytearray(fixture().data)
+        struct.pack_into('<I', data, 76, 6)  # no execute permission
+        with self.assertRaises(ValidationError):
+            immediate_maps(Elf.parse(data), [desc])
+
     def test_generated_break_must_stop_before_any_successor(self):
         label = f'L_{BASE:08X}:\n'
         stop = f'    rt.unsupported(0x{BASE:08X}u, 0x000001CDu, "guest break trap"); return;\n'
