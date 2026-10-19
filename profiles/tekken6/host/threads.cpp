@@ -32,6 +32,18 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     if (allocator->begin() != arena.begin || allocator->end() != arena.end)
         throw psprecomp::Error("Thread allocator ownership mismatch");
     state->allocator_ = std::move(allocator);
+    rt.register_hle("ThreadManForUser", 0x55C20A00u,
+        [state](auto& runtime, auto& c) { state->create_event(runtime, c); });
+    rt.register_hle("ThreadManForUser", 0xEF9E4C70u,
+        [state](auto& runtime, auto& c) { state->delete_event(runtime, c); });
+    rt.register_hle("ThreadManForUser", 0x1FB15A32u,
+        [state](auto& runtime, auto& c) { state->update_event(runtime, c, false); });
+    rt.register_hle("ThreadManForUser", 0x812346E4u,
+        [state](auto& runtime, auto& c) { state->update_event(runtime, c, true); });
+    rt.register_hle("ThreadManForUser", 0x30FD48F0u,
+        [state](auto& runtime, auto& c) { state->poll_event(runtime, c, true); });
+    rt.register_hle("ThreadManForUser", 0x402FCF22u,
+        [state](auto& runtime, auto& c) { state->poll_event(runtime, c, false); });
     rt.register_hle("ThreadManForUser", 0xC07BB470u,
         [state](auto& runtime, auto& c) { state->create_pool(runtime, c); });
     rt.register_hle("ThreadManForUser", 0xED1410E0u,

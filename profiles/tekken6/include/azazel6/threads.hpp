@@ -43,6 +43,7 @@ struct GuestFixedPool {
     std::uint32_t block_size, alignment, attributes;
     bool allocated = false;
 };
+struct GuestEventFlag { std::string name; std::uint32_t attributes, initial, pattern; };
 class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
@@ -53,6 +54,7 @@ public:
     [[nodiscard]] const std::map<std::uint32_t, GuestCallback>& callbacks() const { return callbacks_; }
     [[nodiscard]] std::uint32_t exit_callback() const { return exit_callback_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestFixedPool>& fixed_pools() const { return fixed_pools_; }
+    [[nodiscard]] const std::map<std::uint32_t, GuestEventFlag>& event_flags() const { return event_flags_; }
 private:
     friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena, std::shared_ptr<GuestAllocator>);
     explicit ThreadRegistry(ThreadArena arena) : arena_(arena) {}
@@ -77,6 +79,11 @@ private:
     void delete_pool(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void allocate_pool(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
     void free_pool(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    bool event_context(psprecomp::Runtime&);
+    void create_event(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void delete_event(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void update_event(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool clear);
+    void poll_event(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
     ThreadArena arena_;
     std::shared_ptr<GuestAllocator> allocator_;
     std::vector<GuestThread> threads_;
@@ -92,6 +99,8 @@ private:
     std::uint32_t next_callback_uid_ = 0x50000000u, exit_callback_ = 0;
     std::map<std::uint32_t, GuestFixedPool> fixed_pools_;
     std::uint32_t next_pool_uid_ = 0x60000000u;
+    std::map<std::uint32_t, GuestEventFlag> event_flags_;
+    std::uint32_t next_event_uid_ = 0x70000000u;
 };
 [[nodiscard]] std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena,
                                                                std::shared_ptr<GuestAllocator> = {});

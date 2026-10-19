@@ -12,7 +12,7 @@
 | Windows framework build/regressions | VERIFIED, three suites passed |
 | Python/profile tools | VERIFIED, 43 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; eleven integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; twelve integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
@@ -21,10 +21,11 @@
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
 | Fixed pools | VERIFIED single-block creation, immediate allocation, free/delete and shared ownership; multi-block/waiting services remain rejecting |
 | Language settings | VERIFIED explicit English/Cross defaults and checked runtime-local get/set; no host locale dependency |
+| Event flags | VERIFIED create/delete, set/clear, polling and immediately satisfied waits; queued waits/timeouts remain rejecting |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED constructors, exit registration, 2048-record loop, fixed-pool allocation and language get/set; event-flag creation is the next service boundary after 15765 dispatches |
+| Native entry execution | VERIFIED constructors, exit registration, 2048-record loop, fixed-pool allocation, language get/set and event creation; worker entry coverage is the next boundary after 15769 dispatches |
 | Exception boundaries | VERIFIED 37 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object and fixed-pool checkpoints passed hosted CI |
