@@ -50,3 +50,17 @@ The checkpoint covers 218 roots/19293 words and 37 terminal BREAK sites.
 All 41 Python cases, nine CTest suites and Windows/Android ARM64 compilation
 passed for this checkpoint. Title-screen boot and exception delivery
 remain unimplemented; the next experiment is the observed helper above.
+
+## Object allocator query and selection tables
+
+**VERIFIED continuation:** `0x0887929C` queries the initialized allocator through
+the seven-entry table at `0x08B92680`, with JR site `0x088792F4`. Allocation helper
+`0x0887BF48` uses another seven-entry table at `0x08B926A8`, with JR site
+`0x0887C0A4`. Both indices have explicit unsigned bounds before the table load.
+The generator validates every file-backed destination and guards both jumps.
+
+The latter helper also has an optional callback at `0x0887C1E8`, loaded from the
+object passed in argument register 10. Its target is not established, so that
+site has an empty allowlist and stops before the call or delay slot. Observed
+startup passes no callback and completes this path without reaching the guard.
+The native trace then enters the next startup object through `0x0886074C`.

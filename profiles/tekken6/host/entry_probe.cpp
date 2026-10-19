@@ -6,6 +6,7 @@
 #include "azazel6/bootstrap.hpp"
 #include "azazel6/threads.hpp"
 #include "azazel6/module.hpp"
+#include "azazel6/settings.hpp"
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -62,6 +63,9 @@ int main(int argc, char** argv) {
         const auto partition = azazel6::register_memory_hle(*rt, allocator);
         const auto data_cache = azazel6::register_data_cache_hle(*rt,
             (image_segment->vaddr + image_segment->file_size + 63u) & ~63u, stack_top);
+        const auto language = azazel6::register_language_hle(*rt,
+            {AZAZEL6_LANGUAGE, AZAZEL6_CONFIRM_BUTTON},
+            (image_segment->vaddr + image_segment->file_size + 3u) & ~3u, stack_top);
         const auto threads = azazel6::register_thread_hle(*rt, {
             (image_end + 255u) & ~255u, stack_top - bootstrap_size,
             image_segment->vaddr, image_end, image_segment->vaddr,
@@ -86,6 +90,8 @@ int main(int argc, char** argv) {
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
         std::cout << "data_cache_ranges=" << data_cache->completed_ranges << std::endl;
+        std::cout << "language=" << language->language << " confirm_button=" << language->confirm_button
+                  << " language_reads=" << language->reads << " language_writes=" << language->writes << std::endl;
         std::cout << "callback_count=" << threads->callbacks().size()
                   << " exit_callback=" << hex32(threads->exit_callback()) << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {

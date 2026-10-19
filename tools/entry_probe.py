@@ -11,6 +11,16 @@ from entry_cfg import discover_entry
 from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, guard_generated, verify_break_stops
 
 
+def language_mode(startup):
+    settings = startup.get("language_mode")
+    if not isinstance(settings, dict) or set(settings) != {"language", "confirm_button"}:
+        raise ValueError("Profile must explicitly configure language and confirm button")
+    language, button = settings["language"], settings["confirm_button"]
+    if type(language) is not int or not 0 <= language <= 11 or type(button) is not int or button not in (0, 1):
+        raise ValueError("Unsupported profile language mode")
+    return language, button
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path)
@@ -23,6 +33,7 @@ def main():
     elf = validate(args.input, profile)
     module = module_report(elf)
     startup = json.loads((ROOT / "profiles/tekken6/config/startup.json").read_text())
+    language, button = language_mode(startup)
     indirect = constructor_maps(elf, startup.get("constructor_calls", []))
     pointers = pointer_maps(elf, startup.get("pointer_calls", []))
     if indirect.keys() & pointers.keys():
@@ -81,8 +92,10 @@ def main():
         '#pragma once\n#define AZAZEL6_EXPECTED_SHA "' + profile["executable"]["sha256"] + '"\n'
         f'#define AZAZEL6_MODULE_ADDRESS {module["address"]}u\n'
         f'#define AZAZEL6_BOOTSTRAP_PRIORITY {start_thread["priority"]}u\n'
-        f'#define AZAZEL6_BOOTSTRAP_STACK_SIZE {start_thread["stack_size"]}u\n', encoding="utf-8")
+        f'#define AZAZEL6_BOOTSTRAP_STACK_SIZE {start_thread["stack_size"]}u\n'
+        f'#define AZAZEL6_LANGUAGE {language}u\n#define AZAZEL6_CONFIRM_BUTTON {button}u\n', encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps({"input_sha256": profile["executable"]["sha256"],
+        "language_mode": startup["language_mode"],
         "cfg": cfg, "module": module, "indirect_maps": indirect, "jump_maps": jumps, "trap_maps": traps, "tail_maps": tails,
         "scope": "Bounded startup CFG, guarded constructor calls and returning imports; no fallback"}, indent=2) + "\n")
     print(f"Generated {sum(g['instruction_words'] for g in cfg.values())} startup instruction words in {output}")

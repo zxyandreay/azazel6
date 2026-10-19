@@ -10,9 +10,9 @@
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 41 cases passed |
+| Python/profile tools | VERIFIED, 43 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; ten integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; eleven integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
@@ -20,13 +20,14 @@
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; code/alias/large-range requests reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
 | Fixed pools | VERIFIED single-block creation, immediate allocation, free/delete and shared ownership; multi-block/waiting services remain rejecting |
+| Language settings | VERIFIED explicit English/Cross defaults and checked runtime-local get/set; no host locale dependency |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED all 59 constructors return, exit callback registers, the 2048-record loop completes and a 1.125 MiB fixed pool is allocated; next helper 0x0887929C remains uncovered |
+| Native entry execution | VERIFIED constructors, exit registration, 2048-record loop, fixed-pool allocation and language get/set; event-flag creation is the next service boundary after 15765 dispatches |
 | Exception boundaries | VERIFIED 37 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
-| Linux execution | VERIFIED constructor-completion and callback checkpoints passed hosted CI |
+| Linux execution | VERIFIED startup-object and fixed-pool checkpoints passed hosted CI |
 | Android device/APK | NOT TESTED / not implemented |
 | Game boot/combat/graphics/audio/input | Not implemented |
 | Ultrawide gameplay hooks / moveset packages | PLANNED; reference research only |

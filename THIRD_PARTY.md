@@ -11,6 +11,7 @@ There is no vendored Monster Hunter host, game code or commercial resource.
 | [uOFW](https://github.com/uofw/uofw/tree/28306bb5bd4fcdcc0c1d469bf1f3bdb885dde3e9) | `28306bb5bd4fcdcc0c1d469bf1f3bdb885dde3e9` | Read-only SysMem/ThreadMan contract research; MIT with PSPSDK BSD notices in COPYING; no source copied or linked |
 | [PSPSDK](https://github.com/pspdev/pspsdk/tree/6ef2b21dc440ef8d4125f000301faaa2a470975e) | `6ef2b21dc440ef8d4125f000301faaa2a470975e` | Read-only thread API/startup research; BSD notices; no source copied or linked |
 | [PSP autotests](https://github.com/hrydgard/pspautotests/tree/071a2a6f14477b8b186bd53201e2f2c0adc80679) | `071a2a6f14477b8b186bd53201e2f2c0adc80679` | Expected-result facts only; root LICENSE is an unfinished placeholder, so no source, test bodies or binaries are redistributed |
+| [PPSSPP](https://github.com/hrydgard/ppsspp/blob/cd94e414cde964bf25ec67267f64fcd3d01283bb/Core/HLE/sceImpose.cpp) | `cd94e414cde964bf25ec67267f64fcd3d01283bb` | Read-only language-mode behavioral research; GPL-2.0-or-later file notice; no implementation copied into Azazel6 or linked |
 | [Tekken 6 Ultrawide](https://github.com/zxyandreay/tekken6-ultrawide/tree/d50cd5f19053a2f0aeda7f2970619b984aebad8f) | `d50cd5f19053a2f0aeda7f2970619b984aebad8f` | Research facts and formulas; no PRX source copied |
 | [Tekken 6 Jin8](https://github.com/zxyandreay/tekken6-jin8/tree/dd3894fe72c09e67226f5482ca1ef5afa9c0d1a0) | `dd3894fe72c09e67226f5482ca1ef5afa9c0d1a0` | Research findings only; no payload or code copied |
 

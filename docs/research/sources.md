@@ -23,3 +23,9 @@ The implementation reads local EBOOT bytes supplied for this assignment. No game
 download was attempted. ISO inspection used installed 7-Zip 24.09 to list paths
 only; no assets were extracted for distribution. Raw inventories, generated code,
 framework logs and analyzer reports remain in ignored `local/`.
+
+**Additional inspection, 2026-10-19:** PPSSPP's
+[`sceImpose.cpp` at `cd94e414cde964bf25ec67267f64fcd3d01283bb`](https://github.com/hrydgard/ppsspp/blob/cd94e414cde964bf25ec67267f64fcd3d01283bb/Core/HLE/sceImpose.cpp)
+was read through GitHub's API at that fixed revision. Only language-mode API
+behavior was used as reference evidence. No PPSSPP implementation was copied into
+Azazel6 or linked; this is emulator behavior, not a reproduced hardware result.

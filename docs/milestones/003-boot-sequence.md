@@ -2,12 +2,14 @@
 
 **IN PROGRESS, 2026-10-19.** Native bring-up is implemented; title-screen boot is
 not. The current bounded experiment completes the full 59-entry constructor loop, creates
-three mutexes and eight inactive timers, registers its exit callback and completes
-the post-constructor object's 2048-record initialization loop. It reaches uncovered
-helper `0x0887929C` after creating and allocating a single-block fixed pool. See
+four mutexes and eight inactive timers, registers its exit callback and completes
+the post-constructor object's 2048-record initialization loop. It allocates a
+single-block fixed pool and completes language get/set, then reaches event-flag
+creation after 15765 dispatches. See
 [constructor-completion evidence](../research/constructor-coverage.md) and
 [object/exception-boundary evidence](../research/startup-objects.md) and
-[fixed-pool evidence](../research/fixed-pools.md).
+[fixed-pool evidence](../research/fixed-pools.md) and
+[language-mode evidence](../research/language-mode.md).
 
 Implemented foundations include thread lifecycle and priority handoff, shared
 stack/partition allocation, resident module identity, nested interrupt state,
