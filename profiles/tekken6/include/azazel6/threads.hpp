@@ -11,6 +11,7 @@ inline constexpr std::uint32_t kDeleteThreadNid = 0x9FA03CD3u;
 inline constexpr std::uint32_t kStartThreadNid = 0xF475845Du;
 inline constexpr std::uint32_t kThreadReturnGate = 0x08000000u;
 inline constexpr std::uint32_t kBootstrapUid = 0x7FFFFFFFu;
+inline constexpr std::uint32_t kDisplayIdleGate = 0x08000008u;
 
 // Explicit ownership for the current single-module experiment, not a PSP partition allocator.
 struct ThreadArena {
@@ -20,7 +21,7 @@ struct ThreadArena {
     std::uint32_t module_gp;
     std::uint32_t bootstrap_priority = 0, bootstrap_stack_size = 0;
 };
-enum class ThreadStatus : std::uint32_t { Running = 1, Ready = 2, Dormant = 16 };
+enum class ThreadStatus : std::uint32_t { Running = 1, Ready = 2, Waiting = 4, Dormant = 16 };
 struct GuestThread {
     std::uint32_t uid, entry, priority, attributes, stack_base, stack_size, gp;
     std::string name;
@@ -28,6 +29,7 @@ struct GuestThread {
     psprecomp::AllegrexContext context{};
     std::uint32_t exit_status = 0;
     std::uint64_t stack_ticket = 0;
+    std::optional<std::uint64_t> display_deadline;
 };
 struct GuestMutex {
     std::string name;
@@ -49,6 +51,13 @@ public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
+    [[nodiscard]] bool in_interrupt() const { return in_interrupt_; }
+    bool enter_interrupt();
+    void leave_interrupt();
+    bool wait_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t edge);
+    void wake_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t edge);
+    bool cancel_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint32_t uid);
+    void reschedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) { if (!in_interrupt_) schedule(rt, c); }
     [[nodiscard]] const std::map<std::uint32_t, GuestMutex>& mutexes() const { return mutexes_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestVTimer>& timers() const { return timers_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestCallback>& callbacks() const { return callbacks_; }
@@ -91,6 +100,7 @@ private:
     std::uint32_t current_uid_ = 0;
     std::uint32_t next_uid_ = 1;
     bool interrupts_enabled_ = true;
+    bool in_interrupt_ = false;
     std::map<std::uint32_t, GuestMutex> mutexes_;
     std::uint32_t next_mutex_uid_ = 0x30000000u;
     std::map<std::uint32_t, GuestVTimer> timers_;

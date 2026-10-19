@@ -3,6 +3,50 @@
 #include <algorithm>
 
 namespace azazel6 {
+bool ThreadRegistry::wait_display(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint64_t edge) {
+    auto* thread = find(current_uid_);
+    if (!thread || thread->status != ThreadStatus::Running || !interrupts_enabled_ || in_interrupt_ || !edge) {
+        rt.stop("Display wait requires a running thread with interrupts enabled"); return false;
+    }
+    thread->context = c;
+    thread->context.pc = c.gpr[31];
+    thread->display_deadline = edge;
+    thread->status = ThreadStatus::Waiting;
+    schedule(rt, c);
+    return true;
+}
+void ThreadRegistry::wake_display(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint64_t edge) {
+    auto wake = [edge](GuestThread& thread) {
+        if (thread.status == ThreadStatus::Waiting && thread.display_deadline && *thread.display_deadline <= edge) {
+            thread.display_deadline.reset(); thread.context.set_gpr(2, 0); thread.status = ThreadStatus::Ready;
+        }
+    };
+    wake(bootstrap_);
+    for (auto& thread : threads_) wake(thread);
+    reschedule(rt, c);
+}
+bool ThreadRegistry::cancel_display(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint32_t uid) {
+    auto* thread = find(uid);
+    if (!thread || thread->status != ThreadStatus::Waiting || !thread->display_deadline) return false;
+    thread->display_deadline.reset(); thread->context.set_gpr(2, 0x800201A9u); thread->status = ThreadStatus::Ready;
+    reschedule(rt, c);
+    return true;
+}
+bool ThreadRegistry::enter_interrupt() {
+    if (in_interrupt_ || !interrupts_enabled_) return false;
+    in_interrupt_ = true;
+    interrupts_enabled_ = false;
+    return true;
+}
+void ThreadRegistry::leave_interrupt() {
+    if (!in_interrupt_) throw psprecomp::Error("No interrupt context to restore");
+    in_interrupt_ = false;
+    interrupts_enabled_ = true; // Delivery is allowed only from an enabled context.
+    if (!current_uid_) { psprecomp::set_runtime_thread_identity(0, "display_idle"); return; }
+    const auto* current = find(current_uid_);
+    if (!current) throw psprecomp::Error("Lost interrupt thread ownership");
+    psprecomp::set_runtime_thread_identity(static_cast<std::int32_t>(current_uid_), current->name);
+}
 namespace {
 constexpr std::uint32_t no_memory = 0x80020190u;
 constexpr std::uint32_t no_fill = 0x00100000u, clear_stack = 0x00200000u;
@@ -54,15 +98,17 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         [state](auto& runtime, auto& c) { state->allocate_pool(runtime, c, false); });
     rt.register_hle("ThreadManForUser", 0xF6414A71u,
         [state](auto& runtime, auto& c) { state->free_pool(runtime, c); });
-    rt.register_hle("Kernel_Library", 0x092968F4u, [state](auto&, auto& ctx) {
+    rt.register_hle("Kernel_Library", 0x092968F4u, [state](auto& runtime, auto& ctx) {
+        if (state->in_interrupt_) { runtime.stop("Interrupt-handler mask mutation is unsupported"); return; }
         ctx.set_gpr(2, state->interrupts_enabled_ ? 1u : 0u);
         state->interrupts_enabled_ = false;
     });
     const auto resume = [state](auto& runtime, auto& ctx) {
+        if (state->in_interrupt_) { runtime.stop("Interrupt-handler mask mutation is unsupported"); return; }
         if (ctx.gpr[4] > 1) { runtime.stop("Unsupported interrupt controller flags"); return; }
         state->interrupts_enabled_ = ctx.gpr[4] != 0;
         // Firmware's resume service is void and leaves v0 untouched.
-        // No asynchronous interrupt sources exist in this bounded runtime yet.
+        // Pending sources may be delivered by the profile at the next outer boundary.
     };
     rt.register_hle("Kernel_Library", 0x5F10D406u, resume);
     rt.register_hle("Kernel_Library", 0x3B84732Du, resume);
@@ -152,6 +198,9 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     rt.register_function(kThreadReturnGate, [](auto& runtime, auto& ctx) {
         runtime.invoke_import("Azazel6Host", 1, ctx);
     }, "host_thread_return");
+    rt.register_function(kDisplayIdleGate, [](auto& runtime, auto&) {
+        runtime.stop("Display idle requires an explicit guest-clock producer");
+    }, "host_display_idle");
     if (arena.bootstrap_priority) {
         state->bootstrap_ = {kBootstrapUid, rt.cpu().pc, arena.bootstrap_priority, 0x800000FFu,
                             arena.end, arena.bootstrap_stack_size, arena.module_gp, "module_start"};
@@ -323,7 +372,15 @@ void ThreadRegistry::schedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext
     consider(bootstrap_);
     for (auto& thread : threads_) consider(thread);
     if (best == current && best) return;
-    if (!best) { current_uid_ = 0; rt.stop("No runnable guest threads"); return; }
+    if (!best) {
+        const auto waiting = [](const GuestThread& thread) { return thread.display_deadline.has_value(); };
+        current_uid_ = 0;
+        if (waiting(bootstrap_) || std::any_of(threads_.begin(), threads_.end(), waiting)) {
+            ctx = {}; ctx.pc = kDisplayIdleGate;
+            psprecomp::set_runtime_thread_identity(0, "display_idle");
+        } else rt.stop("No runnable guest threads");
+        return;
+    }
     if (current && current->status == ThreadStatus::Running) {
         current->context = ctx;
         current->status = ThreadStatus::Ready;

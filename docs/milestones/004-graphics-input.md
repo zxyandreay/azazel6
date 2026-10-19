@@ -1,6 +1,9 @@
 # Milestone 004: graphics and input
 
-**READY TO START, 2026-10-20.** The bounded native startup reaches registration of
+**IN PROGRESS, 2026-10-20.** The bounded native startup completes registration and
+enable of its VBLANK handler. The [display foundation](../research/display-foundation.md)
+adds synthetic clock, interrupt delivery, wait/cancellation and framebuffer contracts.
+No visual gate is complete. At the initial handoff, startup reached registration of
 its VBLANK handler after owning a GE finish callback. The EDRAM size query is
 implemented against allocated guest VRAM. All 59 constructors, the 2048-record
 initialization loop and the documented startup kernel services complete; two

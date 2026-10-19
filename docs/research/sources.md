@@ -33,3 +33,9 @@ Azazel6 or linked; this is emulator behavior, not a reproduced hardware result.
 **Additional inspection, 2026-10-20:** the same pinned PSPSDK GE/display and
 interrupt headers/export tables, and uOFW GE callback registration/unset behavior
 were inspected for the graphics handoff. No source implementation was copied.
+
+**Additional inspection, 2026-10-20:** PPSSPP `Core/HLE/sceKernelInterrupt.cpp`
+and `Core/HLE/sceDisplay.cpp` at the same fixed `cd94e414cde964bf25ec67267f64fcd3d01283bb`
+revision were read through the GitHub connector for interrupt ownership, LCD
+frequency, display wait and framebuffer latch contracts. No implementation was
+copied or linked. See [display foundation](display-foundation.md).
