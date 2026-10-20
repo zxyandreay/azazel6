@@ -58,6 +58,7 @@ public:
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
     [[nodiscard]] bool in_interrupt() const { return in_interrupt_; }
+    [[nodiscard]] bool can_idle_display() const;
     bool enter_interrupt();
     void leave_interrupt();
     bool wait_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t edge);

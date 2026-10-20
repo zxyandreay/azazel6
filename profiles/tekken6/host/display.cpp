@@ -50,10 +50,22 @@ void DisplayBuffers::vblank() noexcept {
     if (pending_) { current_ = latched_; pending_ = false; }
 }
 std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
-    std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<InterruptDelivery> interrupts) {
+    std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<InterruptDelivery> interrupts,
+    std::uint64_t idle_frame_budget) {
     if (!threads || !interrupts) throw psprecomp::Error("Display requires owned threads and interrupts");
+    if (idle_frame_budget > DisplayClock::max_events) throw psprecomp::Error("Idle frame budget exceeds limit");
     auto state = std::make_shared<DisplayState>();
     state->runtime_ = &rt; state->threads_ = std::move(threads); state->interrupts_ = std::move(interrupts);
+    state->idle_limit_ = idle_frame_budget;
+    if (idle_frame_budget) {
+        rt.register_hle("Azazel6Host", 3, [state](auto& runtime, auto&) {
+            try { state->advance_idle(runtime); }
+            catch (const psprecomp::Error& e) { runtime.stop(e.what()); }
+        });
+        rt.register_function(kDisplayIdleGate, [](auto& runtime, auto& c) {
+            runtime.invoke_import("Azazel6Host", 3, c);
+        }, "host_bounded_display_idle");
+    }
     rt.register_hle("sceDisplay", 0x289D82FEu, [state](auto& runtime, auto& c) {
         try {
             const auto result = state->buffers.set(runtime.memory(), {c.gpr[4], c.gpr[5], c.gpr[6]}, c.gpr[7]);
@@ -69,6 +81,13 @@ std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
         state->threads_->wait_display(runtime, c, state->clock.frames() + 1);
     });
     return state;
+}
+void DisplayState::advance_idle(psprecomp::Runtime& rt) {
+    if (!idle_limit_ || idle_frames_ >= idle_limit_) throw psprecomp::Error("Idle display frame budget exhausted");
+    if (!threads_->can_idle_display() || rt.cpu().pc != kDisplayIdleGate)
+        throw psprecomp::Error("Idle display advance requires all threads blocked and a display waiter");
+    advance(rt, DisplayClock::ticks_per_frame - clock.ticks() % DisplayClock::ticks_per_frame);
+    ++idle_frames_;
 }
 void DisplayState::advance(psprecomp::Runtime& rt, std::uint64_t ticks) {
     if (&rt != runtime_) throw psprecomp::Error("Display runtime ownership mismatch");

@@ -45,13 +45,17 @@ public:
     std::uint64_t buffer_requests = 0;
     // An explicit time producer must return control for guest callbacks at each edge.
     void advance(psprecomp::Runtime&, std::uint64_t ticks);
+    // Research-only idle jump. Never converts runnable execution into elapsed time.
+    void advance_idle(psprecomp::Runtime&);
+    [[nodiscard]] std::uint64_t idle_frames() const noexcept { return idle_frames_; }
 private:
     friend std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
-        std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>);
+        std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>, std::uint64_t);
     psprecomp::Runtime* runtime_ = nullptr;
     std::shared_ptr<ThreadRegistry> threads_;
     std::shared_ptr<InterruptDelivery> interrupts_;
+    std::uint64_t idle_limit_ = 0, idle_frames_ = 0;
 };
 std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
-    std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>);
+    std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>, std::uint64_t idle_frame_budget = 0);
 }

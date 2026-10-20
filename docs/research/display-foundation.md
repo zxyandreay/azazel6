@@ -5,15 +5,19 @@
 included in AOT coverage. Registration checks executable bounds and an existing
 AOT entry. Duplicate registration and missing release use documented errors;
 unimplemented controllers and unsupported pointers stop the experiment.
-Startup now accepts the observed display-off framebuffer request and enters a
-Waiting state at `sceDisplayWaitVblank`. The scheduler transfers to a priority-48
-worker while the priority-40 graphics thread remains waiting. No frame event has
-been produced in the real run. The clock does not advance on import calls.
-The 267-root/23338-word slice enters worker `0x089B5A70`, validates its observed
-vtable slot `0x08BB6E4C`, calls `0x089B5CBC` and acquires mutex `0x30000003`.
-Its next member call at `0x089B5CFC` remains guarded; the observed target is
-`0x089B5AFC`. Task-object callback `0x089B5AA8` is also a terminal guard. None
-of these guards authorizes a guessed callback target.
+**VERIFIED current native checkpoint:** startup accepts its display-off framebuffer
+request, waits for VBLANK and runs both priority-48 workers until they wait on the
+shared event flag. Worker queue-empty dispatch is admitted through validated
+vtable slot `0x08BB6E50`; task-object callback `0x089B5AA8` remains guarded.
+The 268-root/23404-word slice then reaches the scheduler's idle gate.
+
+The probe explicitly enables [bounded idle events](../decisions/ADR-0002-bounded-idle-events.md).
+With all threads blocked, it jumps to one LCD edge, executes the actual four-word
+VBLANK handler at `0x08AC6C74`, returns through the guarded interrupt gate, and
+resumes the graphics thread at `0x08AC7548`. The framebuffer-off request latches.
+Execution then reaches `sceGeListEnQueue` (`0xAB49E76A`) with a static list, null
+stall/options and callback ID -1. This is native control-flow evidence under a
+restricted idle clock, not measured game timing or rendering.
 
 **VERIFIED synthetic contracts:** owned interrupt delivery uses a separate 4096-byte
 guest allocation, bounded pending events, registration generations, the module GP,
@@ -57,5 +61,5 @@ PSP hardware evidence. No reference implementation was copied or linked.
 
 **BLOCKED visual verification:** `adb devices` reports no attached device. Android
 cross-compilation cannot establish title rendering, menu input or resource
-lifetime on hardware. **PLANNED:** an accounted guest-time producer, additional observed
+lifetime on hardware. **PLANNED:** runnable guest-time accounting, additional observed
 display services, game GE list execution, Android surface/Vulkan and input integration.

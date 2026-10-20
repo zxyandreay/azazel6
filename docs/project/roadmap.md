@@ -6,7 +6,7 @@ These are dependency-ordered research milestones, not delivery promises.
 | --- | --- | --- |
 | 001 Foundation | Implemented | Pinned framework, validation, analysis, native entry slice, Android cross-build |
 | 002 Native bring-up | Implemented: bounded native bootstrap and child execution | First import semantics, wider verified AOT coverage, bootstrap ABI, explicit failure boundaries |
-| 003 Boot sequence | In progress: startup reaches VBLANK registration; title gate remains open | Kernel threads, scheduler, I/O, module loading and title-screen progression |
+| 003 Boot sequence | In progress: startup resumes after an idle VBLANK and reaches GE enqueue; title gate remains open | Kernel threads, scheduler, I/O, module loading and title-screen progression |
 | 004 Graphics/input | In progress: [interrupt/display foundation](../milestones/004-graphics-input.md) | GE/Vulkan correctness, menus, gamepads and multitouch |
 | 005 Stock combat | Planned | Character selection, training, advancing simulation, audio and stable stock matches |
 | 006 Ultrawide | Planned | Verified 3D projection and semantic HUD ownership, round-win matrix |

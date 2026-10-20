@@ -43,8 +43,9 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
 - **VERIFIED:** observed VBLANK registration/enable, handler AOT coverage and
   synthetic full-context delivery on an owned stack.
 - **VERIFIED:** exact rational LCD event clock, VBLANK phases, waiting/cancellation
-  and integrated event ordering in synthetic execution. A production guest-time
-  producer remains required; dispatch counts are not elapsed guest cycles.
+  and integrated event ordering in synthetic execution. An explicit bounded idle producer executes the real handler once all threads
+  block. Runnable guest-time accounting remains required; dispatch counts are not
+  elapsed guest cycles.
 - **VERIFIED:** checked framebuffer descriptors/latches and the observed display-off
   SetFrameBuf/WaitVblank path. Other display services remain observation-driven.
 - **VERIFIED:** [GE control-stream contracts](../research/ge-lists.md), including
@@ -55,8 +56,8 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
   Android device. The milestone is not ready to advance to stock combat.
 
 The event scheduler now queues both observed worker waits, with checked FIFO
-wakeup, cancellation and output ownership. Native startup reaches the explicit
-idle-clock boundary after 17240 dispatches; no guest time was injected.
+wakeup, cancellation and output ownership. The explicit research idle producer resumes the graphics thread after one
+VBLANK and reaches the first real GE list enqueue. No rendering is claimed.
 
 Validation: 47 Python tests, 17 integrated CTest suites and Android ARM64
 cross-compilation pass. Raw traces and translations remain local.

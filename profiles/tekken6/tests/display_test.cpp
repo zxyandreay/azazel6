@@ -36,7 +36,7 @@ void wait_contracts() {
     rt->invoke_import("Kernel_Library", 0x092968F4u, c);
     check(!threads->wait_display(*rt, c, 4) && rt->stopped(), "Wait while interrupts suspended");
 }
-void event_contracts() {
+void event_contracts(bool idle) {
     using namespace azazel6;
     auto rt = std::make_unique<psprecomp::Runtime>();
     auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
@@ -44,7 +44,8 @@ void event_contracts() {
         0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
     auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
     auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
-    auto display = register_display_hle(*rt, threads, delivery);
+    auto display = register_display_hle(*rt, threads, delivery, idle ? 1 : 0);
+    rejects([&] { display->advance_idle(*rt); }, "Idle advance while guest runnable");
     rt->register_function(0x08001000u, [](auto& runtime, auto& c) {
         runtime.memory().store32(c.gpr[5], 1);
         c.gpr[16] = 0xBADu; c.fcr31 = 0; c.vfpu[127] = 0;
@@ -63,20 +64,44 @@ void event_contracts() {
     rt->invoke_import("sceDisplay", 0x36CDFADEu, c);
     rejects([&] { display->advance(*rt, DisplayClock::ticks_per_frame + 1); }, "Multiple unscheduled edges accepted");
     check(display->clock.ticks() == 0, "Rejected advance changed time");
-    display->advance(*rt, DisplayClock::ticks_per_frame);
-    check(delivery->active() && threads->current_uid() == 0 && c.pc == 0x08001000u &&
-          display->buffers.current().address == 0x04000000u, "Interrupt-before-wakeup and latch order");
-    rejects([&] { display->advance(*rt, 1); }, "Clock advanced through an unfinished handler");
+    if (!idle) {
+        display->advance(*rt, DisplayClock::ticks_per_frame);
+        check(delivery->active() && threads->current_uid() == 0 && c.pc == 0x08001000u &&
+              display->buffers.current().address == 0x04000000u, "Interrupt-before-wakeup and latch order");
+        rejects([&] { display->advance(*rt, 1); }, "Clock advanced through an unfinished handler");
+    }
     rt->run(c.pc, 8);
     check(rt->stop_reason() == "synthetic frame complete" && rt->memory().load32(0x08004000u) == 1 &&
           threads->current_uid() == kBootstrapUid && c.gpr[2] == 0 && c.gpr[16] == 99 &&
-          c.fcr31 == 23 && c.vfpu[127] == 123 && !delivery->active(), "Integrated callback return and waiting context");
+          c.fcr31 == 23 && c.vfpu[127] == 123 && !delivery->active() &&
+          display->clock.frames() == 1 && display->idle_frames() == (idle ? 1 : 0),
+          "Integrated callback return and waiting context");
+}
+void idle_boundaries() {
+    using namespace azazel6;
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+    auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+        0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+    auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+    auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+    rejects([&] { register_display_hle(*rt, threads, delivery, 1025); }, "Unbounded idle producer");
+    auto display = register_display_hle(*rt, threads, delivery, 1);
+    threads->wait_display(*rt, rt->cpu(), 2);
+    auto other = std::make_unique<psprecomp::Runtime>(); other->cpu().pc = kDisplayIdleGate;
+    rejects([&] { display->advance_idle(*other); }, "Cross-runtime idle producer");
+    check(display->clock.ticks() == 0 && display->idle_frames() == 0, "Rejected idle changed clock");
+    rt->run(kDisplayIdleGate, 4);
+    check(rt->stop_reason() == "Idle display frame budget exhausted" && display->idle_frames() == 1 &&
+          display->clock.frames() == 1 && threads->current_uid() == 0, "Idle budget or early wake");
 }
 }
 int main() {
     try {
         wait_contracts();
-        event_contracts();
+        event_contracts(false);
+        event_contracts(true);
+        idle_boundaries();
         using namespace azazel6;
         DisplayClock clock;
         constexpr auto frame = DisplayClock::ticks_per_frame;

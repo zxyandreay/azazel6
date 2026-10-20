@@ -81,7 +81,10 @@ int main(int argc, char** argv) {
             image_segment->vaddr + image_segment->file_size, module.gp,
             AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size}, allocator);
         const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
-        const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery);
+        // Bounded research mode: jump only while every thread is blocked.
+        // Runnable CPU time is not modeled; these frames are not measured game timing.
+        const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
+        std::cout << "guest_clock_mode=bounded_idle_events frame_budget=64" << std::endl;
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
                   << " initial_sp=" << hex32(rt->cpu().gpr[29]) << std::endl;
@@ -108,6 +111,7 @@ int main(int argc, char** argv) {
                   << " vblank_enabled=" << interrupts->enabled << std::endl;
         std::cout << "display_buffer_requests=" << display->buffer_requests
                   << " display_frames=" << display->clock.frames()
+                  << " display_idle_frames=" << display->idle_frames()
                   << " display_latch_pending=" << display->buffers.pending() << std::endl;
         std::cout << "language=" << language->language << " confirm_button=" << language->confirm_button
                   << " language_reads=" << language->reads << " language_writes=" << language->writes << std::endl;

@@ -3,6 +3,16 @@
 #include <algorithm>
 
 namespace azazel6 {
+bool ThreadRegistry::can_idle_display() const {
+    if (current_uid_ || in_interrupt_ || !interrupts_enabled_) return false;
+    bool display_wait = false;
+    auto blocked = [&display_wait](const GuestThread& t) {
+        if (t.status == ThreadStatus::Running || t.status == ThreadStatus::Ready) return false;
+        display_wait |= t.status == ThreadStatus::Waiting && t.display_deadline.has_value();
+        return true;
+    };
+    return blocked(bootstrap_) && std::all_of(threads_.begin(), threads_.end(), blocked) && display_wait;
+}
 bool ThreadRegistry::wait_display(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint64_t edge) {
     auto* thread = find(current_uid_);
     if (!thread || thread->status != ThreadStatus::Running || !interrupts_enabled_ || in_interrupt_ || !edge) {
