@@ -30,6 +30,7 @@ struct GuestThread {
     std::uint32_t exit_status = 0;
     std::uint64_t stack_ticket = 0;
     std::optional<std::uint64_t> display_deadline;
+    std::optional<std::uint32_t> event_wait;
 };
 struct GuestMutex {
     std::string name;
@@ -45,7 +46,12 @@ struct GuestFixedPool {
     std::uint32_t block_size, alignment, attributes;
     bool allocated = false;
 };
-struct GuestEventFlag { std::string name; std::uint32_t attributes, initial, pattern; };
+struct EventWait { std::uint32_t thread, bits, mode, output; };
+struct GuestEventFlag {
+    std::string name;
+    std::uint32_t attributes, initial, pattern;
+    std::vector<EventWait> waiters;
+};
 class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
@@ -93,6 +99,10 @@ private:
     void delete_event(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void update_event(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool clear);
     void poll_event(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
+    void cancel_event(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    bool wake_event(psprecomp::Runtime&, std::uint32_t uid, GuestEventFlag&,
+                    std::uint32_t pattern, std::uint32_t result);
+    bool event_output(psprecomp::Runtime&, std::uint32_t address) const;
     ThreadArena arena_;
     std::shared_ptr<GuestAllocator> allocator_;
     std::vector<GuestThread> threads_;

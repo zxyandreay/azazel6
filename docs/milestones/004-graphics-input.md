@@ -7,7 +7,7 @@ No visual gate is complete. At the initial handoff, startup reached registration
 its VBLANK handler after owning a GE finish callback. The EDRAM size query is
 implemented against allocated guest VRAM. All 59 constructors, the 2048-record
 initialization loop and the documented startup kernel services complete; two
-worker threads remain Ready. See [handoff evidence](../research/ge-callbacks.md).
+worker threads now wait on their shared event flag. See [handoff evidence](../research/ge-callbacks.md).
 
 This is a dependency handoff, not completion of Milestone 003. Its title-screen
 gate remains open: display events and graphics integration are now required to
@@ -53,6 +53,10 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
 - **PLANNED:** Android surface/Vulkan and input. No actual game command stream or
   menu has yet executed. **BLOCKED:** real-device exit verification has no attached
   Android device. The milestone is not ready to advance to stock combat.
+
+The event scheduler now queues both observed worker waits, with checked FIFO
+wakeup, cancellation and output ownership. Native startup reaches the explicit
+idle-clock boundary after 17240 dispatches; no guest time was injected.
 
 Validation: 47 Python tests, 17 integrated CTest suites and Android ARM64
 cross-compilation pass. Raw traces and translations remain local.

@@ -80,6 +80,8 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         [state](auto& runtime, auto& c) { state->create_event(runtime, c); });
     rt.register_hle("ThreadManForUser", 0xEF9E4C70u,
         [state](auto& runtime, auto& c) { state->delete_event(runtime, c); });
+    rt.register_hle("ThreadManForUser", 0xCD203292u,
+        [state](auto& runtime, auto& c) { state->cancel_event(runtime, c); });
     rt.register_hle("ThreadManForUser", 0x1FB15A32u,
         [state](auto& runtime, auto& c) { state->update_event(runtime, c, false); });
     rt.register_hle("ThreadManForUser", 0x812346E4u,
@@ -373,7 +375,7 @@ void ThreadRegistry::schedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext
     for (auto& thread : threads_) consider(thread);
     if (best == current && best) return;
     if (!best) {
-        const auto waiting = [](const GuestThread& thread) { return thread.display_deadline.has_value(); };
+        const auto waiting = [](const GuestThread& thread) { return thread.display_deadline || thread.event_wait; };
         current_uid_ = 0;
         if (waiting(bootstrap_) || std::any_of(threads_.begin(), threads_.end(), waiting)) {
             ctx = {}; ctx.pc = kDisplayIdleGate;

@@ -8,6 +8,7 @@ constexpr std::uint32_t name = 0x08003000u, output = 0x08004000u;
 constexpr std::uint32_t create_nid = 0x55C20A00u, delete_nid = 0xEF9E4C70u;
 constexpr std::uint32_t set_nid = 0x1FB15A32u, clear_nid = 0x812346E4u;
 constexpr std::uint32_t poll_nid = 0x30FD48F0u, wait_nid = 0x402FCF22u;
+constexpr std::uint32_t cancel_nid = 0xCD203292u;
 void check(bool ok, const char* why) { if (!ok) throw std::runtime_error(why); }
 struct Fixture {
     std::unique_ptr<psprecomp::Runtime> rt = std::make_unique<psprecomp::Runtime>();
@@ -23,7 +24,63 @@ struct Fixture {
     std::uint32_t create(std::uint32_t pattern = 5, std::uint32_t attr = 0x200) {
         return call(create_nid, name, attr, pattern);
     }
+    std::uint32_t worker(std::uint32_t priority) {
+        rt->register_function(0x08001000u, [](auto&, auto&) {}, "synthetic_worker");
+        rt->cpu().gpr[9] = 0;
+        const auto uid = call(kCreateThreadNid, name, 0x08001000u, priority, 512);
+        call(kStartThreadNid, uid);
+        check(!rt->stopped(), "Worker creation/start");
+        return uid;
+    }
 };
+void queued_waits() {
+    Fixture f; const auto uid = f.create(0);
+    const auto first = f.worker(40), second = f.worker(48);
+    f.rt->memory().store32(output, 0x11223344u);
+    f.rt->cpu().gpr[16] = 42; f.rt->cpu().vfpu[127] = 123;
+    f.call(wait_nid, uid, 1, 0x20, output);
+    check(f.threads->current_uid() == first && f.rt->memory().load32(output) == 0x11223344u,
+          "Wait must switch without writing output");
+    f.call(wait_nid, uid, 1, 0, output + 4);
+    check(f.threads->current_uid() == second, "Second waiter did not yield");
+    f.call(set_nid, uid, 1);
+    check(f.threads->current_uid() == kBootstrapUid && f.rt->cpu().gpr[2] == 0 &&
+          f.rt->cpu().gpr[16] == 42 && f.rt->cpu().vfpu[127] == 123 &&
+          f.rt->cpu().pc == 0x08001800u && f.rt->memory().load32(output) == 1 &&
+          f.threads->event_flags().at(uid).pattern == 0 &&
+          f.threads->event_flags().at(uid).waiters.size() == 1,
+          "FIFO clear/preemption/context restoration");
+    f.call(delete_nid, uid);
+    const auto threads = f.threads->snapshot();
+    check(threads[0].uid == first && threads[0].status == ThreadStatus::Ready &&
+          !threads[0].event_wait && threads[0].context.gpr[2] == 0x800201B5u &&
+          f.rt->memory().load32(output + 4) == 0, "Delete did not release retained waiter");
+
+    Fixture cancel; const auto event = cancel.create(0); cancel.worker(40);
+    cancel.call(wait_nid, event, 1, 0, output);
+    cancel.call(cancel_nid, event, 7, output + 4);
+    check(cancel.threads->current_uid() == kBootstrapUid && cancel.rt->cpu().gpr[2] == 0x800201A9u &&
+          cancel.rt->memory().load32(output) == 7 && cancel.rt->memory().load32(output + 4) == 1 &&
+          cancel.threads->event_flags().at(event).pattern == 7 &&
+          cancel.threads->event_flags().at(event).waiters.empty(), "Cancellation pattern/count/result");
+
+    Fixture single; const auto one = single.create(0, 0); single.worker(40);
+    single.call(wait_nid, one, 1);
+    check(single.call(poll_nid, one, 1, 0, output) == 0x800201B0u &&
+          single.rt->memory().load32(output) == 0, "Single-waiter poll error/output");
+    check(single.call(wait_nid, one, 1) == 0x800201B0u &&
+          single.threads->event_flags().at(one).waiters.size() == 1, "Single-waiter attribute");
+    single.call(set_nid, one, 1);
+    check(single.threads->current_uid() == kBootstrapUid, "Single waiter wake");
+
+    Fixture invalid; const auto bad = invalid.create(0); invalid.worker(40);
+    invalid.call(wait_nid, bad, 1, 0, output);
+    invalid.rt->register_function(output, [](auto&, auto&) {}, "new_code_ownership");
+    invalid.call(set_nid, bad, 1);
+    check(invalid.rt->stopped() && invalid.threads->event_flags().at(bad).pattern == 0 &&
+          invalid.threads->event_flags().at(bad).waiters.size() == 1,
+          "Retained output revalidation must precede mutation");
+}
 void lifecycle() {
     Fixture f; const auto first = f.create(0x80000005u);
     check(first == 0x70000000u && f.rt->cpu().pc == 0x08001800u, "Create UID/ABI");
@@ -55,6 +112,10 @@ void matching() {
         check(f.threads->event_flags().at(uid).pattern == expected, "Clear mode");
     }
     Fixture f; const auto uid = f.create();
+    check(f.call(wait_nid, uid, 1, 0x30, output) == 0 &&
+          f.threads->event_flags().at(uid).pattern == 0 && f.rt->memory().load32(output) == 5,
+          "Wait accepts combined clear modes with clear-all result");
+    f.call(set_nid, uid, 5);
     check(f.call(wait_nid, uid, 5, 0x20, 0) == 0 && f.threads->event_flags().at(uid).pattern == 0,
         "Immediate wait/null result");
     f.call(set_nid, uid, 4);
@@ -85,10 +146,12 @@ void rejecting_boundaries() {
     check(timeout.call(wait_nid, timed, 5, 0x10, output, output + 4) == 0xDEADBEEFu &&
         timeout.rt->stopped() && timeout.threads->event_flags().at(timed).pattern == 5, "Unsupported timeout mutated event");
     Fixture wait; const auto waiting = wait.create(); wait.rt->memory().store32(output, 0x11223344u);
-    check(wait.call(wait_nid, waiting, 2, 0x20, output) == 0xDEADBEEFu && wait.rt->stopped() &&
+    wait.call(wait_nid, waiting, 2, 0x20, output);
+    check(!wait.rt->stopped() && wait.threads->current_uid() == 0 &&
+        wait.rt->cpu().pc == kDisplayIdleGate && wait.threads->event_flags().at(waiting).waiters.size() == 1 &&
         wait.threads->event_flags().at(waiting).pattern == 5 && wait.rt->memory().load32(output) == 0x11223344u,
-        "Unsatisfied wait mutated state");
-    for (auto nid : {create_nid, delete_nid, set_nid, clear_nid, poll_nid, wait_nid}) {
+        "Unsatisfied wait did not retain context/output");
+    for (auto nid : {create_nid, delete_nid, set_nid, clear_nid, poll_nid, wait_nid, cancel_nid}) {
         Fixture f; const auto uid = f.create(); f.rt->invoke_import("Kernel_Library", 0x092968F4u, f.rt->cpu());
         check(f.call(nid, uid, 5) == 0xDEADBEEFu && f.rt->stopped() &&
             f.threads->event_flags().size() == 1 && f.threads->event_flags().at(uid).pattern == 5,
@@ -105,6 +168,6 @@ void rejecting_boundaries() {
 }
 }
 int main() {
-    try { lifecycle(); matching(); rejecting_boundaries(); std::cout << "Immediate event flag contracts passed\n"; }
+    try { lifecycle(); matching(); queued_waits(); rejecting_boundaries(); std::cout << "Event flag scheduler contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
