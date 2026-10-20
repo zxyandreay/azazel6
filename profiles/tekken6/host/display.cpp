@@ -49,4 +49,39 @@ std::uint32_t DisplayBuffers::set(const psprecomp::GuestMemory& mem, Framebuffer
 void DisplayBuffers::vblank() noexcept {
     if (pending_) { current_ = latched_; pending_ = false; }
 }
+std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
+    std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<InterruptDelivery> interrupts) {
+    if (!threads || !interrupts) throw psprecomp::Error("Display requires owned threads and interrupts");
+    auto state = std::make_shared<DisplayState>();
+    state->runtime_ = &rt; state->threads_ = std::move(threads); state->interrupts_ = std::move(interrupts);
+    rt.register_hle("sceDisplay", 0x289D82FEu, [state](auto& runtime, auto& c) {
+        try {
+            const auto result = state->buffers.set(runtime.memory(), {c.gpr[4], c.gpr[5], c.gpr[6]}, c.gpr[7]);
+            if (!result) ++state->buffer_requests;
+            c.set_gpr(2, result);
+        } catch (const psprecomp::Error& e) { runtime.stop(e.what()); }
+    });
+    rt.register_hle("sceDisplay", 0x36CDFADEu, [state](auto& runtime, auto& c) {
+        if (state->threads_->in_interrupt() || !state->threads_->interrupts_enabled()) {
+            runtime.stop("Display wait requires an interruptible thread context"); return;
+        }
+        if (state->clock.in_vblank()) { c.set_gpr(2, 0); return; }
+        state->threads_->wait_display(runtime, c, state->clock.frames() + 1);
+    });
+    return state;
+}
+void DisplayState::advance(psprecomp::Runtime& rt, std::uint64_t ticks) {
+    if (&rt != runtime_) throw psprecomp::Error("Display runtime ownership mismatch");
+    if (rt.stopped() || interrupts_->active() || interrupts_->pending())
+        throw psprecomp::Error("Display advance requires a completed interrupt boundary");
+    const auto next = DisplayClock::ticks_per_frame - clock.ticks() % DisplayClock::ticks_per_frame;
+    if (ticks > next) throw psprecomp::Error("Display advance must yield at the next VBLANK edge");
+    const auto edges = clock.advance(ticks);
+    if (edges.empty()) return;
+    interrupts_->raise_vblank();
+    interrupts_->dispatch(rt, rt.cpu());
+    if (rt.stopped()) return;
+    threads_->wake_display(rt, rt.cpu(), clock.frames());
+    buffers.vblank();
+}
 }

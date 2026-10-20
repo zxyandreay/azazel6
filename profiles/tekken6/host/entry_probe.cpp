@@ -10,6 +10,7 @@
 #include "azazel6/graphics_memory.hpp"
 #include "azazel6/ge_callbacks.hpp"
 #include "azazel6/interrupts.hpp"
+#include "azazel6/display.hpp"
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -79,6 +80,8 @@ int main(int argc, char** argv) {
             image_segment->vaddr, image_end, image_segment->vaddr,
             image_segment->vaddr + image_segment->file_size, module.gp,
             AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size}, allocator);
+        const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
+        const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery);
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
                   << " initial_sp=" << hex32(rt->cpu().gpr[29]) << std::endl;
@@ -103,6 +106,9 @@ int main(int argc, char** argv) {
         std::cout << "ge_callback_count=" << ge_callbacks->count() << std::endl;
         std::cout << "vblank_registered=" << interrupts->vblank.has_value()
                   << " vblank_enabled=" << interrupts->enabled << std::endl;
+        std::cout << "display_buffer_requests=" << display->buffer_requests
+                  << " display_frames=" << display->clock.frames()
+                  << " display_latch_pending=" << display->buffers.pending() << std::endl;
         std::cout << "language=" << language->language << " confirm_button=" << language->confirm_button
                   << " language_reads=" << language->reads << " language_writes=" << language->writes << std::endl;
         std::cout << "callback_count=" << threads->callbacks().size()

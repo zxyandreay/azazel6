@@ -88,15 +88,32 @@ bool InterruptDelivery::dispatch(psprecomp::Runtime& rt, psprecomp::AllegrexCont
         pending_.pop_front();
     if (pending_.empty()) return false;
     const auto handler = *state_->vblank;
+    if (!enter(rt, c, handler, 0)) return false;
+    pending_.pop_front();
+    return true;
+}
+bool InterruptDelivery::enter(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c,
+                               VblankHandler handler, std::uint32_t value) {
     if (!rt.has_function(handler.function)) { rt.stop("VBLANK AOT coverage was removed"); return false; }
     if (!threads_->enter_interrupt()) { rt.stop("VBLANK requires a running thread context"); return false; }
-    saved_ = c; owner_ = threads_->current_uid(); pending_.pop_front();
+    saved_ = c; owner_ = threads_->current_uid();
     for (auto address = stack_.base; address < stack_.base + stack_.size; address += 4)
         rt.memory().store32(address, 0);
-    c.pc = handler.function; c.set_gpr(4, 0); c.set_gpr(5, handler.argument);
+    c.pc = handler.function; c.set_gpr(4, value); c.set_gpr(5, handler.argument);
     c.set_gpr(28, handler.gp); c.set_gpr(29, stack_.base + stack_.size - 16);
     c.set_gpr(31, kInterruptReturnGate);
     psprecomp::set_runtime_thread_identity(-2, "vblank_interrupt");
+    return true;
+}
+bool InterruptDelivery::dispatch_callback(psprecomp::Runtime& rt, std::uint32_t function,
+    std::uint32_t value, std::uint32_t argument, std::uint32_t gp, std::function<void()> completion) {
+    if (&rt != runtime_) throw psprecomp::Error("Callback runtime ownership mismatch");
+    if (rt.stopped() || !available()) return false;
+    if (!completion || gp < psprecomp::GuestMemory::kPhysicalBase ||
+        static_cast<std::uint64_t>(gp) >= psprecomp::GuestMemory::kPhysicalBase + static_cast<std::uint64_t>(rt.memory().size()))
+        throw psprecomp::Error("Invalid callback module/completion ownership");
+    if (!enter(rt, rt.cpu(), {function, argument, gp}, value)) return false;
+    completion_ = std::move(completion);
     return true;
 }
 void InterruptDelivery::finish(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
@@ -106,6 +123,9 @@ void InterruptDelivery::finish(psprecomp::Runtime& rt, psprecomp::AllegrexContex
     }
     c = *saved_; saved_.reset(); owner_ = 0;
     threads_->leave_interrupt();
+    auto completion = std::move(completion_);
+    completion_ = {};
+    if (completion) completion();
     threads_->reschedule(rt, c);
 }
 }

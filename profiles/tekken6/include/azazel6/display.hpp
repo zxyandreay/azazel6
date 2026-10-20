@@ -3,16 +3,20 @@
 #include <cstdint>
 #include <optional>
 #include <vector>
+#include "azazel6/interrupts.hpp"
 
 namespace azazel6 {
-// Explicit guest time in 9 MHz LCD ticks. No host clock or dispatch-count conversion.
+// Half-ticks of the 9 MHz LCD clock preserve the documented 731.5 us VBLANK interval.
+// No host clock or dispatch-count conversion.
 class DisplayClock {
 public:
-    static constexpr std::uint64_t ticks_per_second = 9000000;
-    static constexpr std::uint64_t ticks_per_frame = 525 * 286;
+    static constexpr std::uint64_t ticks_per_second = 18000000;
+    static constexpr std::uint64_t ticks_per_frame = 2 * 525 * 286;
+    static constexpr std::uint64_t vblank_ticks = 13167;
     static constexpr std::uint64_t max_events = 1024;
     [[nodiscard]] std::uint64_t ticks() const noexcept { return ticks_; }
     [[nodiscard]] std::uint64_t frames() const noexcept { return ticks_ / ticks_per_frame; }
+    [[nodiscard]] bool in_vblank() const noexcept { return frames() && ticks_ % ticks_per_frame < vblank_ticks; }
     // Validate the entire advance before mutation. Returned edges are strictly ordered.
     std::vector<std::uint64_t> advance(std::uint64_t ticks);
 private:
@@ -34,4 +38,20 @@ private:
     Framebuffer current_{}, latched_{};
     bool pending_ = false;
 };
+class DisplayState {
+public:
+    DisplayClock clock;
+    DisplayBuffers buffers;
+    std::uint64_t buffer_requests = 0;
+    // An explicit time producer must return control for guest callbacks at each edge.
+    void advance(psprecomp::Runtime&, std::uint64_t ticks);
+private:
+    friend std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
+        std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>);
+    psprecomp::Runtime* runtime_ = nullptr;
+    std::shared_ptr<ThreadRegistry> threads_;
+    std::shared_ptr<InterruptDelivery> interrupts_;
+};
+std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
+    std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>);
 }

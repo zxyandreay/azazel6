@@ -10,6 +10,7 @@ struct GeCallback {
 };
 struct GeCallbacks {
     std::array<std::optional<GeCallback>, 16> slots{};
+    std::array<std::uint64_t, 16> generations{};
     [[nodiscard]] std::size_t count() const noexcept;
 };
 // Own registrations only; GE list execution and interrupt delivery remain unsupported.

@@ -38,6 +38,25 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
    semantics while validating graphics. Ultrawide, texture replacements and combat
    modifications remain later milestones.
 
+## Implementation checkpoint
+
+- **VERIFIED:** observed VBLANK registration/enable, handler AOT coverage and
+  synthetic full-context delivery on an owned stack.
+- **VERIFIED:** exact rational LCD event clock, VBLANK phases, waiting/cancellation
+  and integrated event ordering in synthetic execution. A production guest-time
+  producer remains required; dispatch counts are not elapsed guest cycles.
+- **VERIFIED:** checked framebuffer descriptors/latches and the observed display-off
+  SetFrameBuf/WaitVblank path. Other display services remain observation-driven.
+- **VERIFIED:** [GE control-stream contracts](../research/ge-lists.md), including
+  stalls, control-flow budgets, stale callback generations and actual synthetic
+  AOT callback returns. Drawing commands and real-game GE imports remain rejecting.
+- **PLANNED:** Android surface/Vulkan and input. No actual game command stream or
+  menu has yet executed. **BLOCKED:** real-device exit verification has no attached
+  Android device. The milestone is not ready to advance to stock combat.
+
+Validation: 47 Python tests, 17 integrated CTest suites and Android ARM64
+cross-compilation pass. Raw traces and translations remain local.
+
 ## Exit evidence
 
 Require advancing display lists, correct visible menu rendering, working input,

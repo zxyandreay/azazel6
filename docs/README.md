@@ -58,6 +58,7 @@ Reviewed 2026-10-20. Evidence labels apply to individual claims:
 - [Graphics memory startup boundary](research/graphics-memory.md)
 - [GE callback ownership and VBLANK handoff](research/ge-callbacks.md)
 - [VBLANK and display foundation](research/display-foundation.md)
+- [Bounded GE control streams](research/ge-lists.md)
 - [Dynamic code](research/dynamic-code.md)
 - [Moveset findings](research/moveset-findings.md)
 - [Open questions](research/open-questions.md)

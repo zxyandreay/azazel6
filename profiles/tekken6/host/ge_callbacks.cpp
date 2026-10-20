@@ -1,6 +1,7 @@
 #include "azazel6/ge_callbacks.hpp"
 #include "psprecomp/common.hpp"
 #include <algorithm>
+#include <limits>
 
 namespace azazel6 {
 std::size_t GeCallbacks::count() const noexcept {
@@ -32,6 +33,11 @@ std::shared_ptr<GeCallbacks> register_ge_callback_hle(psprecomp::Runtime& rt,
         const auto free = std::find_if(state->slots.begin(), state->slots.end(),
                                        [](const auto& slot) { return !slot.has_value(); });
         if (free == state->slots.end()) { c.set_gpr(2, 0x80000022u); return; }
+        const auto index = static_cast<std::size_t>(free - state->slots.begin());
+        if (state->generations[index] == std::numeric_limits<std::uint64_t>::max()) {
+            runtime.stop("GE callback generation exhausted"); return;
+        }
+        ++state->generations[index];
         *free = callback; // Copy before returning: the original record may be on a guest stack.
         c.set_gpr(2, static_cast<std::uint32_t>(free - state->slots.begin()));
     });

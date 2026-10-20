@@ -13,7 +13,7 @@ Azazel6 is not playable. See
 | Windows framework build/regressions | VERIFIED, three suites passed |
 | Python/profile tools | VERIFIED, 47 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; sixteen integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; seventeen integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
@@ -24,13 +24,13 @@ Azazel6 is not playable. See
 | Language settings | VERIFIED explicit English/Cross defaults and checked runtime-local get/set; no host locale dependency |
 | Event flags | VERIFIED create/delete, set/clear, polling and immediately satisfied waits; queued waits/timeouts remain rejecting |
 | Graphics memory | VERIFIED immutable EDRAM size/base queries backed by allocated guest VRAM; GE and display remain unimplemented |
-| GE callbacks | VERIFIED owned 16-slot registration/unset; list execution and delivery remain unimplemented |
+| GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; game GE services/rendering remain unimplemented |
 | VBLANK | VERIFIED real-input registration/enable and four-word handler AOT coverage; synthetic owned delivery and full context restoration |
-| Display foundation | VERIFIED synthetic rational LCD clock, checked framebuffer latches, waiting/cancellation; no guest-time producer or display HLE integration yet |
+| Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup accepts SetFrameBuf and waits in WaitVblank; guest-time producer remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED constructors, exit registration, 2048-record loop, fixed-pool allocation, language get/set and event creation; two workers Ready, EDRAM and GE callback registration complete; VBLANK registration/enable complete, expanding graphics-buffer setup coverage |
+| Native entry execution | VERIFIED startup graphics thread Waiting at VBLANK; first priority-48 worker runs and acquires its mutex; guarded worker queue dispatch is being expanded |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
