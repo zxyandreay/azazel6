@@ -88,9 +88,10 @@ void GeQueue::run(std::uint32_t budget) {
             case 0x00: break;
             case 0x10:
                 if (value & ~0x000F0000u) { fail(item, "Unsupported GE BASE bits"); return; }
-                item.base = value << 8; break;
+                state_.write(command); break;
             case 0x08: case 0x0A: {
-                const auto target = item.base | value;
+                if (state_.word(0x13)) { fail(item, "GE control flow with a nonzero offset is unimplemented"); return; }
+                const auto target = state_.word(0x10) << 8 | value;
                 check_word(item, target);
                 if (opcode == 0x0A) {
                     if (item.returns.size() >= 8) { fail(item, "GE call stack budget exhausted"); return; }
@@ -111,7 +112,9 @@ void GeQueue::run(std::uint32_t budget) {
             case 0x0C:
                 if (value || !item.terminal || !item.returns.empty()) { fail(item, "Invalid GE END flow"); return; }
                 terminal(item, id); break;
-            default: fail(item, "Unsupported GE command " + psprecomp::hex32(command)); return;
+            default:
+                if (!state_.write(command)) { fail(item, "Unsupported GE command " + psprecomp::hex32(command)); return; }
+                break;
             }
             item.pc = next; ++item.commands;
             if (item.status == GeStatus::Complete) { queue_.pop_front(); return; }
@@ -138,6 +141,53 @@ void GeQueue::complete_callback(std::uint64_t token) {
     item.event.reset(); item.event_taken = false;
     item.status = finish ? GeStatus::Complete : GeStatus::Queued;
     if (finish) queue_.pop_front();
+}
+std::shared_ptr<GeQueue> register_ge_list_hle(psprecomp::Runtime& rt, std::shared_ptr<GeCallbacks> callbacks,
+    std::shared_ptr<ThreadRegistry> threads, std::vector<GeSpan> spans) {
+    if (!threads || spans.size() > 64) throw psprecomp::Error("Invalid GE HLE ownership");
+    std::sort(spans.begin(), spans.end(), [](auto a, auto b) { return a.begin < b.begin; });
+    std::uint32_t previous = 0;
+    for (const auto span : spans) {
+        if ((span.begin | span.end) & 3u || span.begin < psprecomp::GuestMemory::kPhysicalBase ||
+            span.begin >= span.end || span.end - span.begin > 16384 || span.begin < previous ||
+            static_cast<std::uint64_t>(span.end) > psprecomp::GuestMemory::kPhysicalBase +
+                static_cast<std::uint64_t>(rt.memory().size()))
+            throw psprecomp::Error("Invalid GE HLE list lease");
+        previous = span.end;
+    }
+    auto queue = std::make_shared<GeQueue>(rt.memory(), std::move(callbacks));
+    rt.register_hle("sceGe_user", 0xAB49E76Au, [queue, threads, spans](auto& runtime, auto& c) {
+        if (!threads->current_uid() || threads->in_interrupt() || !threads->interrupts_enabled()) {
+            runtime.stop("GE enqueue requires an interruptible thread"); return;
+        }
+        const auto span = std::find_if(spans.begin(), spans.end(), [&](auto s) { return s.begin == c.gpr[4]; });
+        if (span == spans.end() || c.gpr[5] || c.gpr[6] != 0xFFFFFFFFu || c.gpr[7]) {
+            runtime.stop("GE enqueue requires a verified span and callback-free unstalled arguments"); return;
+        }
+        try {
+            const auto id = queue->enqueue(span->begin, span->end);
+            queue->run(65536);
+            const auto& list = queue->list(id);
+            if (list.status != GeStatus::Complete) {
+                runtime.stop(list.error.empty() ? "GE initialization did not complete within its command budget" : list.error);
+                return;
+            }
+            c.set_gpr(2, id);
+        } catch (const psprecomp::Error& e) { runtime.stop(e.what()); }
+    });
+    rt.register_hle("sceGe_user", 0x03444EB4u, [queue, threads](auto& runtime, auto& c) {
+        if (!threads->current_uid() || threads->in_interrupt() || !threads->interrupts_enabled()) {
+            runtime.stop("GE sync requires an interruptible thread"); return;
+        }
+        if (c.gpr[5] > 1) { runtime.stop("Unsupported GE sync mode"); return; }
+        try {
+            if (queue->list(c.gpr[4]).status != GeStatus::Complete) {
+                runtime.stop("GE sync requires completed work"); return;
+            }
+            c.set_gpr(2, 0);
+        } catch (const std::out_of_range&) { runtime.stop("GE sync list ID is not owned"); }
+    });
+    return queue;
 }
 bool dispatch_ge_callback(psprecomp::Runtime& rt, const std::shared_ptr<GeQueue>& queue,
                           InterruptDelivery& delivery, std::uint32_t gp) {

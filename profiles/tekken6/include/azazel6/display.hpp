@@ -43,6 +43,7 @@ public:
     DisplayClock clock;
     DisplayBuffers buffers;
     std::uint64_t buffer_requests = 0;
+    bool mode_set = false; // Only the observed LCD 480x272 mode is supported.
     // An explicit time producer must return control for guest callbacks at each edge.
     void advance(psprecomp::Runtime&, std::uint64_t ticks);
     // Research-only idle jump. Never converts runnable execution into elapsed time.

@@ -1,4 +1,5 @@
 #include "azazel6/ge_lists.hpp"
+#include "azazel6/bootstrap.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -55,6 +56,74 @@ void callback_execution() {
     rt->run(rt->cpu().pc, 8);
     check(rt->stop_reason() == "synthetic GE complete" && memory.load32(record + 16) == 42 &&
           rt->cpu().gpr[16] == 77 && queue->list(id).status == GeStatus::Complete, "Guest FINISH ABI/return/acknowledgment");
+}
+void state_contracts() {
+    Fixture f;
+    f.words({0x10080000u, 0x13000010u, 0x01004000u, 0x02008000u,
+             0x3C000000u, 0x3D3F8000u, 0x3DBF8000u, 0xD2000003u, 0x0F000000u, 0x0C000000u});
+    auto id = f.queue.enqueue(base, base + 40); f.queue.run(32);
+    check(f.queue.list(id).status == GeStatus::Complete && f.queue.state().writes() == 8 &&
+          f.queue.state().vertex_address() == 0x08005000u && f.queue.state().index_address() == 0x08009000u &&
+          f.queue.state().view_matrix_bits()[0] == 0x3F800000u &&
+          f.queue.state().view_matrix_bits()[1] == 0xBF800000u &&
+          f.queue.state().word(0xD2) == 3, "Retained GE register/address/float24 state");
+    f.words({0x3C00000Bu, 0x3D123456u, 0x3D654321u, 0x0F000000u, 0x0C000000u});
+    id = f.queue.enqueue(base, base + 20); f.queue.run(32);
+    check(f.queue.list(id).status == GeStatus::Failed &&
+          f.queue.state().view_matrix_bits()[11] == 0x12345600u &&
+          f.queue.state().word(0x3D) == 0x123456u, "Matrix overflow mutated retained state");
+    for (auto command : {0x04000003u, 0xEA000000u, 0xCB000000u, 0xC4000000u, 0xFF000000u}) {
+        Fixture unsupported; unsupported.words({command, 0x0F000000u, 0x0C000000u});
+        id = unsupported.queue.enqueue(base, base + 12); unsupported.queue.run(8);
+        check(unsupported.queue.list(id).status == GeStatus::Failed && unsupported.queue.state().writes() == 0,
+              "Draw/transfer/cache/unknown command silently accepted");
+    }
+    GeState address;
+    address.write(0x13FFFFFFu);
+    rejects([&] { address.write(0x01000000u); }, "Relative address overflow");
+    check(address.writes() == 1 && address.vertex_address() == 0, "Address rejection mutated state");
+    Fixture retained;
+    retained.words({0x10080000u, 0x0F000000u, 0x0C000000u});
+    id = retained.queue.enqueue(base, base + 12); retained.queue.run(8);
+    retained.words({0x08004004u, 0x0F000000u, 0x0C000000u});
+    id = retained.queue.enqueue(base, base + 12); retained.queue.run(8);
+    check(retained.queue.list(id).status == GeStatus::Complete, "List did not retain shared BASE register");
+    retained.words({0x13000001u, 0x08004000u});
+    id = retained.queue.enqueue(base, base + 8); retained.queue.run(8);
+    check(retained.queue.list(id).status == GeStatus::Failed &&
+          retained.queue.list(id).commands == 1, "Unimplemented offset branch executed");
+}
+void hle_contracts() {
+    Fixture f;
+    auto threads = register_thread_hle(*f.rt, {0x08010000u, 0x08020000u, code, 0x08010000u,
+        code, code + 256, record, 32, 4096});
+    rejects([&] { register_ge_list_hle(*f.rt, f.callbacks, threads, {{base, base + 4}, {base, base + 8}}); },
+            "Overlapping HLE leases");
+    auto queue = register_ge_list_hle(*f.rt, f.callbacks, threads, {{base, base + 16}});
+    f.words({0xD2000003u, 0x00000000u, 0x0F000000u, 0x0C000000u});
+    auto& c = f.rt->cpu();
+    c.gpr[4] = base; c.gpr[5] = 0; c.gpr[6] = 0xFFFFFFFFu; c.gpr[7] = 0; c.gpr[31] = code + 4;
+    invoke_returning_import(*f.rt, c, "sceGe_user", 0xAB49E76Au);
+    const auto id = c.gpr[2];
+    check(!f.rt->stopped() && queue->list(id).status == GeStatus::Complete &&
+          c.pc == code + 4 && queue->state().word(0xD2) == 3, "GE enqueue result/ABI/completion");
+    for (auto mode : {0u, 1u}) {
+        c.gpr[4] = id; c.gpr[5] = mode;
+        invoke_returning_import(*f.rt, c, "sceGe_user", 0x03444EB4u);
+        check(c.gpr[2] == 0 && !f.rt->stopped(), "Completed-list sync");
+    }
+    c.gpr[4] = base + 4; c.gpr[5] = 0; c.gpr[6] = 0xFFFFFFFFu; c.gpr[7] = 0; c.gpr[2] = 42;
+    f.rt->invoke_import("sceGe_user", 0xAB49E76Au, c);
+    check(f.rt->stopped() && queue->size() == 1 && c.gpr[2] == 42, "Unknown producer mutated queue/returned success");
+    Fixture bad;
+    auto bad_threads = register_thread_hle(*bad.rt, {0x08010000u, 0x08020000u, code, 0x08010000u,
+        code, code + 256, record, 32, 4096});
+    auto bad_queue = register_ge_list_hle(*bad.rt, bad.callbacks, bad_threads, {{base, base + 12}});
+    bad.words({0x04000001u, 0x0F000000u, 0x0C000000u});
+    auto& b = bad.rt->cpu(); b.gpr[4] = base; b.gpr[5] = 0; b.gpr[6] = 0xFFFFFFFFu; b.gpr[7] = 0; b.gpr[2] = 42;
+    bad.rt->invoke_import("sceGe_user", 0xAB49E76Au, b);
+    check(bad.rt->stopped() && b.gpr[2] == 42 && bad_queue->list(1).status == GeStatus::Failed,
+          "Failed GE work returned success");
 }
 }
 int main() {
@@ -116,6 +185,8 @@ int main() {
         rejects([&] { f.queue.enqueue(base + 512, base + 520); }, "Unbounded GE list ownership");
         f.queue.run(16); check(f.queue.list(first + 1).commands == 0, "FIFO passed stalled head");
         callback_execution();
+        state_contracts();
+        hle_contracts();
         std::cout << "Synthetic bounded GE control-stream contracts passed\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

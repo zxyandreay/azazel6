@@ -11,6 +11,7 @@
 #include "azazel6/ge_callbacks.hpp"
 #include "azazel6/interrupts.hpp"
 #include "azazel6/display.hpp"
+#include "azazel6/ge_lists.hpp"
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -84,6 +85,7 @@ int main(int argc, char** argv) {
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
         const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
+        const auto ge_queue = azazel6::register_ge_list_hle(*rt, ge_callbacks, threads, AZAZEL6_GE_LIST_SPANS);
         std::cout << "guest_clock_mode=bounded_idle_events frame_budget=64" << std::endl;
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
@@ -107,11 +109,13 @@ int main(int argc, char** argv) {
         std::cout << "edram_size_reads=" << graphics_memory->size_reads
                   << " edram_address_reads=" << graphics_memory->address_reads << std::endl;
         std::cout << "ge_callback_count=" << ge_callbacks->count() << std::endl;
+        std::cout << "ge_list_count=" << ge_queue->size() << " ge_state_writes=" << ge_queue->state().writes() << std::endl;
         std::cout << "vblank_registered=" << interrupts->vblank.has_value()
                   << " vblank_enabled=" << interrupts->enabled << std::endl;
         std::cout << "display_buffer_requests=" << display->buffer_requests
                   << " display_frames=" << display->clock.frames()
                   << " display_idle_frames=" << display->idle_frames()
+                  << " display_mode_set=" << display->mode_set
                   << " display_latch_pending=" << display->buffers.pending() << std::endl;
         std::cout << "language=" << language->language << " confirm_button=" << language->confirm_button
                   << " language_reads=" << language->reads << " language_writes=" << language->writes << std::endl;

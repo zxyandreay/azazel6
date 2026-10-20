@@ -95,6 +95,33 @@ void idle_boundaries() {
     check(rt->stop_reason() == "Idle display frame budget exhausted" && display->idle_frames() == 1 &&
           display->clock.frames() == 1 && threads->current_uid() == 0, "Idle budget or early wake");
 }
+void mode_contracts() {
+    using namespace azazel6;
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+    auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+        0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+    auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+    auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+    auto display = register_display_hle(*rt, threads, delivery, 1);
+    auto& c = rt->cpu();
+    c.gpr[4] = 1; c.gpr[5] = 0; c.gpr[6] = 0;
+    rt->invoke_import("sceDisplay", 0x0E20F177u, c);
+    check(c.gpr[2] == 0x80000107u && !display->mode_set, "Display mode precedence");
+    c.gpr[4] = 0; c.gpr[5] = 480; c.gpr[6] = 271;
+    rt->invoke_import("sceDisplay", 0x0E20F177u, c);
+    check(c.gpr[2] == 0x80000104u && !display->mode_set, "Display dimensions");
+    display->advance(*rt, DisplayClock::ticks_per_frame);
+    check(display->clock.in_vblank(), "SetMode test must start within VBLANK");
+    c.gpr[6] = 272; c.gpr[31] = 0x08001004u;
+    rt->register_function(0x08001004u, [](auto& runtime, auto&) { runtime.stop("synthetic mode ready"); }, "mode_ready");
+    rt->invoke_import("sceDisplay", 0x0E20F177u, c);
+    check(display->mode_set && threads->current_uid() == 0 && display->clock.frames() == 1,
+          "SetMode completed in the same VBLANK");
+    rt->run(c.pc, 4);
+    check(rt->stop_reason() == "synthetic mode ready" && display->clock.frames() == 2 &&
+          c.gpr[2] == 0 && threads->current_uid() == kBootstrapUid, "SetMode next-edge wakeup");
+}
 }
 int main() {
     try {
@@ -102,6 +129,7 @@ int main() {
         event_contracts(false);
         event_contracts(true);
         idle_boundaries();
+        mode_contracts();
         using namespace azazel6;
         DisplayClock clock;
         constexpr auto frame = DisplayClock::ticks_per_frame;

@@ -39,3 +39,9 @@ and `Core/HLE/sceDisplay.cpp` at the same fixed `cd94e414cde964bf25ec67267f64fcd
 revision were read through the GitHub connector for interrupt ownership, LCD
 frequency, display wait and framebuffer latch contracts. No implementation was
 copied or linked. See [display foundation](display-foundation.md).
+
+**Additional inspection, 2026-10-21:** PPSSPP `Core/HLE/sceKernelEventFlag.cpp`,
+`Core/HLE/sceGe.cpp` and `Core/HLE/sceDisplay.cpp` at the same fixed revision were
+read through the GitHub connector for queued event flags, GE submission/sync and
+display-mode wait behavior. Pinned PSPSDK `guInternal.h` and `sceGuInit.c` were read
+for command/register and float24 contracts. No implementation was copied.

@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-10-20: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-10-21: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -11,7 +11,7 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 47 cases passed |
+| Python/profile tools | VERIFIED, 50 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; seventeen integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
@@ -24,13 +24,13 @@ Azazel6 is not playable. See
 | Language settings | VERIFIED explicit English/Cross defaults and checked runtime-local get/set; no host locale dependency |
 | Event flags | VERIFIED create/delete, set/clear, polling, queued waits, FIFO wakeups and cancellation; timeouts remain rejecting |
 | Graphics memory | VERIFIED immutable EDRAM size/base queries backed by allocated guest VRAM; GE rendering remains unimplemented |
-| GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; game GE services/rendering remain unimplemented |
+| GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; real initialization EnQueue/ListSync complete; draws and asynchronous guest submission remain unimplemented |
 | VBLANK | VERIFIED real-input registration/enable and four-word handler AOT coverage; synthetic owned delivery and full context restoration |
-| Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes one VBLANK handler under bounded idle events; runnable guest-time accounting remains unimplemented |
+| Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes two VBLANK handlers and SetMode under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED startup graphics thread Waiting at VBLANK; both workers Waiting on their shared event flag; graphics resumes after one idle VBLANK and reaches GE list enqueue |
+| Native entry execution | VERIFIED startup graphics thread Waiting at VBLANK; both workers Waiting on their shared event flag; graphics completes initialization GE work and SetMode, then stops at a guarded graphics-allocation method |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

@@ -1,6 +1,6 @@
 # Milestone 004: graphics and input
 
-**IN PROGRESS, 2026-10-20.** The bounded native startup completes registration and
+**IN PROGRESS, 2026-10-21.** The bounded native startup completes registration and
 enable of its VBLANK handler. The [display foundation](../research/display-foundation.md)
 adds synthetic clock, interrupt delivery, wait/cancellation and framebuffer contracts.
 No visual gate is complete. At the initial handoff, startup reached registration of
@@ -50,16 +50,18 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
   SetFrameBuf/WaitVblank path. Other display services remain observation-driven.
 - **VERIFIED:** [GE control-stream contracts](../research/ge-lists.md), including
   stalls, control-flow budgets, stale callback generations and actual synthetic
-  AOT callback returns. Drawing commands and real-game GE imports remain rejecting.
-- **PLANNED:** Android surface/Vulkan and input. No actual game command stream or
+  AOT callback returns. The first real initialization list completes EnQueue/ListSync with retained
+  state. Drawing commands and asynchronous guest submissions remain rejecting.
+- **PLANNED:** Android surface/Vulkan and input. A 211-command game initialization stream has executed; no draw stream or
   menu has yet executed. **BLOCKED:** real-device exit verification has no attached
   Android device. The milestone is not ready to advance to stock combat.
 
 The event scheduler now queues both observed worker waits, with checked FIFO
 wakeup, cancellation and output ownership. The explicit research idle producer resumes the graphics thread after one
-VBLANK and reaches the first real GE list enqueue. No rendering is claimed.
+VBLANK and completes the first GE initialization list and the stock display-mode wait
+after two VBLANK handler returns. No rendering is claimed.
 
-Validation: 47 Python tests, 17 integrated CTest suites and Android ARM64
+Validation: 50 Python tests, 17 integrated CTest suites and Android ARM64
 cross-compilation pass. Raw traces and translations remain local.
 
 ## Exit evidence

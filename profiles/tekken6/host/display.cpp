@@ -80,6 +80,13 @@ std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
         if (state->clock.in_vblank()) { c.set_gpr(2, 0); return; }
         state->threads_->wait_display(runtime, c, state->clock.frames() + 1);
     });
+    rt.register_hle("sceDisplay", 0x0E20F177u, [state](auto& runtime, auto& c) {
+        if (c.gpr[4]) { c.set_gpr(2, 0x80000107u); return; }
+        if (c.gpr[5] != 480 || c.gpr[6] != 272) { c.set_gpr(2, 0x80000104u); return; }
+        // SetMode waits for the next VBLANK even if called during the current one.
+        if (state->threads_->wait_display(runtime, c, state->clock.frames() + 1))
+            state->mode_set = true;
+    });
     return state;
 }
 void DisplayState::advance_idle(psprecomp::Runtime& rt) {

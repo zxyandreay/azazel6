@@ -21,6 +21,28 @@ def language_mode(startup):
     return language, button
 
 
+def ge_list_spans(elf, startup):
+    """Validate explicitly investigated, file-backed GE initialization leases."""
+    rows = startup.get("ge_list_spans", [])
+    if not isinstance(rows, list) or len(rows) > 64:
+        raise ValueError("Invalid GE span table")
+    result = []
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"begin", "end"}:
+            raise ValueError("GE spans require begin/end")
+        if not all(isinstance(row[k], str) for k in ("begin", "end")):
+            raise ValueError("GE span addresses must be hexadecimal strings")
+        begin, end = int(row["begin"], 16), int(row["end"], 16)
+        if (begin | end) & 3 or not 0x08000000 <= begin < end <= 0x0A000000 or end - begin > 16384:
+            raise ValueError("Invalid GE span bounds")
+        elf.guest_to_offset(begin, end - begin)
+        result.append((begin, end))
+    result.sort()
+    if any(a[1] > b[0] for a, b in zip(result, result[1:])):
+        raise ValueError("Overlapping GE spans")
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path)
@@ -34,6 +56,7 @@ def main():
     module = module_report(elf)
     startup = json.loads((ROOT / "profiles/tekken6/config/startup.json").read_text())
     language, button = language_mode(startup)
+    ge_spans = ge_list_spans(elf, startup)
     indirect = constructor_maps(elf, startup.get("constructor_calls", []))
     pointers = pointer_maps(elf, startup.get("pointer_calls", []))
     if indirect.keys() & pointers.keys():
@@ -101,9 +124,12 @@ def main():
         f'#define AZAZEL6_MODULE_ADDRESS {module["address"]}u\n'
         f'#define AZAZEL6_BOOTSTRAP_PRIORITY {start_thread["priority"]}u\n'
         f'#define AZAZEL6_BOOTSTRAP_STACK_SIZE {start_thread["stack_size"]}u\n'
-        f'#define AZAZEL6_LANGUAGE {language}u\n#define AZAZEL6_CONFIRM_BUTTON {button}u\n', encoding="utf-8")
+        f'#define AZAZEL6_LANGUAGE {language}u\n#define AZAZEL6_CONFIRM_BUTTON {button}u\n'
+        '#define AZAZEL6_GE_LIST_SPANS {' + ','.join(f'{{{begin}u,{end}u}}' for begin, end in ge_spans) + '}\n',
+        encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps({"input_sha256": profile["executable"]["sha256"],
         "language_mode": startup["language_mode"],
+        "ge_list_spans": ge_spans,
         "cfg": cfg, "module": module, "indirect_maps": indirect, "jump_maps": jumps, "trap_maps": traps, "tail_maps": tails,
         "scope": "Bounded startup CFG, guarded constructor calls and returning imports; no fallback"}, indent=2) + "\n")
     print(f"Generated {sum(g['instruction_words'] for g in cfg.values())} startup instruction words in {output}")
