@@ -1,0 +1,41 @@
+name: Synthetic Android host
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/android-host.yml'
+      - 'platform/android/**'
+      - 'profiles/tekken6/include/azazel6/input.hpp'
+      - 'tools/android_host.py'
+      - 'tools/analyze.py'
+      - 'tools/elf.py'
+      - 'dependencies.json'
+  pull_request:
+    paths:
+      - '.github/workflows/android-host.yml'
+      - 'platform/android/**'
+      - 'profiles/tekken6/include/azazel6/input.hpp'
+      - 'tools/android_host.py'
+      - 'tools/analyze.py'
+      - 'tools/elf.py'
+      - 'dependencies.json'
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install pinned Android build tools
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
+      - run: python -m unittest discover -s tests -v
+      - run: python tools/android_host.py --fetch-sdl
+      - run: python tools/repository_check.py

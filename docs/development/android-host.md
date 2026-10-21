@@ -28,6 +28,9 @@ Fetching is explicit and only needed for an absent checkout. Subsequent builds
 can omit `--fetch-sdl`; both Python and CMake reject a different revision or dirty
 SDL source. Java and native SDL components come from the same pinned checkout.
 SDK/JDK roots can also be passed through `--sdk` and `--java-home`.
+The `Synthetic Android host` GitHub workflow runs the same build on relevant
+source/dependency changes and supports manual dispatch. It uses no game inputs
+and does not upload keys or APKs.
 
 The driver compiles ARM64/API 29, links against the system Vulkan loader, creates
 DEX with D8, packages with AAPT2, aligns with ZIPAlign and debug-signs with
