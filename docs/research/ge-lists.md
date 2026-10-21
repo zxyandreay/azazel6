@@ -97,3 +97,21 @@ four graphics-object method sites are guarded by verified vtable slot
 `0x08ACF154` remains terminal: its observed target is `0x08ACE9C4`, from an
 object with vtable `0x08BCFBD0`. Another unverified method at `0x08AC7358`
 also remains guarded. No guessed target is admitted.
+## Guarded graphics object continuation (2026-10-21)
+
+**VERIFIED:** exact-hash ELF pointer slots `0x08BCFC24`, `0x08BCFB6C` and
+`0x08BCFB88` select `0x08ACE9C4`, `0x08ACD7F0` and `0x08ACD60C` respectively.
+The corresponding call sites `0x08ACF154`, `0x08ACF1B0` and `0x08ACF1E0` now use
+the existing checked pointer-call mechanism. Unknown targets still stop; the
+continuation includes explicit stops at the newly reachable interface calls.
+
+The 280-root, 23,880-word probe executes the first two guarded methods and their
+direct helpers, preserving the prior two VBLANK returns and 209 initialization
+state writes. It stops at the direct coverage boundary `0x08ACD010` with return
+address `0x08ACC3E4`. The third guarded method is covered but has not executed at
+this checkpoint. Windows bounded execution and Android ARM64 compilation pass;
+there is still no drawing stream, guest input or menu result. The next startup
+step is bounded discovery of that direct helper, followed by its observed
+interface ownership. Raw disassembly, generated source and execution logs remain
+under `local/`.
+

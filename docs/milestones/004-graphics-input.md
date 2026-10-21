@@ -67,6 +67,9 @@ The event scheduler now queues both observed worker waits, with checked FIFO
 wakeup, cancellation and output ownership. The explicit research idle producer resumes the graphics thread after one
 VBLANK and completes the first GE initialization list and the stock display-mode wait
 after two VBLANK handler returns. No rendering is claimed.
+The 280-root startup probe also passes guarded graphics object methods before
+stopping at direct helper `0x08ACD010`; unknown interface calls remain explicit
+stops. See [continued coverage](../research/ge-lists.md).
 
 Validation: 53 Python tests, 18 integrated CTest suites, Android ARM64
 cross-compilation and synthetic APK build/signature/alignment checks pass.

@@ -30,7 +30,7 @@ Azazel6 is not playable. See
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED startup graphics thread Waiting at VBLANK; both workers Waiting on their shared event flag; graphics completes initialization GE work and SetMode, then stops at a guarded graphics-allocation method |
+| Native entry execution | VERIFIED startup graphics thread Waiting at VBLANK; both workers Waiting on their shared event flag; graphics completes initialization GE work, SetMode and guarded graphics object methods, then stops at direct helper 0x08ACD010 |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
