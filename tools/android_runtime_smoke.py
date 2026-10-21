@@ -134,6 +134,7 @@ class Smoke:
                 send("inject", events=[1, 304, 1, 0, 0, 0])
                 time.sleep(1)
                 self.capture("virtual-button-disconnecting", "red")
+                cleared_before_disconnect = self.logs().count("Host input: buttons=0x00000000 contacts=0")
             finally:
                 pad.stdin.close()
                 try:
@@ -143,7 +144,10 @@ class Smoke:
                     pad.wait(timeout=5)
             if pad.returncode:
                 raise RuntimeError("Android uinput command failed; see uinput.txt")
-        time.sleep(1)
+        # SDL's Android joystick detector polls removals every three seconds.
+        # Observe a fresh state transition rather than assuming a fixed delay.
+        self.wait(lambda: self.logs().count("Host input: buttons=0x00000000 contacts=0") >
+                  cleared_before_disconnect, "controller state cleared after removal", 15)
         self.capture("virtual-button-disconnected", "blue")
         self.passed("Android virtual controller connect, press, release and held disconnect")
         for cycle in range(3):
