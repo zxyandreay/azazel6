@@ -7,12 +7,26 @@ synthetic: dark blue at rest, red when a mapped gamepad button is held and green
 when an accepted touch contact is active. There is no menu or touch button overlay.
 See [ADR-0003](../decisions/ADR-0003-android-host-probe.md).
 
-**VERIFIED, 2026-10-21:** the pinned SDL/native host and Java activity compile;
-the ARM64 APK passes APKSigner verification, ZIPAlign 16 KiB checks and ELF
-load-segment checks. AAPT2 reports API 29 minimum, SDK 35 target and ARM64 only.
-Native dependencies resolve to packaged SDL plus Android system libraries.
-53 Python tests and 18 integrated CTest suites pass. **BLOCKED:** `adb devices -l`
-lists no attached device; no presentation, lifecycle or physical input claim is made.
+**VERIFIED, 2026-10-22:** both ARM64 and x86_64 host APKs build, sign and
+pass ELF/ZIP 16 KiB alignment checks. The x86_64 APK executed on the official
+Android Emulator 36.5.10 using WHPX, an API 37 preview Google Play 16 KiB x86_64
+image and SwiftShader Vulkan through Goldfish GFXStream. A matching native ABI
+was used; the image's ARM64 translation capability is not ARM64 execution evidence.
+
+The automated AVD run verified installation, launch, Vulkan presentation with
+captured pixels, touch down/up, a virtual controller's connection/button/release/
+held disconnect, three Home/resume cycles retaining the process and clearing
+contacts, and 30 seconds of subsequent advancing frames. It reached frame 3000.
+Captured center pixels were (13,20,46) at rest, (13,128,46) for touch and
+(128,20,46) for the controller. This is synthetic host execution, not game rendering.
+Physical ARM64 GPU/controller behavior, multitouch and long sessions remain unverified.
+
+The first attempt correctly failed when a System UI ANR dialog obscured the app;
+the clean run passed after the boot-time dialog was dismissed. Early console key
+injection did not reach SDL, and shell `input keyevent` used virtual device -1.
+The supported Android `uinput` command provided a discoverable virtual controller.
+Testing exposed and fixed landscape orientation and selection of newly attached
+controllers when the emulator's built-in D-pad was already open.
 
 ## Build
 
@@ -30,9 +44,11 @@ SDL source. Java and native SDL components come from the same pinned checkout.
 SDK/JDK roots can also be passed through `--sdk` and `--java-home`.
 The `Synthetic Android host` GitHub workflow runs the same build on relevant
 source/dependency changes and supports manual dispatch. It uses no game inputs
-and does not upload keys or APKs.
+and does not upload keys or APKs. It also builds x86_64 and runs the same
+smoke test on an API 35 Google APIs AVD with KVM and SwiftShader, retaining
+synthetic runtime logs, screenshots and results as a short-lived CI artifact.
 
-The driver compiles ARM64/API 29, links against the system Vulkan loader, creates
+The driver defaults to ARM64/API 29, links against the system Vulkan loader, creates
 DEX with D8, packages with AAPT2, aligns with ZIPAlign and debug-signs with
 APKSigner. It checks ARM64 ELF load-segment alignment, APK signature and 16 KiB
 ZIP alignment before publishing `local/android-host/azazel6-host-probe.apk`.
@@ -54,7 +70,8 @@ directory so deleted Java classes cannot remain in the APK.
   presenter/window destruction. Surface loss and resizing recreate resources;
   device loss terminates with a diagnostic.
 - The first available SDL gamepad is sampled using PSP button bits and unsigned
-  analog axes. Disconnect closes its handle and clears state; a remaining pad
+  analog axes. A newly connected pad becomes active, so an emulator D-pad cannot
+  monopolize input. Disconnect closes its handle and clears state; a remaining pad
   can replace it. SDL mappings are sampled afresh each iteration.
 - Touch identity is `(device, finger)`, capped at 16 contacts. Coordinates map
   through the window safe area and a centered stock 480x272 viewport. Invalid
@@ -64,6 +81,34 @@ directory so deleted Java classes cannot remain in the APK.
 - Host sampling/presentation never advances a guest clock. A future observed
   `sceCtrl` contract must connect sampled state to guest code explicitly.
 
+## Repeatable AVD execution
+
+Inspect `emulator -accel-check`, installed system images and `adb devices -l`
+before testing. Use the official Android Emulator with a matching x86_64 image,
+hardware virtualization (WHPX on Windows or KVM on Linux), Vulkan-capable
+SwiftShader graphics and sufficient RAM (the local run used 3072 MiB). Keep a
+separate AVD under `local/`; do not modify a user's existing device. Reuse the
+installed SDK/NDK/JDK. Local command-line tools were installed under `local/`
+from Google's repository metadata with the published archive checksum verified.
+On Windows, command-line tool batch launchers can mishandle `!` in paths; invoke
+their Java entry point directly when necessary.
+
+```powershell
+python tools/android_host.py --abi x86_64
+python -m pip install -r tools/requirements-android-test.txt
+python tools/android_runtime_smoke.py --serial emulator-5556 --apk local/android-host-x86_64/azazel6-host-probe.apk
+```
+
+Use the actual serial reported by ADB. The runner requires an emulator, a build
+report matching the APK hash, the AVD's primary ABI and a fresh evidence directory.
+It uses Android's [uinput test interface](https://android.googlesource.com/platform/frameworks/base/+/HEAD/cmds/uinput/)
+for a virtual controller; it does not inject SDL events inside the application.
+The latest local passing evidence is under
+`local/android-runtime/api37-16k-controller/`. Build reports alone deliberately
+retain `device_execution: NOT TESTED`; separate runtime reports identify the exact
+APK hash and executed checks. Per-ABI output directories have separate debug keys;
+uninstall the diagnostic before switching between differently signed builds.
+
 ## Real-device verification gate
 
 Compilation and signing do not verify Android runtime behavior. With an authorized
@@ -72,7 +117,7 @@ ARM64 Android device visible to `adb devices`, install the local debug APK:
 ```powershell
 adb install -r local/android-host/azazel6-host-probe.apk
 adb shell am start -n org.azazel6.probe/.HostActivity
-adb logcat -s SDL
+adb logcat -s SDL/APP SDL AndroidRuntime libc
 ```
 
 Record the actual device/OS/GPU, first synthetic frame, touch rejection outside

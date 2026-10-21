@@ -23,6 +23,17 @@ class AndroidPackagingTests(unittest.TestCase):
     def test_aligned_arm64(self):
         elf_alignment(library())
 
+    def test_emulator_abi_and_mismatch(self):
+        data = library()
+        struct.pack_into("<H", data, 18, 62)
+        elf_alignment(data, "x86_64")
+        with self.assertRaises(ValueError):
+            elf_alignment(data, "arm64-v8a")
+        with self.assertRaises(ValueError):
+            elf_alignment(library(), "x86_64")
+        with self.assertRaises(ValueError):
+            elf_alignment(data, "armeabi-v7a")
+
     def test_wrong_architecture_and_headers(self):
         for offset, fmt, value in [(16, "H", 2), (18, "H", 62), (32, "Q", 1000),
                                    (52, "H", 0), (54, "H", 48), (56, "H", 0), (64, "I", 0)]:

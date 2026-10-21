@@ -18,12 +18,15 @@ def run(*command):
     subprocess.run([str(part) for part in command], check=True, cwd=ROOT)
 
 
-def elf_alignment(data):
-    """Require ARM64 ELF64 and 16 KiB compatible load segments before packaging."""
+def elf_alignment(data, abi="arm64-v8a"):
+    """Require the requested ELF64 architecture and 16 KiB load compatibility."""
+    machines = {"arm64-v8a": 183, "x86_64": 62}
+    if abi not in machines:
+        raise ValueError("Unsupported host probe ABI")
     if (len(data) < 64 or data[:7] != b"\x7fELF\x02\x01\x01" or
-            struct.unpack_from("<HH", data, 16) != (3, 183) or
+            struct.unpack_from("<HH", data, 16) != (3, machines[abi]) or
             struct.unpack_from("<H", data, 52)[0] != 64):
-        raise ValueError("Expected little-endian ARM64 ELF64 library")
+        raise ValueError(f"Expected little-endian {abi} ELF64 library")
     offset = struct.unpack_from("<Q", data, 32)[0]
     size, count = struct.unpack_from("<HH", data, 54)
     if size != 56 or not count or offset + size * count > len(data):
@@ -64,10 +67,12 @@ def main():
     parser.add_argument("--ndk-version", default="27.1.12297006")
     parser.add_argument("--build-tools", default="36.0.0")
     parser.add_argument("--compile-sdk", default="36")
+    parser.add_argument("--abi", choices=["arm64-v8a", "x86_64"], default="arm64-v8a")
     parser.add_argument("--fetch-sdl", action="store_true")
-    parser.add_argument("--output", type=Path, default=ROOT / "local/android-host")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    output = local_output(args.output)
+    default_output = "android-host" if args.abi == "arm64-v8a" else "android-host-x86_64"
+    output = local_output(args.output or ROOT / "local" / default_output)
     output.mkdir(parents=True, exist_ok=True)
     if not args.sdk or not args.java_home:
         raise ValueError("Set ANDROID_HOME/JAVA_HOME or --sdk/--java-home (JDK 17)")
@@ -91,7 +96,7 @@ def main():
     native = local_output(output / "native")
     run("cmake", "-S", ROOT / "platform/android", "-B", native, "-G", "Ninja",
         f"-DCMAKE_MAKE_PROGRAM={ninja}", f"-DCMAKE_TOOLCHAIN_FILE={ndk / 'build/cmake/android.toolchain.cmake'}",
-        "-DANDROID_ABI=arm64-v8a", "-DANDROID_PLATFORM=android-29", "-DANDROID_STL=c++_static",
+        f"-DANDROID_ABI={args.abi}", "-DANDROID_PLATFORM=android-29", "-DANDROID_STL=c++_static",
         "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON", "-DCMAKE_BUILD_TYPE=Release",
         f"-DAZAZEL6_SDL_SOURCE={sdl}")
     run("cmake", "--build", native, "--parallel", "2")
@@ -123,8 +128,8 @@ def main():
     with zipfile.ZipFile(unsigned, "a", compression=zipfile.ZIP_STORED) as archive:
         for name, path in libraries.items():
             data = path.read_bytes()
-            elf_alignment(data)
-            archive.writestr("lib/arm64-v8a/" + name, data)
+            elf_alignment(data, args.abi)
+            archive.writestr(f"lib/{args.abi}/" + name, data)
         dex_files = sorted(dex.glob("classes*.dex"))
         if not dex_files:
             raise ValueError("D8 produced no dex files")
@@ -147,9 +152,10 @@ def main():
     target = output / "azazel6-host-probe.apk"
     shutil.copyfile(signed, target)
     report = {"kind": "synthetic_host_probe", "sdl_revision": lock["revision"],
+              "abi": args.abi,
               "min_sdk": 29, "target_sdk": 35, "compile_sdk": args.compile_sdk,
               "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
-              "verified": ["arm64_elf", "16k_load_alignment", "apk_signature", "16k_zip_alignment"],
+              "verified": ["elf_abi", "16k_load_alignment", "apk_signature", "16k_zip_alignment"],
               "device_execution": "NOT TESTED", "game_execution": False}
     (output / "build-report.json").write_text(json.dumps(report, indent=2) + "\n")
     print(f"Verified synthetic APK: {target}\nDevice lifecycle/input/presentation remain unverified.")

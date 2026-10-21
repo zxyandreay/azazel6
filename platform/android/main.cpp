@@ -48,7 +48,13 @@ struct Watch {
     App& app_;
 };
 using Gamepad = std::unique_ptr<SDL_Gamepad, decltype(&SDL_CloseGamepad)>;
-void connect(Gamepad& pad) {
+void connect(Gamepad& pad, SDL_JoystickID preferred = 0) {
+    if (preferred) {
+        Gamepad replacement(SDL_OpenGamepad(preferred), SDL_CloseGamepad);
+        if (replacement) pad = std::move(replacement);
+        if (pad) SDL_Log("Gamepad selected: %s", SDL_GetGamepadName(pad.get()));
+        return;
+    }
     if (pad) return;
     int count = 0;
     auto* ids = SDL_GetGamepads(&count);
@@ -76,6 +82,7 @@ azazel6::PadSample sample(SDL_Gamepad* pad) {
 }
 
 int main(int, char**) {
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) { SDL_Log("%s", SDL_GetError()); return 1; }
     int status = 0;
     {
@@ -101,7 +108,7 @@ int main(int, char**) {
                 while (SDL_PollEvent(&event)) {
                     // Opening/closing pads can itself dispatch SDL events. Keep
                     // that work outside the lifecycle lock to avoid lock inversion.
-                    if (event.type == SDL_EVENT_GAMEPAD_ADDED) connect(pad);
+                    if (event.type == SDL_EVENT_GAMEPAD_ADDED) connect(pad, event.gdevice.which);
                     if (event.type == SDL_EVENT_GAMEPAD_REMOVED && pad &&
                         SDL_GetGamepadID(pad.get()) == event.gdevice.which) {
                         pad.reset();
@@ -159,6 +166,8 @@ int main(int, char**) {
                         }
                         if (app.presenter.present(app.input.pad.buttons ? 0.5f : 0.05f, contacts ? 0.5f : 0.08f)) {
                             if (++frames == 1) SDL_Log("First synthetic frame presented");
+                            if (frames % 120 == 0)
+                                SDL_Log("Synthetic progress: frames=%llu", static_cast<unsigned long long>(frames));
                         }
                     }
                 }

@@ -7,7 +7,7 @@
 Native startup now executes GE initialization, but no drawing stream or menu has
 been reached. Android surface, Vulkan lifetime and input adaptation can be built
 independently. They require runtime verification on Android before integration
-with guest rendering. No device is currently attached.
+with guest rendering. At the initial decision no device was attached.
 
 ## Decision
 
@@ -47,3 +47,12 @@ and driver tests. Integrating guest draw commands remains separate work.
 
 Yakumo remains unchanged under [ADR-0001](ADR-0001-framework-strategy.md).
 Guest idle events retain the limits of [ADR-0002](ADR-0002-bounded-idle-events.md).
+
+## AVD validation extension (2026-10-22)
+
+Allow x86_64 only for the separate synthetic host so official accelerated AVDs
+can execute a matching ABI. The game target remains ARM64. Validate the ELF
+machine and the AVD primary ABI explicitly; ARM translation is not native ARM
+coverage. Run the host on local official AVDs and an API 35 KVM GitHub runner,
+with captured pixels and Android uinput events in addition to logs. Physical
+ARM64 hardware and the game/menu exit gates remain separate requirements.

@@ -7,6 +7,8 @@ on:
       - 'platform/android/**'
       - 'profiles/tekken6/include/azazel6/input.hpp'
       - 'tools/android_host.py'
+      - 'tools/android_runtime_smoke.py'
+      - 'tools/requirements-android-test.txt'
       - 'tools/analyze.py'
       - 'tools/elf.py'
       - 'dependencies.json'
@@ -16,6 +18,8 @@ on:
       - 'platform/android/**'
       - 'profiles/tekken6/include/azazel6/input.hpp'
       - 'tools/android_host.py'
+      - 'tools/android_runtime_smoke.py'
+      - 'tools/requirements-android-test.txt'
       - 'tools/analyze.py'
       - 'tools/elf.py'
       - 'dependencies.json'
@@ -42,4 +46,28 @@ jobs:
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
       - run: python -m unittest discover -s tests -v
       - run: python tools/android_host.py --fetch-sdl
+      - run: python tools/android_host.py --abi x86_64
+      - run: python -m pip install -r tools/requirements-android-test.txt
+      - name: Enable KVM for the Android virtual device
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise Vulkan, input and lifecycle on Android
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-window -gpu swiftshader -no-snapshot -noaudio -no-boot-anim -memory 3072 -cores 2
+          script: python tools/android_runtime_smoke.py --serial emulator-5554 --apk local/android-host-x86_64/azazel6-host-probe.apk --output local/android-runtime/ci
+      - name: Retain synthetic runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-android-runtime
+          path: local/android-runtime/ci
+          if-no-files-found: warn
+          retention-days: 14
       - run: python tools/repository_check.py

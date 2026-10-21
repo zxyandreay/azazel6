@@ -53,8 +53,11 @@ void Presenter::initialize(SDL_Window* window) {
     create.enabledExtensionCount = count;
     create.ppEnabledExtensionNames = extensions;
     vk(vkCreateInstance(&create, nullptr, &instance_), "create instance");
+    SDL_Log("Vulkan instance created");
     surface();
+    SDL_Log("Vulkan Android surface created");
     vk(vkEnumeratePhysicalDevices(instance_, &count, nullptr), "physical device count");
+    SDL_Log("Vulkan physical device count: %u", count);
     require(count && count <= 32, "Invalid physical device count");
     std::vector<VkPhysicalDevice> devices(count);
     vk(vkEnumeratePhysicalDevices(instance_, &count, devices.data()), "physical devices");
@@ -62,6 +65,7 @@ void Presenter::initialize(SDL_Window* window) {
     for (auto candidate : devices) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(candidate, &properties);
+        SDL_Log("Vulkan candidate: %s API=%u", properties.deviceName, properties.apiVersion);
         if (properties.apiVersion < VK_API_VERSION_1_1) continue;
         std::uint32_t n = 0;
         vk(vkEnumerateDeviceExtensionProperties(candidate, nullptr, &n, nullptr), "extension count");
@@ -73,6 +77,7 @@ void Presenter::initialize(SDL_Window* window) {
                 return std::strcmp(e.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0;
             })) continue;
         vkGetPhysicalDeviceQueueFamilyProperties(candidate, &n, nullptr);
+        SDL_Log("Vulkan queue family count: %u", n);
         require(n && n <= 64, "Invalid queue family count");
         std::vector<VkQueueFamilyProperties> families(n);
         vkGetPhysicalDeviceQueueFamilyProperties(candidate, &n, families.data());
