@@ -7,6 +7,7 @@ There is no vendored Monster Hunter host, game code or commercial resource.
 | Component | Revision | Use and license |
 | --- | --- | --- |
 | [Yakumo](https://github.com/TeamGDB/Yakumo/tree/39ac05f1a166703430d18826bc5877f4feb6b511) | `39ac05f1a166703430d18826bc5877f4feb6b511` | Framework source compiled locally; MIT, PSPRecomp and Yakumo contributors |
+| [SDL 3.4.18](https://github.com/libsdl-org/SDL/tree/829a65d769d935c4852f8159e964312c0957260a) | `829a65d769d935c4852f8159e964312c0957260a` | Unchanged external native library and Java activity compiled into the synthetic Android host probe; Zlib license included in its APK |
 | [PSPRecomp](https://github.com/jessicanataliagta/PSPRecomp/tree/f6e7d415c7f447b934cc3865a31eb725f353d659) | `f6e7d415c7f447b934cc3865a31eb725f353d659` | Read-only architectural comparison; MIT; not separately linked |
 | [uOFW](https://github.com/uofw/uofw/tree/28306bb5bd4fcdcc0c1d469bf1f3bdb885dde3e9) | `28306bb5bd4fcdcc0c1d469bf1f3bdb885dde3e9` | Read-only SysMem/ThreadMan contract research; MIT with PSPSDK BSD notices in COPYING; no source copied or linked |
 | [PSPSDK](https://github.com/pspdev/pspsdk/tree/6ef2b21dc440ef8d4125f000301faaa2a470975e) | `6ef2b21dc440ef8d4125f000301faaa2a470975e` | Read-only thread API/startup research; BSD notices; no source copied or linked |
@@ -17,8 +18,10 @@ There is no vendored Monster Hunter host, game code or commercial resource.
 
 [The unchanged upstream MIT notice](THIRD_PARTY_LICENSE_YAKUMO.txt) must accompany
 any distributed binaries containing the framework. The dependency's source retains
-all notices. No SDL3, Vulkan, FFmpeg or texture-decoder code is included yet.
-Reassess their individual licenses when adding those components.
+all notices. SDL's unchanged `LICENSE.txt` and Azazel6's MIT license are included
+under the host APK's `assets/licenses/`. Vulkan declarations come from the installed
+NDK; the probe links Android's system Vulkan loader. No Vulkan implementation,
+FFmpeg or texture decoder is vendored. Reassess licenses when adding components.
 
 The ELF/profile tools, entry host and math implementation are original work based
 on inspected formats, local bytes and documented behavior. The sectionless module

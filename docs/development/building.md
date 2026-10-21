@@ -96,8 +96,10 @@ python tools/android_smoke.py --ndk "$env:ANDROID_HOME/ndk/27.1.12297006" --ninj
 ```
 
 The smoke build uses `arm64-v8a`, API 26, and disables host-executed tests during
-cross-compilation. It compiles native components only. SDL, Vulkan rendering,
-Java/Gradle integration, APK installation and device execution remain future work.
+cross-compilation. It compiles native components only. The separate
+[synthetic Android host probe](android-host.md) builds an SDL/Vulkan diagnostic
+APK without game inputs. Guest rendering, product Gradle integration and real-device
+execution remain separate work.
 
 ## Repository audit
 

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.azazel6.probe" android:versionCode="1" android:versionName="0.1">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35" />
+    <uses-feature android:name="android.hardware.vulkan.version" android:version="0x00401000" android:required="true" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+    <application android:label="Azazel6 Host Probe" android:allowBackup="false"
+        android:debuggable="true" android:extractNativeLibs="false"
+        android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
+        android:hardwareAccelerated="true" android:enableOnBackInvokedCallback="false">
+        <activity android:name="org.azazel6.probe.HostActivity" android:exported="true"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="layoutDirection|locale|fontScale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -4,23 +4,23 @@
 CMake 4.0.3 and Ninja from SDK CMake 3.22.1 cross-compiled the math library,
 PSPRecomp core/tools and generated entry probe for `arm64-v8a`, API 26. The
 Milestone 002 expanded probe, import wrappers and bootstrap HLE also compile/link.
-No Android binary was executed, and no APK was produced. NDK/CMake deprecation
+No Android binary was executed at that checkpoint. NDK/CMake deprecation
 warnings and existing upstream conversion warnings did not prevent linking.
 
 API 26 is a native smoke-build floor, not a promised product minimum. Yakumo's
-current application requires API 29 and Vulkan 1.1. **PLANNED:** adopt API 29 and
-Vulkan 1.1 as the initial application baseline after the renderer is selected;
+current application requires API 29 and Vulkan 1.1. The separate synthetic
+[host probe](../development/android-host.md) adopts API 29 and Vulkan 1.1;
 record actual supported devices and extensions rather than assuming the loader
 implies a compatible driver. Resolve device features, formats and queues at startup.
 
 ## Application integration
 
 Use SDL3's Android activity and Java classes from the same pinned SDL source as
-the native library. A future `libmain.so` owns the host; Android glue exchanges
-events and file descriptors. Yakumo's packaging currently uses SDK tools directly,
-not Gradle. Azazel6 has not selected an APK packaging implementation or copied that
-activity; a conventional Gradle externalNativeBuild integration is the planned
-product route once a running host warrants it.
+the native library. The synthetic `libmain.so` owns a checked Vulkan clear
+presenter and sampled input adapter. [ADR-0003](../decisions/ADR-0003-android-host-probe.md)
+selects SDK-tool packaging for this diagnostic, with the external SDL activity.
+A conventional Gradle externalNativeBuild integration remains the planned
+product route once a running game host warrants it.
 
 Use Android's Storage Access Framework picker for user game imports. A content URI
 is not a filesystem path: use a granted descriptor or bounded streaming copy into

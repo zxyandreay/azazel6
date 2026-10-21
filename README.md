@@ -53,6 +53,10 @@ See [building](docs/development/building.md) for analysis, generation, the nativ
 probe and Android commands. Game inputs, generated translations and local reports
 must remain under ignored paths. No game download or decryption service is provided.
 
+The separate [Android host probe](docs/development/android-host.md) builds a
+synthetic Vulkan/input diagnostic APK without game files. It is not a playable
+Tekken application.
+
 ## Project knowledge
 
 - [Documentation index](docs/README.md)

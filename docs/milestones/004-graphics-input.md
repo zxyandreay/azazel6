@@ -52,17 +52,25 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
   stalls, control-flow budgets, stale callback generations and actual synthetic
   AOT callback returns. The first real initialization list completes EnQueue/ListSync with retained
   state. Drawing commands and asynchronous guest submissions remain rejecting.
-- **PLANNED:** Android surface/Vulkan and input. A 211-command game initialization stream has executed; no draw stream or
-  menu has yet executed. **BLOCKED:** real-device exit verification has no attached
-  Android device. The milestone is not ready to advance to stock combat.
+- **VERIFIED:** a separate [Android host probe](../development/android-host.md)
+  compiles SDL/Vulkan surface ownership, a synthetic clear presenter and a sampled
+  input adapter into a signed ARM64 APK. ELF and APK 16 KiB alignment checks pass.
+  Synthetic input tests cover stable device/finger identity, safe-area letterboxing,
+  invalid contacts, capacity, cancellation and analog boundaries.
+- **PLANNED:** connect an observed GE drawing subset and guest controller services.
+  A 211-command game initialization stream has executed; no draw stream or menu
+  has yet executed. **BLOCKED:** `adb devices -l` reports no attached device on
+  2026-10-21, so host lifecycle/presentation/input and real-device exit verification
+  cannot run. The milestone is not ready to advance to stock combat.
 
 The event scheduler now queues both observed worker waits, with checked FIFO
 wakeup, cancellation and output ownership. The explicit research idle producer resumes the graphics thread after one
 VBLANK and completes the first GE initialization list and the stock display-mode wait
 after two VBLANK handler returns. No rendering is claimed.
 
-Validation: 50 Python tests, 17 integrated CTest suites and Android ARM64
-cross-compilation pass. Raw traces and translations remain local.
+Validation: 53 Python tests, 18 integrated CTest suites, Android ARM64
+cross-compilation and synthetic APK build/signature/alignment checks pass.
+Raw traces, translations, APKs and debug keys remain local.
 
 ## Exit evidence
 

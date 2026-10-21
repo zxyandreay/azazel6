@@ -4,5 +4,11 @@
     "revision": "39ac05f1a166703430d18826bc5877f4feb6b511",
     "license": "MIT",
     "paths": ["cmake", "configs", "include", "src", "tools", "tests", "docs"]
+  },
+  "sdl": {
+    "url": "https://github.com/libsdl-org/SDL.git",
+    "revision": "829a65d769d935c4852f8159e964312c0957260a",
+    "tag": "release-3.4.18",
+    "license": "Zlib"
   }
 }

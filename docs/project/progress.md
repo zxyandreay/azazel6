@@ -11,9 +11,9 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 50 cases passed |
+| Python/profile tools | VERIFIED, 53 cases passed |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; seventeen integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; eighteen integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
@@ -34,7 +34,9 @@ Azazel6 is not playable. See
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
-| Android device/APK | NOT TESTED / not implemented |
+| Android host APK | VERIFIED synthetic SDL/Vulkan probe builds, signs and passes ARM64 ELF / 16 KiB ELF and ZIP alignment checks; no game code |
+| Host input | VERIFIED synthetic touch identity, stock coordinate and analog contracts; SDL gamepad/touch adapter compiled, guest input integration remains unimplemented |
+| Android device | BLOCKED: no attached device; presentation, lifecycle and physical input NOT TESTED |
 | Game boot/combat/graphics/audio/input | Not implemented |
 | Ultrawide gameplay hooks / moveset packages | PLANNED; reference research only |
 

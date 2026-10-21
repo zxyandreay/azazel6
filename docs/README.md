@@ -66,6 +66,7 @@ Reviewed 2026-10-20. Evidence labels apply to individual claims:
 ## Development
 
 - [Setup and builds](development/building.md)
+- [Synthetic Android host probe](development/android-host.md)
 - [Testing and debugging](development/testing.md)
 - [Coding standards and workflow](development/workflow.md)
 

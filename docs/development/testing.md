@@ -40,6 +40,8 @@ download commercial input, run the real-game probe or upload generated output.
 | Auto generation | Generator accepts the input | Complete/usable compiled corpus |
 | Entry probe | Actual translated entry instructions reach a known import | Successful kernel bootstrap or game boot |
 | Android build | ARM64 native compilation/linking | APK, surface lifecycle or device execution |
+| Android host packaging | Synthetic probe APK, signature and ELF/ZIP 16 KiB alignment | Real-device presentation, lifecycle, page-size compatibility or game execution |
+| Host input | Stable touch identity, stock-coordinate bounds, cancellation/capacity and analog conversion | Physical controller/touch behavior or guest `sceCtrl` semantics |
 
 ## Debugging procedure
 

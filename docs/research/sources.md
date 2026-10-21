@@ -45,3 +45,11 @@ copied or linked. See [display foundation](display-foundation.md).
 read through the GitHub connector for queued event flags, GE submission/sync and
 display-mode wait behavior. Pinned PSPSDK `guInternal.h` and `sceGuInit.c` were read
 for command/register and float24 contracts. No implementation was copied.
+
+**Additional inspection, 2026-10-21:** SDL 3.4.18 at
+[`829a65d769d935c4852f8159e964312c0957260a`](https://github.com/libsdl-org/SDL/tree/829a65d769d935c4852f8159e964312c0957260a)
+was fetched unchanged. Android lifecycle documentation, event-watch locking,
+Vulkan surface glue, window safe-area, touch and gamepad headers were inspected.
+Its Java activity/native library are compiled externally for the synthetic probe;
+the unchanged Zlib notice is packaged with it. PSPSDK controller constants from
+the existing pinned checkout inform the original host input adapter.
