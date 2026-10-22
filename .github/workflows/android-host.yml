@@ -1,28 +1,6 @@
 name: Synthetic Android host
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/android-host.yml'
-      - 'platform/android/**'
-      - 'profiles/tekken6/include/azazel6/input.hpp'
-      - 'tools/android_host.py'
-      - 'tools/android_runtime_smoke.py'
-      - 'tools/requirements-android-test.txt'
-      - 'tools/analyze.py'
-      - 'tools/elf.py'
-      - 'dependencies.json'
-  pull_request:
-    paths:
-      - '.github/workflows/android-host.yml'
-      - 'platform/android/**'
-      - 'profiles/tekken6/include/azazel6/input.hpp'
-      - 'tools/android_host.py'
-      - 'tools/android_runtime_smoke.py'
-      - 'tools/requirements-android-test.txt'
-      - 'tools/analyze.py'
-      - 'tools/elf.py'
-      - 'dependencies.json'
 permissions:
   contents: read
 jobs:

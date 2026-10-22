@@ -42,11 +42,14 @@ Fetching is explicit and only needed for an absent checkout. Subsequent builds
 can omit `--fetch-sdl`; both Python and CMake reject a different revision or dirty
 SDL source. Java and native SDL components come from the same pinned checkout.
 SDK/JDK roots can also be passed through `--sdk` and `--java-home`.
-The `Synthetic Android host` GitHub workflow runs the same build on relevant
-source/dependency changes and supports manual dispatch. It uses no game inputs
-and does not upload keys or APKs. It also builds x86_64 and runs the same
-smoke test on an API 35 Google APIs AVD with KVM and SwiftShader, retaining
-synthetic runtime logs, screenshots and results as a short-lived CI artifact.
+Local builds and official AVD execution are the default validation path. Both
+GitHub workflows are manual-only: pushes and pull requests do not start Actions
+runs. Keep the `Synthetic Android host` workflow as an explicit fallback if local
+emulation is unavailable. It uses no game inputs and does not upload keys or
+APKs. When manually dispatched, it builds x86_64 and runs the same smoke test on
+an API 35 Google APIs AVD with KVM and SwiftShader, retaining synthetic runtime
+logs, screenshots and results as a short-lived CI artifact. Workflow configuration
+alone is not evidence of a passing Android run.
 
 The driver defaults to ARM64/API 29, links against the system Vulkan loader, creates
 DEX with D8, packages with AAPT2, aligns with ZIPAlign and debug-signs with

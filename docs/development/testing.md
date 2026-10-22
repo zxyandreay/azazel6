@@ -25,10 +25,15 @@ overflow, pool exhaustion, reusable holes, stale UIDs, per-runtime ownership,
 stack fill/clear behavior and unsupported-option stops. CreateThread is also
 reached by the bounded real-input experiment; deletion is synthetic-only evidence.
 
-Use [build commands](building.md) to reproduce. The workflow in
+Use [build commands](building.md) to reproduce locally. Local Python tests,
+CMake/CTest, repository audit and official Android AVD execution are the default;
+commit and push their reviewed results without starting hosted test runs. Both
+GitHub workflows accept manual dispatch only, as an explicit fallback.
 `.github/workflows/ci.yml` fetches the pinned framework, builds root integration,
-runs native/Python tests and audits repository content on Ubuntu. It does not
-download commercial input, run the real-game probe or upload generated output.
+runs native/Python tests and audits repository content on Ubuntu when dispatched.
+It does not download commercial input, run the real-game probe or upload generated
+output. See the [Android host procedure](android-host.md) for actual local APK
+installation, Vulkan pixels, input, lifecycle and runtime evidence.
 
 ## Evidence boundaries
 
@@ -54,5 +59,6 @@ Use unit/static checks before broader builds. Bound native execution with
 `tools/run_probe.py`; generated intra-unit loops are not necessarily bounded by an
 outer dispatch count, so retain the external timeout as coverage expands. Add a
 regression for each parser/runtime boundary change. Browser tests are not relevant
-to this milestone. No Android device, sanitizer run, full-corpus compilation,
-gameplay benchmark or renderer validation was performed locally.
+to this milestone. The synthetic host has executed on an official local Android
+AVD; this does not verify physical ARM64 hardware or game rendering. No sanitizer
+run, full-corpus compilation or gameplay benchmark has been performed locally.
