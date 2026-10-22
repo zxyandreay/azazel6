@@ -175,6 +175,25 @@ class IndirectCallTests(unittest.TestCase):
             with self.subTest(target=target), self.assertRaises(ValidationError):
                 pointer_maps(self.fixture(target), [descriptor])
 
+    def test_v0_slot_call_keeps_continuation_and_guards_before_delay(self):
+        # Independent synthetic JALR-v0 fixture with a separately stored slot.
+        elf = program([0x0040F809, 0x24840004, 0x03E00008, 0,
+                       BASE + 20, 0x03E00008, 0])
+        descriptor = dict(site=hex(BASE), register=2, pointers=[hex(BASE + 16)])
+        mapping = pointer_maps(elf, [descriptor])
+        cfg = discover_entry(elf, indirect_calls={BASE: mapping[BASE]['targets']})
+        self.assertEqual(mapping[BASE]['targets'], [BASE + 20])
+        self.assertEqual(cfg['ranges'], [[BASE, 16]])
+        self.assertEqual(cfg['trapped_calls'], [])
+        source = guard_generated(f'L_{BASE:08X}:\n'
+            '    jump_target = ctx.gpr[2];\n'
+            '    ctx.set_gpr(31, 0x08804008u);\n'
+            '    ctx.gpr[4] += 4;\n', mapping)
+        self.assertIn('ctx.gpr[2], {0x08804014u}', source)
+        self.assertLess(source.index('guard_indirect_call'), source.index('jump_target'))
+        self.assertLess(source.index('guard_indirect_call'), source.index('ctx.set_gpr'))
+        self.assertLess(source.index('guard_indirect_call'), source.index('ctx.gpr[4]'))
+
     def test_pointer_tails_preserve_function_boundaries(self):
         elf = program([0x00800008, 0, BASE + 16, 0xFFFFFFFF, 0x03E00008, 0])
         descriptor = dict(site=hex(BASE), register=4, pointers=[hex(BASE + 8)])

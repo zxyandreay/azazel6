@@ -11,7 +11,9 @@ Repository: `https://github.com/zxyandreay/azazel6`.
 **Checkpoint now available:** work continues on the explicitly selected
 `wip/local-startup-2026-10-22` branch. Commit `8787384` contains the previously
 local source changes; they have been inspected in place. The terminal diagnostic
-has now executed and captured target `0x08AC39A8`. See the appended
+has now executed and captured target `0x08AC39A8`; a subsequent checked-slot
+mapping executes that method and returns. The current boundary is the terminal
+guard at `0x08AC7358`, observing target `0x08ACF96C`. See the appended
 [execution evidence](../research/startup-indirect-2026-10-22.md) before using
 the original proposed experiment below. Do not reapply the root or duplicate
 its trap, and do not pop the existing documentation stash.

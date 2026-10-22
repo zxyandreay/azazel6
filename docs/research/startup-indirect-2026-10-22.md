@@ -154,3 +154,28 @@ effects. The Windows Release build, all 18 integrated CTest suites and the local
 Android ARM64 cross-build passed. This native probe was executed on Windows;
 cross-compilation is not Android execution, and the Android host diagnostic
 remains a separate application.
+
+## Executed checked-slot continuation
+
+**VERIFIED, 2026-10-22:** after the diagnostic commit `32b6e1f`, the profile
+replaces only the `0x08AC2C00` terminal trap with a register-2 pointer call
+derived from file-backed slot `0x08BCF528`, and adds method root `0x08AC39A8`.
+The exact-input validator checks the call instruction, pointer and executable
+target. Runtime dispatch still rejects every other target before link or delay
+effects. No object table is patched and no success stub is introduced.
+
+The 303-root / 24,782-word slice executes `0x08AC39A8`, returns through
+`0x08AC2C08`, and continues graphics setup. The next actual stop is
+`Unverified indirect target 0x08ACF96C at 0x08AC7358`, with block-entry PC and
+RA `0x08AC7350`, SP `0x09FFE600`, a0 `0x00000200`, v0 `0x08ACF96C`, and
+v1 `0x08BCFC88`. This later trap remains terminal. The previous cache, GE and
+two-idle-VBLANK results remain unchanged; both workers remain waiting. The
+runner reports exit 1 / `failed` for the explicit guard, not successful boot.
+
+Independent synthetic regressions cover a JALR-v0 checked slot and retained
+continuation, plus actual runtime dispatch/link/delay/return behavior. A
+registered but unreviewed method must still reject without executing either
+the target or delay side effect. All 66 Python tests and 18 integrated CTest
+suites pass (40.28 seconds for CTest). Windows Release and Android ARM64
+cross-builds pass. The exact-hash Windows run above was executed locally;
+no Android game execution or new Android host APK behavior is claimed.

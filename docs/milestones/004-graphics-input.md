@@ -71,14 +71,16 @@ The event scheduler now queues both observed worker waits, with checked FIFO
 wakeup, cancellation and output ownership. The explicit research idle producer resumes the graphics thread after one
 VBLANK and completes the first GE initialization list and the stock display-mode wait
 after two VBLANK handler returns. No rendering is claimed.
-The 302-root startup probe also passes guarded graphics object methods, three
-checked texture-state writebacks and matrix-state setup. A terminal diagnostic
-now covers helper `0x08AC2B54` and captures target `0x08AC39A8` at call site
-`0x08AC2C00` without executing it. See the
+The 303-root startup probe also passes guarded graphics object methods, three
+checked texture-state writebacks and matrix-state setup. After a terminal
+diagnostic captured target `0x08AC39A8` at call site `0x08AC2C00`, exact-input
+slot review and synthetic regressions permitted that single target. Native
+execution reaches the method and returns through `0x08AC2C08`; the next guard
+traps target `0x08ACF96C` at `0x08AC7358`. See the
 [guarded diagnostic](../research/startup-indirect-2026-10-22.md).
 See [continued coverage](../research/ge-lists.md).
 
-Validation: 65 Python tests, 18 integrated CTest suites, Android ARM64
+Validation: 66 Python tests, 18 integrated CTest suites, Android ARM64
 cross-compilation and synthetic APK build/signature/alignment checks pass.
 Raw traces, translations, APKs and debug keys remain local.
 
