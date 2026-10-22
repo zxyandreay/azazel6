@@ -1,7 +1,8 @@
 import unittest
+import struct
 from test_elf import fixture
 from elf import Elf
-from entry_probe import ge_list_spans
+from entry_probe import ge_list_spans, cache_writeback_spans
 
 
 class GeSpanTests(unittest.TestCase):
@@ -31,3 +32,17 @@ class GeSpanTests(unittest.TestCase):
         for rows in [[row, row], [row] * 65, {}]:
             with self.assertRaises(ValueError):
                 ge_list_spans(self.elf, {"ge_list_spans": rows})
+
+    def test_cache_lines_must_be_fully_file_backed(self):
+        row = {"begin": "0x08804000", "end": "0x08804040"}
+        with self.assertRaises(ValueError):
+            cache_writeback_spans(self.elf, {"cache_writeback_spans": [row]})
+        data = fixture() + bytes(32)
+        struct.pack_into("<I", data, 52 + 16, 64)
+        elf = Elf.parse(data)
+        self.assertEqual(cache_writeback_spans(elf, {"cache_writeback_spans": [row]}),
+                         [(0x08804000, 0x08804040)])
+        for bad in ({"begin": "0x08804004", "end": "0x08804040"},
+                    {"begin": "0x08804000", "end": "0x08804020"}):
+            with self.assertRaises(ValueError):
+                cache_writeback_spans(elf, {"cache_writeback_spans": [bad]})

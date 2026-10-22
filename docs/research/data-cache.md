@@ -39,3 +39,38 @@ compilation pass. Native execution retains its 4096-dispatch/15-second bounds.
 **PLANNED:** graphics/DMA, additional processors and dynamic-code execution need
 explicit cache/coherency integration. This startup handler does not establish
 those contracts, instruction-cache behavior or general PSP cache emulation.
+
+## Texture-state writeback (2026-10-22)
+
+**VERIFIED observation:** after the guarded graphics interface calls, method
+`0x08ACD030` reaches `sceKernelDcacheWritebackRange` (`0x3EE30821`) through
+`0x08B88FC8`. Its first request is address `0x08BEF374`, size `0x20`, returning
+to `0x08ACF200`. The exact-hash producer indexes eight 32-byte command slots,
+using a bounded ring index. The reviewed cache-line envelope is
+`[0x08BEF340, 0x08BEF480)`; this is a data-coherency lease, not permission to
+submit or execute a GE list.
+
+**DOCUMENTED:** the same pinned PSPSDK declares the writeback service void.
+uOFW's small-range L1 path visits 64-byte lines, synchronizes and leaves v0 zero.
+No firmware implementation was copied. Neither inspection nor coherent host
+execution is a measurement of PSP hardware cache timing.
+
+The profile's optional `cache_writeback_spans` must be complete, file-backed,
+aligned cache lines. Generation rejects overlap with any discovered instruction
+range. Runtime registration rejects overlap, excess count, oversized spans and
+spans outside canonical memory preceding BSS. Only writeback can use these
+additional leases; writeback/invalidate retains its original BSS/RAM policy.
+Both services check sizes, 64-bit end arithmetic and registered code in every
+intersecting line before recording success. Shared AOT/HLE RAM is unchanged.
+The counters distinguish writebacks from the total completed cache operations.
+
+**VERIFIED execution:** the bounded Windows probe completes three 32-byte
+writebacks at `0x08BEF374`, `0x08BEF394` and `0x08BEF3B4`, then continues into
+graphics matrix/state setup. The cache counter reaches six total operations,
+including the three earlier constructor writeback/invalidate requests. This does
+not submit the texture-state ring to a GPU.
+
+Synthetic tests cover coherent data/return ABI, invalidation-policy isolation,
+lease boundaries, invalid registration, aliases, overflow and code-line overlap.
+General cache emulation, asynchronous device coherency and instruction-cache
+invalidation remain unimplemented.

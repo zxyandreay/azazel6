@@ -178,7 +178,12 @@ class Smoke:
             before = self.logs().count("Host probe suspended")
             foreground = self.logs().count("Host probe foreground")
             self.shell("input", "touchscreen", "motionevent", "DOWN", x, y)
-            self.shell("input", "keyevent", "KEYCODE_HOME")
+            try:
+                self.shell("input", "keyevent", "KEYCODE_HOME")
+            finally:
+                # Home cancels the app's contact, but the shell-injected global
+                # gesture must also end before another gesture or activity launch.
+                self.shell("input", "touchscreen", "motionevent", "UP", x, y)
             self.wait(lambda: self.logs().count("Host probe suspended") > before, "background suspend")
             self.shell("am", "start", "-W", "-n", COMPONENT, timeout=60)
             self.wait(lambda: self.logs().count("Host probe foreground") > foreground, "foreground resume")

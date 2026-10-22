@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
             (image_end + 255u) & ~255u, stack_top - bootstrap_size);
         const auto partition = azazel6::register_memory_hle(*rt, allocator);
         const auto data_cache = azazel6::register_data_cache_hle(*rt,
-            (image_segment->vaddr + image_segment->file_size + 63u) & ~63u, stack_top);
+            (image_segment->vaddr + image_segment->file_size + 63u) & ~63u, stack_top, AZAZEL6_CACHE_WRITEBACK_SPANS);
         const auto language = azazel6::register_language_hle(*rt,
             {AZAZEL6_LANGUAGE, AZAZEL6_CONFIRM_BUTTON},
             (image_segment->vaddr + image_segment->file_size + 3u) & ~3u, stack_top);
@@ -105,7 +105,8 @@ int main(int argc, char** argv) {
         rt->run(elf.runtime_entry(), 32768);
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
-        std::cout << "data_cache_ranges=" << data_cache->completed_ranges << std::endl;
+        std::cout << "data_cache_ranges=" << data_cache->completed_ranges
+                  << " writeback_ranges=" << data_cache->writeback_ranges << std::endl;
         std::cout << "edram_size_reads=" << graphics_memory->size_reads
                   << " edram_address_reads=" << graphics_memory->address_reads << std::endl;
         std::cout << "ge_callback_count=" << ge_callbacks->count() << std::endl;

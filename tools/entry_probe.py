@@ -23,23 +23,32 @@ def language_mode(startup):
 
 def ge_list_spans(elf, startup):
     """Validate explicitly investigated, file-backed GE initialization leases."""
-    rows = startup.get("ge_list_spans", [])
+    return file_data_spans(elf, startup, "ge_list_spans", 4)
+
+
+def cache_writeback_spans(elf, startup):
+    """Authorize complete cache lines of investigated file-backed data only."""
+    return file_data_spans(elf, startup, "cache_writeback_spans", 64)
+
+
+def file_data_spans(elf, startup, key, alignment):
+    rows = startup.get(key, [])
     if not isinstance(rows, list) or len(rows) > 64:
-        raise ValueError("Invalid GE span table")
+        raise ValueError(f"Invalid {key} table")
     result = []
     for row in rows:
         if not isinstance(row, dict) or set(row) != {"begin", "end"}:
-            raise ValueError("GE spans require begin/end")
+            raise ValueError(f"{key} require begin/end")
         if not all(isinstance(row[k], str) for k in ("begin", "end")):
-            raise ValueError("GE span addresses must be hexadecimal strings")
+            raise ValueError(f"{key} addresses must be hexadecimal strings")
         begin, end = int(row["begin"], 16), int(row["end"], 16)
-        if (begin | end) & 3 or not 0x08000000 <= begin < end <= 0x0A000000 or end - begin > 16384:
-            raise ValueError("Invalid GE span bounds")
+        if (begin | end) & (alignment - 1) or not 0x08000000 <= begin < end <= 0x0A000000 or end - begin > 16384:
+            raise ValueError(f"Invalid {key} bounds")
         elf.guest_to_offset(begin, end - begin)
         result.append((begin, end))
     result.sort()
     if any(a[1] > b[0] for a, b in zip(result, result[1:])):
-        raise ValueError("Overlapping GE spans")
+        raise ValueError(f"Overlapping {key}")
     return result
 
 
@@ -57,6 +66,7 @@ def main():
     startup = json.loads((ROOT / "profiles/tekken6/config/startup.json").read_text())
     language, button = language_mode(startup)
     ge_spans = ge_list_spans(elf, startup)
+    cache_spans = cache_writeback_spans(elf, startup)
     indirect = constructor_maps(elf, startup.get("constructor_calls", []))
     pointers = pointer_maps(elf, startup.get("pointer_calls", []))
     if indirect.keys() & pointers.keys():
@@ -88,6 +98,8 @@ def main():
     ranges = sorted(pair for graph in cfg.values() for pair in graph["ranges"])
     if any(a + size > b for (a, size), (b, _) in zip(ranges, ranges[1:])):
         raise ValueError("Overlapping startup roots")
+    if any(start < end and start + size > begin for start, size in ranges for begin, end in cache_spans):
+        raise ValueError("Cache writeback span intersects discovered guest code")
     start_thread = module["start_thread"]
     if not start_thread or not 8 <= start_thread["priority"] <= 119 or not 512 <= start_thread["stack_size"] <= 65536 or start_thread["attributes"] != 0x80000000:
         raise ValueError("Unsupported or missing module-start thread parameters")
@@ -125,11 +137,13 @@ def main():
         f'#define AZAZEL6_BOOTSTRAP_PRIORITY {start_thread["priority"]}u\n'
         f'#define AZAZEL6_BOOTSTRAP_STACK_SIZE {start_thread["stack_size"]}u\n'
         f'#define AZAZEL6_LANGUAGE {language}u\n#define AZAZEL6_CONFIRM_BUTTON {button}u\n'
-        '#define AZAZEL6_GE_LIST_SPANS {' + ','.join(f'{{{begin}u,{end}u}}' for begin, end in ge_spans) + '}\n',
+        '#define AZAZEL6_GE_LIST_SPANS {' + ','.join(f'{{{begin}u,{end}u}}' for begin, end in ge_spans) + '}\n'
+        '#define AZAZEL6_CACHE_WRITEBACK_SPANS {' + ','.join(f'{{{begin}u,{end}u}}' for begin, end in cache_spans) + '}\n',
         encoding="utf-8")
     (output / "manifest.json").write_text(json.dumps({"input_sha256": profile["executable"]["sha256"],
         "language_mode": startup["language_mode"],
         "ge_list_spans": ge_spans,
+        "cache_writeback_spans": cache_spans,
         "cfg": cfg, "module": module, "indirect_maps": indirect, "jump_maps": jumps, "trap_maps": traps, "tail_maps": tails,
         "scope": "Bounded startup CFG, guarded constructor calls and returning imports; no fallback"}, indent=2) + "\n")
     print(f"Generated {sum(g['instruction_words'] for g in cfg.values())} startup instruction words in {output}")

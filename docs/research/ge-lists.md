@@ -97,6 +97,7 @@ four graphics-object method sites are guarded by verified vtable slot
 `0x08ACF154` remains terminal: its observed target is `0x08ACE9C4`, from an
 object with vtable `0x08BCFBD0`. Another unverified method at `0x08AC7358`
 also remains guarded. No guessed target is admitted.
+
 ## Guarded graphics object continuation (2026-10-21)
 
 **VERIFIED:** exact-hash ELF pointer slots `0x08BCFC24`, `0x08BCFB6C` and
@@ -115,3 +116,32 @@ step is bounded discovery of that direct helper, followed by its observed
 interface ownership. Raw disassembly, generated source and execution logs remain
 under `local/`.
 
+## Graphics interface and texture-state continuation (2026-10-22)
+
+**VERIFIED:** the graphics object's interface query at `0x08ACC134` reads
+vtable slot `0x08BCFAE4`, selecting `0x08ACD008`. The observed default object has
+vtable `0x08BD0708`; its slots `0x08BD070C` and `0x08BD0710` select
+`0x08AEBCC4` and `0x08AEBCCC`. Checked calls at `0x08ACD634`/`0x08ACD678` and
+tails at `0x08ACD65C`/`0x08ACD6A0` admit only those verified slots. The observed
+zero-argument branch executes the latter call/tail pair. The nonzero branch is
+covered, not claimed executed.
+
+The graphics setup call at `0x08ACF1F8` reads slot `0x08BCFAF0`, selecting
+`0x08ACD030`. The bounded probe executes it and reaches a 32-byte texture-state
+[cache writeback](data-cache.md). These are translated game methods, including
+the executable's own constant-return methods, not host success stubs. Unknown
+object types and targets still stop. No new drawing stream has been submitted.
+
+The state query at `0x08AE7F78` and its related site `0x08AC2F94` use the
+reviewed slot `0x08BCFB64` selecting `0x08ACD768`; the former executes on the
+observed path. Subsequent matrix setup copies VFPU values and calls direct
+helpers before tail-dispatching at `0x08AC2C8C`. Its object's vtable is
+`0x08BCF510`; the verified slot `0x08BCF524` selects `0x08AC3CC4`, which sets
+two state flags in the guest object. The bounded probe executes this method.
+Only the observed interface target is admitted; other object types still stop.
+
+The current 301-root, 24,728-word slice reaches uncovered helper `0x08AC2B54`,
+return address `0x08AC61F0`. It retains the two VBLANK returns, one completed
+initialization list and 209 state writes. There are three new texture-state
+writebacks, but no second list submission or drawing evidence. The next coverage
+step needs a bounded CFG and terminal guards for that helper's indirect calls.

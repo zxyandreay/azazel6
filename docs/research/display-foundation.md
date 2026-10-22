@@ -59,7 +59,9 @@ enable-before-register, interrupt arguments, mask behavior, framebuffer latch
 rules and the LCD clock ratio. These are behavioral references, not reproduced
 PSP hardware evidence. No reference implementation was copied or linked.
 
-**BLOCKED visual verification:** `adb devices` reports no attached device. Android
-cross-compilation cannot establish title rendering, menu input or resource
-lifetime on hardware. **PLANNED:** runnable guest-time accounting, additional observed
-display services, game GE list execution, Android surface/Vulkan and input integration.
+**VERIFIED platform update, 2026-10-22:** the separate
+[synthetic Android host](../development/android-host.md) executes Vulkan, input
+and lifecycle checks on an official AVD. This does not render guest framebuffers
+or establish title/menu behavior. **BLOCKED hardware verification:** no physical
+ARM64 device/controller is attached. **PLANNED:** runnable guest-time accounting,
+additional observed display services, GE drawing and guest input integration.

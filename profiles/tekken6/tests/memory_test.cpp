@@ -55,10 +55,11 @@ void cache_contracts() {
     constexpr std::uint32_t begin = 0x08010000u, end = 0x08030000u;
     auto rt = std::make_unique<psprecomp::Runtime>();
     const auto state = register_data_cache_hle(*rt, begin, end);
-    auto call = [](auto& runtime, std::uint32_t address, std::uint32_t size) {
+    auto call = [](auto& runtime, std::uint32_t address, std::uint32_t size,
+                   std::uint32_t nid = 0x34B9FA9Eu) {
         auto& c = runtime.cpu(); c.gpr[4] = address; c.gpr[5] = size;
         c.gpr[2] = 0xDEADBEEFu; c.gpr[31] = 0x08001800u; c.pc = 0x08001900u;
-        invoke_returning_import(runtime, c, "UtilsForUser", 0x34B9FA9Eu);
+        invoke_returning_import(runtime, c, "UtilsForUser", nid);
     };
     auto view = rt->memory().aot_fast_view(); view.aot_store32(begin, 0x12345678u);
     call(*rt, begin + 1, 3);
@@ -85,6 +86,40 @@ void cache_contracts() {
     try { register_data_cache_hle(*rt, begin + 1, end); }
     catch (const std::exception&) { rejected = true; }
     check(rejected, "Unaligned cache ownership accepted");
+    // The writeback service shares coherent backing but only its explicit
+    // leases authorize file-backed command data. Invalidation stays narrower.
+    constexpr auto data = begin - 128;
+    auto writer = std::make_unique<psprecomp::Runtime>();
+    const auto writes = register_data_cache_hle(*writer, begin, end, {{data, data + 64}});
+    writer->memory().aot_fast_view().aot_store32(data + 4, 0xCAFEBABEu);
+    call(*writer, data + 4, 32, 0x3EE30821u);
+    call(*writer, begin, 0, 0x3EE30821u);
+    check(!writer->stopped() && writes->writeback_ranges == 2 && writes->completed_ranges == 2 &&
+          writer->cpu().gpr[2] == 0 && writer->cpu().pc == 0x08001800u &&
+          writer->memory().load32(data + 4) == 0xCAFEBABEu, "Writeback coherence/return ABI");
+    call(*writer, data + 4, 32);
+    check(writer->stopped() && writes->completed_ranges == 2, "Writeback lease widened invalidation");
+    for (auto [address, size] : {std::pair{data - 1, 1u}, {data + 63, 2u}, {data + 64, 1u},
+                               {0xFFFFFFFFu, 2u}, {begin, 65536u}, {0x88010000u, 4u}}) {
+        auto bad = std::make_unique<psprecomp::Runtime>();
+        const auto rejected_write = register_data_cache_hle(*bad, begin, end, {{data, data + 64}});
+        call(*bad, address, size, 0x3EE30821u);
+        check(bad->stopped() && !rejected_write->completed_ranges && !rejected_write->writeback_ranges &&
+              bad->cpu().gpr[2] == 0xDEADBEEFu, "Invalid writeback accepted");
+    }
+    auto code = std::make_unique<psprecomp::Runtime>();
+    const auto code_state = register_data_cache_hle(*code, begin, end, {{data, data + 64}});
+    code->register_function(data, [](auto&, auto&) {}, "synthetic_code");
+    call(*code, data + 63, 1, 0x3EE30821u);
+    check(code->stopped() && !code_state->completed_ranges, "Writeback code-line overlap accepted");
+    for (const auto& spans : std::vector<std::vector<std::pair<std::uint32_t, std::uint32_t>>>{
+            {{data + 1, data + 64}}, {{data, begin + 64}}, {{data, data}},
+            {{data, data + 64}, {data, data + 64}}, {{0, 64}}}) {
+        bool invalid = false;
+        try { register_data_cache_hle(*code, begin, end, spans); }
+        catch (const std::exception&) { invalid = true; }
+        check(invalid, "Invalid writeback lease accepted");
+    }
 }
 int main() {
     try { allocator_contracts(); hle_contracts(); cache_contracts(); std::cout << "Shared guest allocation contracts passed\n"; }

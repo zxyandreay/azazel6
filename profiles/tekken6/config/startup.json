@@ -279,7 +279,28 @@
     "0x08AEB1D0",
     "0x08ACD7F0",
     "0x08ACD60C",
-    "0x08ACC110"
+    "0x08ACC110",
+    "0x08ACD010",
+    "0x08ACD008",
+    "0x08AEBCC4",
+    "0x08AEBCCC",
+    "0x08ACD030",
+    "0x08AE7F48",
+    "0x08AC5F8C",
+    "0x08AC6028",
+    "0x08AC63AC",
+    "0x08AC30C8",
+    "0x08ACD768",
+    "0x08AC2C18",
+    "0x08AC2A64",
+    "0x08AC295C",
+    "0x08AC29D0",
+    "0x08AC2AFC",
+    "0x08AC2380",
+    "0x08AC60C4",
+    "0x08AC46DC",
+    "0x08AC3CC4",
+    "0x08AC2E3C"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup, direct-call and validated pointer-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -359,22 +380,6 @@
     },
     {
       "site": "0x08AC7358",
-      "register": 2
-    },
-    {
-      "site": "0x08ACF1F8",
-      "register": 2
-    },
-    {
-      "site": "0x08ACD634",
-      "register": 2
-    },
-    {
-      "site": "0x08ACD678",
-      "register": 2
-    },
-    {
-      "site": "0x08ACC134",
       "register": 2
     }
   ],
@@ -575,6 +580,48 @@
       "pointers": [
         "0x08BCFB88"
       ]
+    },
+    {
+      "site": "0x08ACC134",
+      "register": 2,
+      "pointers": [
+        "0x08BCFAE4"
+      ]
+    },
+    {
+      "site": "0x08ACD634",
+      "register": 2,
+      "pointers": [
+        "0x08BD0710"
+      ]
+    },
+    {
+      "site": "0x08ACD678",
+      "register": 2,
+      "pointers": [
+        "0x08BD0710"
+      ]
+    },
+    {
+      "site": "0x08ACF1F8",
+      "register": 2,
+      "pointers": [
+        "0x08BCFAF0"
+      ]
+    },
+    {
+      "site": "0x08AE7F78",
+      "register": 2,
+      "pointers": [
+        "0x08BCFB64"
+      ]
+    },
+    {
+      "site": "0x08AC2F94",
+      "register": 2,
+      "pointers": [
+        "0x08BCFB64"
+      ]
     }
   ],
   "pointer_tails": [
@@ -707,6 +754,27 @@
       "pointers": [
         "0x08B8FE98"
       ]
+    },
+    {
+      "site": "0x08ACD65C",
+      "register": 25,
+      "pointers": [
+        "0x08BD070C"
+      ]
+    },
+    {
+      "site": "0x08ACD6A0",
+      "register": 25,
+      "pointers": [
+        "0x08BD070C"
+      ]
+    },
+    {
+      "site": "0x08AC2C8C",
+      "register": 25,
+      "pointers": [
+        "0x08BCF524"
+      ]
     }
   ],
   "language_mode": {
@@ -746,6 +814,12 @@
     {
       "begin": "0x08BEFBE8",
       "end": "0x08BEFF34"
+    }
+  ],
+  "cache_writeback_spans": [
+    {
+      "begin": "0x08BEF340",
+      "end": "0x08BEF480"
     }
   ]
 }

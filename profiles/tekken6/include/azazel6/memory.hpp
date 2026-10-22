@@ -30,10 +30,12 @@ struct PartitionMemory {
 };
 std::shared_ptr<PartitionMemory> register_memory_hle(psprecomp::Runtime&, std::shared_ptr<GuestAllocator>);
 struct DataCacheState {
-    std::uint64_t completed_ranges = 0;
+    std::uint64_t completed_ranges = 0, writeback_ranges = 0;
     std::uint32_t last_address = 0, last_size = 0;
 };
-// Single-threaded coherent RAM only, outside the file-backed executable image.
+// Single-threaded coherent RAM. Additional reviewed file-backed data leases
+// authorize writeback only; invalidation retains its original BSS/RAM boundary.
 std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime&,
-                                                     std::uint32_t data_begin, std::uint32_t data_end);
+    std::uint32_t data_begin, std::uint32_t data_end,
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> writeback_spans = {});
 } // namespace azazel6
