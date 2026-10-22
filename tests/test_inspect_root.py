@@ -47,6 +47,36 @@ class InspectRootTests(unittest.TestCase):
         self.assertEqual(report['reviewed_indirect_sites'], [f'0x{BASE:08X}'])
         self.assertEqual(report['candidate_callees'], [])
 
+    def test_existing_root_requires_explicit_read_only_audit(self):
+        jal = 0x0C000000 | ((BASE + 16) >> 2 & 0x03FFFFFF)
+        elf = program([jal, 0, 0x03E00008, 0, 0x03E00008, 0])
+        with self.assertRaisesRegex(ValidationError, "already declared in the local startup roots"):
+            inspect_root(elf, BASE, (BASE,))
+        report = inspect_root(elf, BASE, (BASE,), inspect_existing_root=True)
+        self.assertEqual(report['status'], 'CFG_DISCOVERED_EXISTING_ROOT')
+        self.assertEqual(report['profile_membership'], 'EXISTING_STARTUP_ROOT')
+        self.assertEqual(report['candidate_callees'], [f'0x{BASE+16:08X}'])
+        self.assertNotIn('generated', report)
+        # The inspector may review an existing root, but cannot treat a second
+        # already-declared function as new AOT coverage.
+        excluded = inspect_root(elf, BASE, (BASE, BASE + 16), inspect_existing_root=True)
+        self.assertEqual(excluded['candidate_callees'], [])
+        self.assertEqual(excluded['instruction_words'], 4)
+
+    def test_import_stub_still_rejects_existing_root_audit(self):
+        elf = program([0x03E00008, 0])
+        with self.assertRaisesRegex(ValidationError, "PSP import stub"):
+            inspect_root(elf, BASE, (), (BASE,))
+        with self.assertRaisesRegex(ValidationError, "PSP import stub"):
+            inspect_root(elf, BASE, (BASE,), (BASE,), inspect_existing_root=True)
+        for bad in (None, 1, 0, "true"):
+            with self.subTest(flag=bad), self.assertRaises(ValidationError):
+                inspect_root(elf, BASE, (), inspect_existing_root=bad)
+        blocked = inspect_root(program([0x0080F809, 0]), BASE, (BASE,), inspect_existing_root=True)
+        self.assertEqual(blocked['status'], 'BLOCKED_NEEDS_REVIEW')
+        self.assertEqual(blocked['profile_membership'], 'EXISTING_STARTUP_ROOT')
+        self.assertIn('verified target map', blocked['blocker'])
+
     def test_bad_address_budget_and_owned_boundaries(self):
         elf = program([0x03E00008, 0])
         for address in (BASE + 1, BASE + 0x20, 0xFFFFFFFF, -1, None, True):

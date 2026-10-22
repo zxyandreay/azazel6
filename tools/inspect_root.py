@@ -40,15 +40,22 @@ def reviewed_transfers(elf, startup):
 
 
 def inspect_root(elf, address, roots, import_stubs=(), *, instruction_budget=4096,
-                 known_transfers=None):
+                 known_transfers=None, inspect_existing_root=False):
     """Return bounded address-only evidence; never mutate the startup profile."""
     if (type(address) is not int or not 0 <= address <= 0xFFFFFFFC or address & 3 or
-            type(instruction_budget) is not int or not 1 <= instruction_budget <= 4096):
+            type(instruction_budget) is not int or not 1 <= instruction_budget <= 4096 or
+            type(inspect_existing_root) is not bool):
         raise ValidationError("Invalid root address or instruction budget")
     existing = frozenset(roots)
     imports = frozenset(import_stubs)
-    if address in existing or address in imports:
-        raise ValidationError("Candidate is already a startup root or import stub")
+    if address in imports:
+        raise ValidationError(f"0x{address:08X} is a PSP import stub, not a function root; "
+                              "investigate its library/NID and HLE contract")
+    is_existing_root = address in existing
+    if is_existing_root and not inspect_existing_root:
+        raise ValidationError(f"0x{address:08X} is already declared in the local startup roots; "
+                              "use --inspect-existing-root for an audit, or regenerate "
+                              "and rerun the bounded native probe to locate its next stop")
     if not any(s.flags & 1 and s.vaddr <= address and address + 4 <= s.vaddr + s.filesz
                for s in elf.segments):
         raise ValidationError("Candidate is not executable file-backed guest code")
@@ -64,11 +71,12 @@ def inspect_root(elf, address, roots, import_stubs=(), *, instruction_budget=409
         preview.append({"pc": f"0x{pc:08X}",
                         "word": f"0x{int.from_bytes(elf.data[offset:offset + 4], 'little'):08X}"})
     report = {"candidate": f"0x{address:08X}", "status": "RESEARCH_ONLY",
+              "profile_membership": "EXISTING_STARTUP_ROOT" if is_existing_root else "NEW_CANDIDATE",
               "instruction_budget": instruction_budget, "first_words": preview,
               "limitations": "Static CFG only; not AOT coverage, boot progress or a verified function boundary"}
     try:
         cfg = discover_entry(elf, instruction_budget, address,
-                             import_stubs=imports, external_entries=existing,
+                             import_stubs=imports, external_entries=existing - {address},
                              **(known_transfers or {}))
     except ValidationError as error:
         report.update(status="BLOCKED_NEEDS_REVIEW", blocker=str(error))
@@ -80,7 +88,8 @@ def inspect_root(elf, address, roots, import_stubs=(), *, instruction_budget=409
         if any(s.flags & 1 and s.vaddr <= target and target + 4 <= s.vaddr + s.filesz
                for s in elf.segments):
             candidates.add(target)
-    report.update(status="CFG_DISCOVERED_NOT_AUTHORIZED",
+    report.update(status="CFG_DISCOVERED_EXISTING_ROOT" if is_existing_root else
+                  "CFG_DISCOVERED_NOT_AUTHORIZED",
                   instruction_words=cfg["instruction_words"],
                   ranges=[[f"0x{a:08X}", size] for a, size in cfg["ranges"]],
                   direct_calls={f"0x{site:08X}": f"0x{target:08X}"
@@ -98,6 +107,8 @@ def main(argv=None):
     parser.add_argument("input", type=Path, help="Your locally owned decrypted ULUS10466 EBOOT")
     parser.add_argument("--root", required=True, help="Uncovered guest function address, e.g. 0x08ACD010")
     parser.add_argument("--budget", type=int, default=4096)
+    parser.add_argument("--inspect-existing-root", action="store_true",
+                        help="Audit a root already in the local startup profile; never authorizes new AOT code")
     parser.add_argument("--output", type=Path, default=ROOT / "local/root-inspection")
     args = parser.parse_args(argv)
     # No side effects or output before verifying the exact executable fingerprint.
@@ -111,7 +122,8 @@ def main(argv=None):
     report = inspect_root(elf, root, (int(x, 16) for x in startup["roots"]),
                           (int(x["stub"], 16) for x in module["imports"]),
                           instruction_budget=args.budget,
-                          known_transfers=reviewed_transfers(elf, startup))
+                          known_transfers=reviewed_transfers(elf, startup),
+                          inspect_existing_root=args.inspect_existing_root)
     report["input_sha256"] = elf.report()["sha256"]
     out = local_output(args.output)
     out.mkdir(parents=True, exist_ok=True)
@@ -120,7 +132,7 @@ def main(argv=None):
     print(f"{report['status']}: {path}")
     if "blocker" in report:
         print(f"Reason: {report['blocker']}", file=sys.stderr)
-    return 0 if report["status"] == "CFG_DISCOVERED_NOT_AUTHORIZED" else 2
+    return 0 if report["status"] in ("CFG_DISCOVERED_NOT_AUTHORIZED", "CFG_DISCOVERED_EXISTING_ROOT") else 2
 
 
 if __name__ == "__main__":
