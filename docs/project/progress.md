@@ -36,7 +36,7 @@ Azazel6 is not playable. See
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
 | Android host APK | VERIFIED synthetic SDL/Vulkan probe builds, signs and passes ARM64 and x86_64 ELF / 16 KiB ELF and ZIP alignment checks; no game code |
 | Host input | VERIFIED synthetic touch identity, stock coordinate and analog contracts; SDL gamepad/touch adapter compiled, guest input integration remains unimplemented |
-| Android virtual device | VERIFIED official emulator API 37 x86_64 / 16 KiB: APK installation, Vulkan pixels, touch, virtual controller, three Home/resume cycles and 30-second advancing-frame interval |
+| Android virtual device | VERIFIED official emulator API 37 x86_64 / 16 KiB and API 35 x86_64 / 4 KiB: APK installation, Vulkan pixels, touch, virtual controller, navigation overlays, three Home/resume cycles and 30-second advancing-frame intervals; API 35 setup limitations documented |
 | Physical Android device | BLOCKED: no physical ARM64 device/controller attached; hardware GPU/input behavior unverified |
 | Game boot/combat/graphics/audio/input | Not implemented |
 | Ultrawide gameplay hooks / moveset packages | PLANNED; reference research only |

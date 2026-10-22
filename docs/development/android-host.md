@@ -118,9 +118,23 @@ Use the actual serial reported by ADB. The runner requires an emulator, a build
 report matching the APK hash, the AVD's primary ABI and a fresh evidence directory.
 It uses Android's [uinput test interface](https://android.googlesource.com/platform/frameworks/base/+/HEAD/cmds/uinput/)
 for a virtual controller; it does not inject SDL events inside the application.
-The latest local passing evidence is under
-`local/android-runtime/api37-overlay-clean/` (APK SHA-256
+Local passing evidence is under `local/android-runtime/api37-overlay-clean/`
+and `local/android-runtime/api35-threebutton/` (APK SHA-256
 `042e2ca5b7b1df2307db20bcd65961132acddd2a64d40c96c9cb219db305188c`).
+The API 35 Google APIs x86_64 image (revision 9, 4 KiB pages) also passes actual
+installation, Vulkan pixel checks, touch, virtual controller held disconnect,
+navigation overlay changes, three Home/resume cycles and a 30-second advancing
+frame interval. Its final recorded synthetic frame is 3960. The existing
+WHPX-enabled emulator 36.5.10 was reused; the additional image is local.
+
+**VERIFIED limitation:** initial API 35 attempts hit a first-frame timeout and
+SystemUI ANR/dialog interference during navigation testing. Failed evidence is
+retained locally. The final passing run used three-button navigation, with the
+smoke test switching to gesture navigation and restoring the original mode.
+The injected lifecycle touch now always receives its matching UP. This result
+does not establish reliable cold-boot behavior or a proven cause for the
+SystemUI failures. Both passing AVDs run the x86_64 synthetic host; advertised
+ARM64 translation support is not physical ARM64 execution evidence.
 Build reports alone deliberately
 retain `device_execution: NOT TESTED`; separate runtime reports identify the exact
 APK hash and executed checks. Per-ABI output directories have separate debug keys;
