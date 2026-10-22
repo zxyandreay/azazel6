@@ -31,3 +31,15 @@ The next execution dependency is display interrupt integration in
 [Milestone 004](004-graphics-input.md). Begin that work while keeping this
 milestone's title-screen gate open. Missing kernel/I/O/module services still
 belong here and must be implemented when encountered.
+
+## Candidate-root inspection handoff (2026-10-22)
+
+**IMPLEMENTED tooling, not verified game progression:** `tools/inspect_root.py`
+provides a strict-hash, bounded, local-only CFG inspection for the next uncovered
+direct helper `0x08ACD010`. It never expands authorized AOT roots automatically;
+unknown indirect transfers and size limits produce explicit research blockers.
+The source and synthetic test cases were added without access to the user-owned
+EBOOT in this session. Re-run the complete Python suite, execute the inspector
+locally with the exact EBOOT, review its candidate call targets and only then
+consider carefully expanding startup coverage. The prior 280-root/23,880-word
+checkpoint and title-screen gate remain unchanged.
