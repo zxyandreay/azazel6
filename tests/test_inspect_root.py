@@ -39,6 +39,14 @@ class InspectRootTests(unittest.TestCase):
         self.assertEqual(report['first_words'][0]['word'], '0x0080F809')
         self.assertNotIn('candidate_callees', report)
 
+    def test_reviewed_indirect_remains_guarded_but_scannable(self):
+        elf = program([0x0080F809, 0, 0x03E00008, 0])
+        known = {"indirect_calls": {BASE: [BASE + 16]}}
+        report = inspect_root(elf, BASE, (), known_transfers=known)
+        self.assertEqual(report['status'], 'CFG_DISCOVERED_NOT_AUTHORIZED')
+        self.assertEqual(report['reviewed_indirect_sites'], [f'0x{BASE:08X}'])
+        self.assertEqual(report['candidate_callees'], [])
+
     def test_bad_address_budget_and_owned_boundaries(self):
         elf = program([0x03E00008, 0])
         for address in (BASE + 1, BASE + 0x20, 0xFFFFFFFF, -1, None, True):
