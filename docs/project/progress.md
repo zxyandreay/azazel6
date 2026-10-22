@@ -50,3 +50,13 @@ with PPSSPP, and Jin8 freezes are not fixed.
 The [graphics/input foundation](../research/display-foundation.md) is implemented.
 Milestone 003 remains open until title boot is verified; this is an observed
 dependency transition, not a claim that boot or rendering is complete.
+
+**2026-10-22 supplemental source checkpoint:** A new bounded, fail-closed
+`tools/inspect_root.py` candidate-root inspector and synthetic regression
+tests were added for the next direct helper `0x08ACD010`. The tool never
+edits `startup.json`, runs recompilation or claims game boot. Python syntax
+checks and isolated mock-dependency contract checks were performed in a remote
+Linux environment; the full repository suite, exact-EBOOT inspection, native
+probe, Android SDK builds and AVD runs were **not available** in that environment.
+The previously verified game execution and graphics boundaries above are
+unchanged.
