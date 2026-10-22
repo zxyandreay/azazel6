@@ -113,3 +113,44 @@ EBOOT/ISO, disassembly/raw instruction dumps, generated game code, extracted
 assets, secret files, or unreviewed diagnostic logs.
 
 CI workflows must remain manually dispatched; prefer local tests and builds.
+
+## Executed terminal diagnostic on the checkpoint branch
+
+**VERIFIED, 2026-10-22:** `wip/local-startup-2026-10-22` at `8787384`
+contains the previously local source checkpoint. The working tree was clean;
+the existing documentation stash was left untouched. A fresh ignored backup
+retains the profile, starting commit and working diff before this experiment.
+
+The experiment added only root `0x08AC2B54` and the empty-target register-2
+trap at `0x08AC2C00`. The bounded CFG contains 45 additional instruction words,
+with all four direct callees already covered. The complete slice has 302 roots
+and 24,773 words. Generated guard placement was inspected: it precedes target
+dispatch, the JALR link update and the delay slot.
+
+The exact-hash Windows probe stops with:
+
+- **VERIFIED:** `Unverified indirect target 0x08AC39A8 at 0x08AC2C00`.
+- `a0 = 0x08C44E00`, `v0 = 0x08AC39A8`, `v1 = 0x08BCF510`, and
+  the checked first word of the object is `0x08BCF510`.
+- `ra = 0x08AC2BF4` remains the prior direct-call return; JALR has not replaced it.
+  The runtime reports block-entry PC `0x08AC2BF4`; the stop reason identifies
+  the exact trapped instruction. Runner status is `failed`, native exit code 1,
+  as expected for this deliberate guard. This is not a successful boot.
+- Prior results remain: three texture-state writebacks (six total cache ranges),
+  one GE initialization list, 209 GE state writes and two idle VBLANK returns.
+
+**VERIFIED static follow-up:** the observed vtable's slot `0x08BCF528`
+(`+0x18`) contains `0x08AC39A8` in the exact executable. Its complete bounded
+five-instruction method sets the object's words at offsets `0x24` and `0x1C`
+to one and returns zero, including the store in the return delay slot. Both
+observed destinations are within the ELF's static zero-initialized memory
+extent, ending at `0x08C63044`. It has no additional calls or indirect targets.
+This static review alone does not authorize execution; the diagnostic commit
+retains the terminal trap. Raw instructions and execution logs remain local.
+
+The local Python suite passes 65 cases, including a synthetic object-load/JALR-v0
+fixture verifying terminal CFG reachability and guard ordering before link/delay
+effects. The Windows Release build, all 18 integrated CTest suites and the local
+Android ARM64 cross-build passed. This native probe was executed on Windows;
+cross-compilation is not Android execution, and the Android host diagnostic
+remains a separate application.

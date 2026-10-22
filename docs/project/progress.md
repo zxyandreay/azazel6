@@ -11,7 +11,7 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 57 cases passed |
+| Python/profile tools | VERIFIED, 65 cases passed locally |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; eighteen integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
@@ -30,7 +30,7 @@ Azazel6 is not playable. See
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED startup graphics thread Waiting at VBLANK; both workers Waiting on their shared event flag; graphics completes initialization GE work, SetMode and guarded graphics object methods, then stops at direct helper 0x08ACD010 |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics objects and three texture-state writebacks; the 302-root diagnostic traps target 0x08AC39A8 at 0x08AC2C00 before execution; both workers remain Waiting |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

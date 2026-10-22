@@ -4,7 +4,8 @@ import unittest
 
 from test_elf import fixture
 from elf import Elf, ValidationError
-from inspect_root import inspect_root
+from inspect_root import inspect_root, reviewed_transfers
+from indirect_calls import guard_generated
 
 BASE = 0x08804000
 
@@ -46,6 +47,27 @@ class InspectRootTests(unittest.TestCase):
         self.assertEqual(report['status'], 'CFG_DISCOVERED_NOT_AUTHORIZED')
         self.assertEqual(report['reviewed_indirect_sites'], [f'0x{BASE:08X}'])
         self.assertEqual(report['candidate_callees'], [])
+
+    def test_object_call_diagnostic_stops_before_link_and_delay(self):
+        # Synthetic object/slot loads and JALR v0. The unsupported successor
+        # must not become reachable merely because a terminal guard is present.
+        elf = program([0x8C830000, 0x8C620018, 0x0040F809, 0x24840004, 0x0000000C])
+        site = BASE + 8
+        transfers = reviewed_transfers(elf, {
+            'trapped_calls': [{'site': hex(site), 'register': 2}]})
+        report = inspect_root(elf, BASE, (), known_transfers=transfers)
+        self.assertEqual(report['instruction_words'], 4)
+        self.assertEqual(report['trapped_transfer_sites'], [f'0x{site:08X}'])
+        self.assertEqual(report['reviewed_indirect_sites'], [])
+        self.assertEqual(report['candidate_callees'], [])
+        source = guard_generated(f'L_{site:08X}:\n'
+            '    jump_target = ctx.gpr[2];\n'
+            '    ctx.set_gpr(31, 0x08804010u);\n'
+            '    ctx.gpr[4] += 4;\n', transfers['trapped_calls'])
+        self.assertIn('ctx.gpr[2], {})) return;', source)
+        self.assertLess(source.index('guard_indirect_call'), source.index('jump_target'))
+        self.assertLess(source.index('guard_indirect_call'), source.index('ctx.set_gpr'))
+        self.assertLess(source.index('guard_indirect_call'), source.index('ctx.gpr[4]'))
 
     def test_existing_root_requires_explicit_read_only_audit(self):
         jal = 0x0C000000 | ((BASE + 16) >> 2 & 0x03FFFFFF)

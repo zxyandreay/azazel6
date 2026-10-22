@@ -8,6 +8,14 @@ This is **not** permission to bypass verified-input or safe-execution boundaries
 
 Repository: `https://github.com/zxyandreay/azazel6`.
 
+**Checkpoint now available:** work continues on the explicitly selected
+`wip/local-startup-2026-10-22` branch. Commit `8787384` contains the previously
+local source changes; they have been inspected in place. The terminal diagnostic
+has now executed and captured target `0x08AC39A8`. See the appended
+[execution evidence](../research/startup-indirect-2026-10-22.md) before using
+the original proposed experiment below. Do not reapply the root or duplicate
+its trap, and do not pop the existing documentation stash.
+
 **Important branch distinction:** GitHub `main` initially contains the
 published research tools but **not** the maintainer's 12 locally modified source
 and documentation files described in the research checkpoint. A cloud Codex
