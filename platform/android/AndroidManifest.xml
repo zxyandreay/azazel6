@@ -11,7 +11,7 @@
         android:hardwareAccelerated="true" android:enableOnBackInvokedCallback="false">
         <activity android:name="org.azazel6.probe.HostActivity" android:exported="true"
             android:screenOrientation="sensorLandscape"
-            android:configChanges="layoutDirection|locale|fontScale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation">
+            android:configChanges="layoutDirection|locale|grammaticalGender|fontScale|fontWeightAdjustment|assetsPaths|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

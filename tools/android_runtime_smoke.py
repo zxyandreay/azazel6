@@ -40,7 +40,7 @@ class Smoke:
         return self.call("shell", *args, timeout=timeout).decode(errors="replace").strip()
 
     def logs(self):
-        return self.call("logcat", "-d", "-v", "threadtime", "-s", "SDL/APP", "SDL", "AndroidRuntime", "libc").decode(errors="replace")
+        return self.call("logcat", "-d", "-v", "threadtime", "-s", "SDL/APP", "SDL", "Azazel6Host", "AndroidRuntime", "libc").decode(errors="replace")
 
     def wait(self, predicate, label, seconds=45):
         deadline = time.monotonic() + seconds
@@ -77,6 +77,7 @@ class Smoke:
         if (manifest.get("kind") != "synthetic_host_probe" or manifest.get("game_execution") is not False or
                 hashlib.sha256(apk.read_bytes()).hexdigest() != manifest.get("sha256")):
             raise ValueError("APK does not match the synthetic build report")
+        self.call("wait-for-device", timeout=180)
         self.wait(lambda: self.shell("getprop", "sys.boot_completed") == "1", "Android boot", 180)
         abis = self.shell("getprop", "ro.product.cpu.abilist").split(",")
         if manifest.get("abi") != abis[0]:
@@ -150,6 +151,29 @@ class Smoke:
                   cleared_before_disconnect, "controller state cleared after removal", 15)
         self.capture("virtual-button-disconnected", "blue")
         self.passed("Android virtual controller connect, press, release and held disconnect")
+        overlays = self.shell("cmd", "overlay", "list", "--user", "0")
+        (self.output / "overlays-before.txt").write_text(overlays)
+        prefix = "com.android.internal.systemui.navbar."
+        enabled = re.findall(r"\[x\] (" + re.escape(prefix) + r"[a-z0-9_]+)", overlays)
+        alternate = prefix + ("threebutton" if prefix + "gestural" in enabled else "gestural")
+        if len(enabled) != 1 or alternate not in overlays:
+            raise RuntimeError("AVD lacks the expected navigation overlays for configuration testing")
+        try:
+            before_config = self.logs().count("Host configuration updated")
+            self.shell("cmd", "overlay", "enable-exclusive", "--user", "0", "--category", alternate)
+            self.wait(lambda: self.logs().count("Host configuration updated") > before_config,
+                      "resource overlay configuration update", 15)
+            time.sleep(2)
+            if self.shell("pidof", PACKAGE) != pid:
+                raise RuntimeError("App restarted during resource overlay update")
+            self.capture("overlay-changed", "blue")
+        finally:
+            self.shell("cmd", "overlay", "enable-exclusive", "--user", "0", "--category", enabled[0])
+        time.sleep(2)
+        if self.shell("pidof", PACKAGE) != pid:
+            raise RuntimeError("App restarted while restoring resource overlay")
+        self.capture("overlay-restored", "blue")
+        self.passed("navigation resource overlay changes retained process and Vulkan output")
         for cycle in range(3):
             before = self.logs().count("Host probe suspended")
             foreground = self.logs().count("Host probe foreground")
@@ -213,6 +237,10 @@ def main():
     finally:
         try:
             (output / "logcat.txt").write_text(smoke.logs(), encoding="utf-8")
+            (output / "logcat-all.txt").write_bytes(smoke.call("logcat", "-d", "-v", "threadtime"))
+            if smoke.report["status"] != "passed":
+                (output / "failure.png").write_bytes(smoke.call("exec-out", "screencap", "-p"))
+                (output / "activity.txt").write_text(smoke.shell("dumpsys", "activity", "activities"), encoding="utf-8")
         except (OSError, RuntimeError, subprocess.TimeoutExpired):
             pass
         (output / "result.json").write_text(json.dumps(smoke.report, indent=2) + "\n")

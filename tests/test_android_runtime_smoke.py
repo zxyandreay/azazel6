@@ -46,7 +46,7 @@ class RuntimeGuardTests(unittest.TestCase):
                 sha256=hashlib.sha256(apk.read_bytes()).hexdigest())))
             smoke = Smoke(Path("adb"), "emulator-5554", Path(directory))
             smoke.shell = Mock(side_effect=["1", "x86_64,arm64-v8a"])
-            smoke.call = Mock(side_effect=AssertionError("must not install"))
+            smoke.call = Mock(return_value=b"")
             with self.assertRaisesRegex(ValueError, "primary ABI"):
                 smoke.run(apk, 30)
-            smoke.call.assert_not_called()
+            smoke.call.assert_called_once_with("wait-for-device", timeout=180)

@@ -53,6 +53,7 @@ Guest idle events retain the limits of [ADR-0002](ADR-0002-bounded-idle-events.m
 Allow x86_64 only for the separate synthetic host so official accelerated AVDs
 can execute a matching ABI. The game target remains ARM64. Validate the ELF
 machine and the AVD primary ABI explicitly; ARM translation is not native ARM
-coverage. Run the host on local official AVDs and an API 35 KVM GitHub runner,
-with captured pixels and Android uinput events in addition to logs. Physical
+coverage. Run the host on local official AVDs, with captured pixels and Android
+uinput events in addition to logs. The API 35 KVM GitHub workflow is a manual
+fallback only; routine pushes do not run hosted validation. Physical
 ARM64 hardware and the game/menu exit gates remain separate requirements.

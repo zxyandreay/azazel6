@@ -16,7 +16,9 @@ was used; the image's ARM64 translation capability is not ARM64 execution eviden
 The automated AVD run verified installation, launch, Vulkan presentation with
 captured pixels, touch down/up, a virtual controller's connection/button/release/
 held disconnect, three Home/resume cycles retaining the process and clearing
-contacts, and 30 seconds of subsequent advancing frames. It reached frame 3000.
+contacts, and 30 seconds of subsequent advancing frames. The latest run also
+switched navigation resource overlays and restored the original selection while
+retaining the process and Vulkan output; it reached frame 3840.
 Captured center pixels were (13,20,46) at rest, (13,128,46) for touch and
 (128,20,46) for the controller. This is synthetic host execution, not game rendering.
 Physical ARM64 GPU/controller behavior, multitouch and long sessions remain unverified.
@@ -27,6 +29,16 @@ injection did not reach SDL, and shell `input keyevent` used virtual device -1.
 The supported Android `uinput` command provided a discoverable virtual controller.
 Testing exposed and fixed landscape orientation and selection of newly attached
 controllers when the emulator's built-in D-pad was already open.
+
+Local testing also reproduced resource-overlay configuration changes. SDL's
+activity recreation path exits the native application, so the native-only probe
+now explicitly handles `assetsPaths`, font weight and grammatical gender changes
+alongside its existing configuration set. SDL still receives configuration and
+surface updates. The smoke test changes/restores navigation overlays, verifies
+the configuration callback, checks the unchanged process and captures Vulkan
+pixels. It retains full system logcat and failure screenshots for diagnosis.
+Earlier hosted API 35 attempts failed at controller-removal polling and activity
+recreation; neither is recorded as a passing run. Continued validation is local.
 
 ## Build
 
@@ -107,7 +119,9 @@ report matching the APK hash, the AVD's primary ABI and a fresh evidence directo
 It uses Android's [uinput test interface](https://android.googlesource.com/platform/frameworks/base/+/HEAD/cmds/uinput/)
 for a virtual controller; it does not inject SDL events inside the application.
 The latest local passing evidence is under
-`local/android-runtime/api37-16k-controller/`. Build reports alone deliberately
+`local/android-runtime/api37-overlay-clean/` (APK SHA-256
+`042e2ca5b7b1df2307db20bcd65961132acddd2a64d40c96c9cb219db305188c`).
+Build reports alone deliberately
 retain `device_execution: NOT TESTED`; separate runtime reports identify the exact
 APK hash and executed checks. Per-ABI output directories have separate debug keys;
 uninstall the diagnostic before switching between differently signed builds.
