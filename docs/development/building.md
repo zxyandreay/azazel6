@@ -79,6 +79,30 @@ host to 32768 dispatches, and interpreter fallback is explicitly disabled. The t
 StartThread and exit services now support bounded priority handoff; waiting, timers and general scheduling remain unimplemented. Dispatch exhaustion, uncovered code and rejected
 SDK versions are experiment failures, not completed research boundaries.
 
+
+## Inspect the next uncovered startup helper (no game output committed)
+
+The bounded entry probe currently stops at direct helper `0x08ACD010`. The
+new inspector reuses the strict profile fingerprint and conservative entry CFG
+scanner to inspect this root **without changing** `startup.json` or authorizing
+AOT execution. Run on a computer with your own decrypted, exact-hash input:
+
+```sh
+python tools/inspect_root.py local/game/EBOOT.BIN --root 0x08ACD010
+```
+
+The report is written to ignored
+`local/root-inspection/root-08ACD010.json`. It records the first eight
+file-backed instruction words for **local** reverse-engineering, bounded
+discovered ranges, direct call candidates, and any unsupported indirect-control
+boundary. A nonzero exit (2) indicates a CFG boundary requiring manual review;
+it does **not** silently permit unknown control flow. If new targets are
+investigated, validate their byte and indirect-call ownership before updating
+the startup profile and regenerating the probe. Static discovery, even when
+successful, is not proof of native execution or gameplay. Never commit the raw
+report or game-derived code. Synthetic inspector regressions live in
+`tests/test_inspect_root.py` and run with the existing Python suite.
+
 ## Android cross-compilation
 
 Tested NDK package: `27.1.12297006`. Set `ANDROID_NDK_HOME` to that installed NDK,
