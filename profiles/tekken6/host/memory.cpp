@@ -5,11 +5,15 @@
 namespace azazel6 {
 std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
     std::uint32_t begin, std::uint32_t end,
-    std::vector<std::pair<std::uint32_t, std::uint32_t>> writeback_spans) {
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> writeback_spans,
+    std::shared_ptr<const PartitionMemory> partition) {
     if (begin < psprecomp::GuestMemory::kPhysicalBase || begin >= end || ((begin | end) & 63u) ||
         static_cast<std::uint64_t>(end) > psprecomp::GuestMemory::kPhysicalBase +
             static_cast<std::uint64_t>(rt.memory().size()))
         throw psprecomp::Error("Invalid coherent data-cache range");
+    if (partition && (partition->owner != &rt || !partition->allocator ||
+        partition->allocator->begin() < begin || partition->allocator->end() > end))
+        throw psprecomp::Error("Invalid cache partition ownership");
     if (writeback_spans.size() > 64) throw psprecomp::Error("Too many cache writeback spans");
     std::sort(writeback_spans.begin(), writeback_spans.end());
     std::uint32_t previous = psprecomp::GuestMemory::kPhysicalBase;
@@ -19,12 +23,19 @@ std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
         previous = hi;
     }
     auto state = std::make_shared<DataCacheState>();
-    const auto operation = [state, begin, end, writeback_spans](auto& runtime, auto& c, bool writeback) {
+    const auto operation = [state, begin, end, writeback_spans, partition](auto& runtime, auto& c, bool writeback) {
         const auto address = c.gpr[4], size = c.gpr[5];
         const auto finish = static_cast<std::uint64_t>(address) + size;
         const bool extra = writeback && std::any_of(writeback_spans.begin(), writeback_spans.end(),
             [address, finish](auto span) { return address >= span.first && finish <= span.second; });
-        if (size >= 0x10000u || (!(address >= begin && finish <= end) && !extra)) {
+        const bool large_owned = writeback && partition && size <= 0x80000u &&
+            std::any_of(partition->blocks.begin(), partition->blocks.end(),
+                [address, finish](const auto& item) {
+                    const auto& block = item.second;
+                    return address >= block.base &&
+                        finish <= static_cast<std::uint64_t>(block.base) + block.size;
+                });
+        if ((size >= 0x10000u && !large_owned) || (!(address >= begin && finish <= end) && !extra)) {
             runtime.stop("Data-cache range outside verified coherent startup memory"); return;
         }
         if (size) {
@@ -40,7 +51,7 @@ std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
         ++state->completed_ranges;
         if (writeback) ++state->writeback_ranges;
         state->last_address = address; state->last_size = size;
-        c.set_gpr(2, 0); // Verified small-range L1 routine leaves v0 zero.
+        c.set_gpr(2, 0); // Inspected successful L1 range paths finish with v0 zero.
     };
     rt.register_hle("UtilsForUser", 0x34B9FA9Eu, [operation](auto& runtime, auto& c) { operation(runtime, c, false); });
     rt.register_hle("UtilsForUser", 0x3EE30821u, [operation](auto& runtime, auto& c) { operation(runtime, c, true); });
@@ -92,7 +103,8 @@ std::uint32_t GuestAllocator::max_free() const {
 std::shared_ptr<PartitionMemory> register_memory_hle(psprecomp::Runtime& rt, std::shared_ptr<GuestAllocator> allocator) {
     if (!allocator || static_cast<std::uint64_t>(allocator->end()) > 0x08000000ull + rt.memory().size())
         throw psprecomp::Error("Partition arena outside RAM");
-    auto state = std::make_shared<PartitionMemory>(); state->allocator = std::move(allocator);
+    auto state = std::make_shared<PartitionMemory>(); state->owner = &rt;
+    state->allocator = std::move(allocator);
     rt.register_hle("SysMemUserForUser", 0x237DBD4Fu, [state](auto& runtime, auto& c) {
         if (c.gpr[4] != 2) { runtime.stop("Unsupported memory partition"); return; }
         const auto type = c.gpr[6], size = c.gpr[7], address = c.gpr[8];

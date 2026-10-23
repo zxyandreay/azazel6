@@ -67,7 +67,8 @@ int main(int argc, char** argv) {
             (image_end + 255u) & ~255u, stack_top - bootstrap_size);
         const auto partition = azazel6::register_memory_hle(*rt, allocator);
         const auto data_cache = azazel6::register_data_cache_hle(*rt,
-            (image_segment->vaddr + image_segment->file_size + 63u) & ~63u, stack_top, AZAZEL6_CACHE_WRITEBACK_SPANS);
+            (image_segment->vaddr + image_segment->file_size + 63u) & ~63u, stack_top,
+            AZAZEL6_CACHE_WRITEBACK_SPANS, partition);
         const auto language = azazel6::register_language_hle(*rt,
             {AZAZEL6_LANGUAGE, AZAZEL6_CONFIRM_BUTTON},
             (image_segment->vaddr + image_segment->file_size + 3u) & ~3u, stack_top);

@@ -71,7 +71,7 @@ The event scheduler now queues both observed worker waits, with checked FIFO
 wakeup, cancellation and output ownership. The explicit research idle producer resumes the graphics thread after one
 VBLANK and completes the first GE initialization list and the stock display-mode wait
 after two VBLANK handler returns. No rendering is claimed.
-The 323-root startup probe also passes guarded graphics object methods, five
+The 323-root startup probe also passes guarded graphics object methods, six
 checked writebacks and matrix-state setup. After a terminal
 diagnostic captured target `0x08AC39A8` at call site `0x08AC2C00`, exact-input
 slot review and synthetic regressions permitted that single target. Native
@@ -80,7 +80,8 @@ checked-slot mapping at `0x08AC7358` executes graphics memory setup and returns;
 the checked method at `0x08AC757C` and three guarded resource-query sites now
 return and complete layout setup. The cleanup helper's empty-list path returns;
 the checked next state callback `0x08862200` now executes and reaches a
-512 KiB cache writeback that the current policy rejects.
+512 KiB writeback within its live partition. The next stop captures matrix
+method `0x08AC3CD8` at the terminal guard `0x08AC3DF0`.
 The cleanup callback remains terminal and has not executed. See the
 [guarded diagnostic](../research/startup-indirect-2026-10-22.md).
 See [continued coverage](../research/ge-lists.md).

@@ -74,3 +74,45 @@ Synthetic tests cover coherent data/return ABI, invalidation-policy isolation,
 lease boundaries, invalid registration, aliases, overflow and code-line overlap.
 General cache emulation, asynchronous device coherency and instruction-cache
 invalidation remain unimplemented.
+
+
+## Live-partition large writeback (2026-10-23)
+
+**VERIFIED observation:** callback `0x08862200` requests a 512 KiB allocation
+through `0x08AC5BF8`, `0x08AEDE30` and `0x08AC594C`. The allocator returns
+`0x09BF4280`; accessor `0x08AC5928` supplies the same buffer. The writeback at
+`0x08B88FC8` covers `[0x09BF4280, 0x09C74280)`, wholly within the live partition
+`[0x08C64000, 0x09E24000)`. The earlier size cap stopped this call.
+
+**DOCUMENTED:** pinned uOFW's `sceKernelL1DcacheWritebackRange` also has a
+large-range path. It inspects cache tags and writes matching lines; its successful
+loop finishes with v0 zero. The service remains void in PSPSDK. These are source
+observations, not hardware cache measurements. No firmware code was copied.
+
+The coherent probe now accepts writebacks from 64 KiB through 512 KiB only if
+the entire interval belongs to one currently live partition block of the same
+runtime. This is an explicit bounded research policy. Registration checks the
+partition's runtime and arena; each call rechecks live block membership, 64-bit
+end arithmetic, canonical data bounds and every intersecting code line. Freeing
+a partition revokes its authority. Adjacent blocks cannot be combined; stacks
+and fixed pools do not confer this authority. Large writeback/invalidate stays
+rejecting. Existing small-range and reviewed file-backed data rules are unchanged.
+
+Partition ownership is deliberately coarser than the game's internal heap:
+it does not prove individual suballocation lifetime. The actual observed buffer
+is freshly allocated on this execution path. General DMA, asynchronous GPU
+visibility, cache timing and instruction-cache invalidation remain unimplemented.
+
+Synthetic contracts cover maximum and unaligned ranges, unchanged AOT-visible
+bytes, return ABI, stale partitions, missing owners, crossing adjacent blocks,
+non-partition reservations, overflow, aliases, code-line overlap, excessive size,
+large invalidation and cross-runtime/out-of-arena registration.
+
+
+**VERIFIED execution:** the same 323-root native probe now completes the
+512 KiB writeback (nine cache ranges, six writebacks) and returns through
+`0x08AEDE80`. The next guard stops at `0x08AC3DF0` with observed target
+`0x08AC3CD8`; a0 is `0x08C44E00`, whose checked first word is `0x08BCF510`.
+No additional GE list or display frame is observed. All 70 Python cases,
+18 CTest suites (52.40 seconds), Windows Release and Android ARM64 builds pass.
+This is host-native game startup research, not Android game execution.

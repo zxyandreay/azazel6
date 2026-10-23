@@ -24,6 +24,7 @@ private:
     std::map<std::uint64_t, GuestAllocation> allocations_;
 };
 struct PartitionMemory {
+    const psprecomp::Runtime* owner = nullptr;
     std::shared_ptr<GuestAllocator> allocator;
     std::map<std::uint32_t, GuestAllocation> blocks;
     std::uint32_t next_uid = 0x10000000u;
@@ -35,7 +36,9 @@ struct DataCacheState {
 };
 // Single-threaded coherent RAM. Additional reviewed file-backed data leases
 // authorize writeback only; invalidation retains its original BSS/RAM boundary.
+// Large writebacks (64..512 KiB) additionally require one live partition block.
 std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime&,
     std::uint32_t data_begin, std::uint32_t data_end,
-    std::vector<std::pair<std::uint32_t, std::uint32_t>> writeback_spans = {});
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> writeback_spans = {},
+    std::shared_ptr<const PartitionMemory> partition = {});
 } // namespace azazel6

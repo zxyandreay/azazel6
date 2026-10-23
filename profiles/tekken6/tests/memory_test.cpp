@@ -121,7 +121,73 @@ void cache_contracts() {
         check(invalid, "Invalid writeback lease accepted");
     }
 }
+void large_writeback_contracts() {
+    static constexpr std::uint32_t begin = 0x08010000u, end = 0x08110000u;
+    struct Fixture {
+        std::unique_ptr<psprecomp::Runtime> rt = std::make_unique<psprecomp::Runtime>();
+        std::shared_ptr<PartitionMemory> partition = register_memory_hle(*rt,
+            std::make_shared<GuestAllocator>(begin, end));
+        std::shared_ptr<DataCacheState> cache = register_data_cache_hle(*rt, begin, end, {}, partition);
+        std::uint32_t allocate(std::uint32_t size) {
+            auto& c = rt->cpu(); c.gpr[4] = 2; c.gpr[5] = begin - 64;
+            c.gpr[6] = 0; c.gpr[7] = size; c.gpr[8] = 0;
+            rt->memory().store8(begin - 64, 0);
+            rt->invoke_import("SysMemUserForUser", 0x237DBD4Fu, c);
+            check(partition->blocks.contains(c.gpr[2]), "Cache fixture allocation failed");
+            return c.gpr[2];
+        }
+        void write(std::uint32_t address, std::uint32_t size, std::uint32_t nid = 0x3EE30821u) {
+            auto& c = rt->cpu(); c.gpr[4] = address; c.gpr[5] = size;
+            c.gpr[2] = 0xDEADBEEFu; c.gpr[31] = 0x08001800u; c.pc = 0x08001900u;
+            invoke_returning_import(*rt, c, "UtilsForUser", nid);
+        }
+        void rejected() {
+            check(rt->stopped() && !cache->completed_ranges && !cache->writeback_ranges &&
+                  rt->cpu().gpr[2] == 0xDEADBEEFu && rt->cpu().pc == 0x08001900u,
+                  "Unowned large writeback mutated state");
+        }
+    };
+    Fixture good; const auto uid = good.allocate(0x80000u);
+    auto view = good.rt->memory().aot_fast_view();
+    view.aot_store32(begin, 0xCAFEBABEu); view.aot_store32(begin + 0x7FFFCu, 0x12345678u);
+    good.write(begin, 0x80000u); good.write(begin + 1, 0x10000u);
+    good.write(begin + 0x70000u, 0x10000u);
+    check(!good.rt->stopped() && good.cache->completed_ranges == 3 && good.cache->writeback_ranges == 3 &&
+          good.rt->cpu().gpr[2] == 0 && good.rt->cpu().pc == 0x08001800u &&
+          good.rt->memory().load32(begin) == 0xCAFEBABEu &&
+          good.rt->memory().load32(begin + 0x7FFFCu) == 0x12345678u,
+          "Large writeback lost coherent data/return ABI");
+    good.rt->cpu().gpr[4] = uid;
+    good.rt->invoke_import("SysMemUserForUser", 0xB6D61D02u, good.rt->cpu());
+    good.write(begin, 0x80000u);
+    check(good.rt->stopped() && good.cache->completed_ranges == 3 &&
+          good.rt->cpu().gpr[2] == 0xDEADBEEFu, "Freed partition retained writeback authority");
+    for (auto [address, size] : {std::pair{begin - 1, 0x10000u}, {begin + 0x70001u, 0x10000u},
+                               {begin + 0x80000u, 0x10000u}, {0x88010000u, 0x10000u},
+                               {0xFFFFFFFFu, 0x10000u}, {begin, 0xFFFFFFFFu}}) {
+        Fixture bad; bad.allocate(0x80000u); bad.write(address, size); bad.rejected();
+    }
+    Fixture empty; empty.write(begin, 0x10000u); empty.rejected();
+    Fixture oversized; oversized.allocate(0x100000u);
+    oversized.write(begin, 0x80001u); oversized.rejected();
+    Fixture adjacent; adjacent.allocate(0x80000u); adjacent.allocate(0x80000u);
+    adjacent.write(begin + 0x70000u, 0x20000u); adjacent.rejected();
+    Fixture invalidation; invalidation.allocate(0x80000u);
+    invalidation.write(begin, 0x10000u, 0x34B9FA9Eu); invalidation.rejected();
+    Fixture code; code.allocate(0x80000u);
+    code.rt->register_function(begin + 0x10000u, [](auto&, auto&) {}, "synthetic_code");
+    code.write(begin + 1, 0x10000u); code.rejected();
+    // Allocator-owned stacks/pools alone do not authorize partition writebacks.
+    Fixture other; check(other.partition->allocator->allocate(0x80000u).has_value(), "Fixture reserve failed");
+    other.write(begin, 0x10000u); other.rejected();
+    bool foreign = false, outside = false;
+    try { register_data_cache_hle(*other.rt, begin, end, {}, good.partition); }
+    catch (const std::exception&) { foreign = true; }
+    try { register_data_cache_hle(*other.rt, begin + 64, end, {}, other.partition); }
+    catch (const std::exception&) { outside = true; }
+    check(foreign && outside, "Invalid large-writeback registration accepted");
+}
 int main() {
-    try { allocator_contracts(); hle_contracts(); cache_contracts(); std::cout << "Shared guest allocation contracts passed\n"; }
+    try { allocator_contracts(); hle_contracts(); cache_contracts(); large_writeback_contracts(); std::cout << "Shared guest allocation contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
