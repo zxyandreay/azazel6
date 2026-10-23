@@ -155,3 +155,25 @@ store delay slot has not executed. Exact-input static slot `0x08BCFCC0`
 The earlier GE/display/cache counts remain unchanged. All 69 Python tests,
 18 CTest suites and Windows/ARM64 builds pass locally. This remains a deliberate
 guarded stop, not a successful boot or Android game execution.
+
+## Graphics resource-query continuation (2026-10-23)
+
+**VERIFIED:** the observed slot `0x08BCFCC0` now guards query sites
+`0x08AC7A58`, `0x08AC7AC8` and `0x08AC75B8`. The first two share the same
+object retained in s1; the third was separately observed by a terminal probe
+with a0 `0x08C44E44`, checked object word/v1 `0x08BCFC88` and target
+`0x08ACF924`. Other targets still reject. Bounded coverage adds that method,
+its direct resource lookup `0x08AEB824`, and layout helper `0x08AE7B18`.
+
+The final 314-root / 25,159-word Windows probe executes both nested query
+returns twice, returns through `0x08AC75C0`, and executes the layout helper.
+It then reaches the next direct coverage boundary `0x0885ECE4`, RA
+`0x08861050`, SP `0x09FFE680`. Five writebacks (eight total cache ranges)
+and nine EDRAM base reads are observed; there is still only one GE list,
+209 GE state writes and two idle VBLANK returns. Both workers remain waiting.
+Prepared graphics words do not prove submitted draws or visible output.
+
+All 69 Python tests, 18 CTest suites (29.38 seconds), Windows Release and
+Android ARM64 builds pass locally. The uncovered-code stop is exit 1 / `failed`.
+Static inspection of `0x0885ECE4` requires a terminal diagnostic at indirect
+call `0x0885ED34`; no target for that new subsystem has been authorized.
