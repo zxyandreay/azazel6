@@ -179,3 +179,30 @@ the target or delay side effect. All 66 Python tests and 18 integrated CTest
 suites pass (40.28 seconds for CTest). Windows Release and Android ARM64
 cross-builds pass. The exact-hash Windows run above was executed locally;
 no Android game execution or new Android host APK behavior is claimed.
+
+## Graphics memory continuation (2026-10-23)
+
+**VERIFIED:** at `0x08AC7358`, the observed v1 value `0x08BCFC88` selects
+file-backed slot `0x08BCFCD8` (`+0x50`), containing target `0x08ACF96C`.
+The caller supplies its object from s1 in the call delay slot; pre-call a0 is
+not that object. Only this checked slot is permitted. Six bounded method/helper
+roots are added. The already covered shared entry `0x08AC3414` gets an explicit
+root so the two callers do not duplicate its translation. Generation still
+rejects overlapping ranges.
+
+The 310-root / 24,944-word slice initially exposed a host registration stack
+overflow. The independently tested [registration fix](aot-registration.md)
+permits the exact-hash Windows probe to execute the method and its helpers,
+including EDRAM-backed allocator state, and return through `0x08AC7360`.
+The next stop is `Unverified indirect target 0x08AC7A24 at 0x08AC757C`.
+The block-entry PC and RA are `0x08AC7560`; SP is `0x09FFE630`.
+The observed object is `0x08C52884`, whose checked first word and v1 are
+`0x08BCF5D8`. The terminal guard has not executed the new method.
+
+EDRAM base reads increase from four to five. Three texture-state writebacks,
+one initialization list, 209 GE state writes, two idle VBLANK returns and the
+two waiting workers remain. There is no draw submission or title-screen result.
+All 69 Python tests, 18 CTest suites (57.03 seconds), Windows Release and
+Android ARM64 builds pass. The native guarded stop remains exit 1 / `failed`,
+with logs retained locally. Static inspection of the next target stops at
+unverified indirect call `0x08AC7A58`; its target must be diagnosed before use.
