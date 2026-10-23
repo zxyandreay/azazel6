@@ -1,6 +1,6 @@
 # Testing and debugging
 
-**Executed 2026-10-23 on Windows x64:** 69 Python test cases and 18 integrated
+**Executed 2026-10-23 on Windows x64:** 70 Python test cases and 18 integrated
 CTest suites passed. These cover profile tooling, math/input, startup HLE,
 thread/memory ownership, display/GE contracts and three upstream suites.
 Python cases include every

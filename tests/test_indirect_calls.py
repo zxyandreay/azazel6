@@ -60,6 +60,22 @@ class IndirectCallTests(unittest.TestCase):
             with self.subTest(lower=lower), self.assertRaises(ValidationError):
                 immediate_maps(elf, [desc | {'sources': [dict(upper=hex(BASE + 16), lower=hex(lower))]}])
 
+    def test_two_state_sources_preserve_both_guarded_callbacks(self):
+        words = [0x00A0F809, 0, 0x03E00008, 0, 0x3C020880, 0x24454030,
+                 0, 0x3C030880, 0x34654038, 0, 0, 0, 0x03E00008, 0,
+                 0x03E00008, 0]
+        desc = dict(site=hex(BASE), register=5, sources=[hex(BASE + 16), hex(BASE + 28)])
+        mapping = immediate_maps(program(words), [desc])
+        self.assertEqual(mapping[BASE]['targets'], [BASE + 48, BASE + 56])
+        self.assertEqual(mapping[BASE]['source_pairs'], [(BASE + 16, BASE + 20),
+                                                       (BASE + 28, BASE + 32)])
+        guarded = guard_generated(f'L_{BASE:08X}:\n    jump_target = ctx.gpr[5];\n', mapping)
+        self.assertIn('ctx.gpr[5], {0x08804030u, 0x08804038u}', guarded)
+        self.assertLess(guarded.index('guard_indirect_call'), guarded.index('jump_target'))
+        words[8] = 0x34454038  # Second pair reads the wrong upper register.
+        with self.assertRaises(ValidationError):
+            immediate_maps(program(words), [desc])
+
     def test_immediate_pairs_reject_unverified_sources_and_targets(self):
         def fixture(upper=0x3C020880, lower=0x24424020):
             return program([0x0080F809, 0, 0x03E00008, 0, upper, lower, 0, 0, 0x03E00008, 0])

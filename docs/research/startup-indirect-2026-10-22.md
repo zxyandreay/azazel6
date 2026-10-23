@@ -195,3 +195,25 @@ That provenance needs a separate reviewed immediate-source mapping before the
 new callback may execute. The alternate virtual-member path stays trapped.
 All 69 Python tests, 18 CTest suites (28.30 seconds) and Windows/ARM64 builds
 pass. The prior graphics/cache/display observations remain unchanged.
+
+
+## Checked next-state callback (2026-10-23)
+
+**VERIFIED:** the immediate-source mapping at `0x08860FBC` now preserves both
+state callbacks, including the observed `0x08862200` producer described above.
+A synthetic two-source test checks both addresses, guard ordering and malformed
+second-source rejection. Eight bounded roots cover the callback's first helper
+chain; the new virtual call at `0x08AC3DF0` remains terminal.
+
+The 323-root / 25,428-word native probe executes this callback and reaches
+`sceKernelDcacheWritebackRange` at `0x08B88FC8`, returning to `0x08AEDE80`.
+The request covers `[0x09BF4280, 0x09C74280)` (512 KiB). The current less-than-
+64-KiB cache policy rejects it before recording another operation. Eight cache
+operations, five writebacks, one GE list, 209 GE state writes and two idle
+VBLANK returns remain observed; both workers remain waiting. This exit-1
+research boundary is not a successful boot.
+
+All 70 Python cases, 18 CTest suites (32.46 seconds), Windows Release and
+Android ARM64 builds pass locally. **PLANNED:** review the large-range firmware
+contract and live buffer ownership before extending writeback support. No game
+code was executed on Android in this increment.

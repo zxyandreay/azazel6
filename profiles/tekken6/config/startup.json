@@ -314,7 +314,15 @@
     "0x08ACF924",
     "0x08AEB824",
     "0x08AE7B18",
-    "0x0885ECE4"
+    "0x0885ECE4",
+    "0x08862200",
+    "0x08AC5BF8",
+    "0x08AC3DD0",
+    "0x08AE7830",
+    "0x08AE7734",
+    "0x08AEDE30",
+    "0x08AC594C",
+    "0x08AC5928"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup, direct-call and validated pointer-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -390,6 +398,10 @@
     },
     {
       "site": "0x0885ED34",
+      "register": 2
+    },
+    {
+      "site": "0x08AC3DF0",
       "register": 2
     }
   ],
@@ -848,7 +860,8 @@
         {
           "upper": "0x08861644",
           "lower": "0x0886164C"
-        }
+        },
+        "0x08861444"
       ]
     }
   ],
