@@ -111,6 +111,10 @@ report or game-derived code. Synthetic inspector regressions live in
 
 ## Android cross-compilation
 
+For grouped disassembly, references and optional decompilation, use the
+[local Ghidra/Allegrex evidence workflow](../research/reverse-engineering.md).
+It supplements the strict CFG inspector without authorizing AOT roots.
+
 Tested NDK package: `27.1.12297006`. Set `ANDROID_NDK_HOME` to that installed NDK,
 and place Ninja on PATH, or supply `--ninja` with an installed SDK Ninja executable.
 

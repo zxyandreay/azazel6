@@ -28,6 +28,7 @@ Azazel6 is not playable. See
 | VBLANK | VERIFIED real-input registration/enable and four-word handler AOT coverage; synthetic owned delivery and full context restoration |
 | Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes two VBLANK handlers and SetMode under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
+| Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
 | Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, six writebacks and graphics memory setup; the 323-root slice executes the checked next state callback 0x08862200 and completes its 512 KiB writeback and stops at guarded matrix call 0x08AC3DF0 (observed target 0x08AC3CD8); both workers remain Waiting |

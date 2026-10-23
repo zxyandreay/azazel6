@@ -30,6 +30,7 @@ Reviewed 2026-10-20. Evidence labels apply to individual claims:
 
 ## Research
 
+- [Ghidra/Allegrex and optional REA workflow](research/reverse-engineering.md)
 - [Source inventory and revisions](research/sources.md)
 - [Executable and PSP imports](research/executable.md)
 - [Startup imports and thread boundary](research/startup-imports.md)
