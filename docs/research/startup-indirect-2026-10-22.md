@@ -217,3 +217,39 @@ All 70 Python cases, 18 CTest suites (32.46 seconds), Windows Release and
 Android ARM64 builds pass locally. **PLANNED:** review the large-range firmware
 contract and live buffer ownership before extending writeback support. No game
 code was executed on Android in this increment.
+
+## Ghidra-assisted matrix continuation (2026-10-23)
+
+**VERIFIED:** the subsequent large-range ownership change `dc92503` completes
+the 512 KiB writeback and reaches `0x08AC3DF0` with target `0x08AC3CD8`.
+The observed object `0x08C44E00` retains table `0x08BCF510`. The new
+[Allegrex workflow](reverse-engineering.md) confirms the caller and four setters
+against 45 instruction words from the exact ELF. Pseudocode is supporting
+evidence only; its unresolved tail warning remains recorded locally.
+
+The caller reloads the same table after each setter. Slots `+0x0C`, `+0x10`,
+`+0x14`, `+0x18` select `0x08AC3CD8`, `0x08AC3CB0`, `0x08AC3CC4`, and
+`0x08AC39A8`. The methods only set words at object offsets `0x0C`, `0x14`,
+`0x1C`, `0x24` and return zero; none changes the table or calls another function.
+All destinations lie within the observed static object's ELF memory extent.
+The three JALR sites and final JR tail receive separate exact-slot target guards.
+Link and delay-slot effects occur only after the guard; the tail retains RA.
+Two new roots supply the previously uncovered setters.
+
+The 325-root / 25,453-word Windows probe executes all four, returns through
+`0x08AC5C24` and reaches direct helper `0x08ACE044` from `0x08862268`.
+Two additional diagnostic roots then reach `0x08ACF848` with observed target
+`0x08ACE2D8`, object `0x08C44E40`, table/v1 `0x08BCFBD0`, RA `0x08ACE064`
+and SP `0x09FFE640`. The register-2 guard at that site remains terminal in
+this increment. Its file-backed slot at `0x08BCFC7C` (`+0xAC`) matches the
+observed target, but executing it requires reviewing its resource helper chain.
+Ghidra's second grouped report recovers the caller and wrapper without resolving
+this target automatically. The diagnostic slice is 327 roots / 25,478 words.
+
+Six writebacks, nine cache ranges, one GE list, 209 state writes, two idle
+VBLANK events and both waiting workers remain unchanged. Every run is bounded;
+the new guarded stop is exit 1 / `failed`, not title boot or rendering.
+All 76 Python tests pass, including grouped call/tail-slot and refusal regressions.
+All 18 CTest suites pass using a local temporary directory (the sandbox's default
+temporary path initially caused two upstream rename failures). Windows Release
+and Android ARM64 cross-compilation pass. No Android game execution is claimed.

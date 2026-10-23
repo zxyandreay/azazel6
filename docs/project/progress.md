@@ -11,7 +11,7 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 70 cases passed locally; bounded host registration stack |
+| Python/profile tools | VERIFIED, 76 cases passed locally; bounded host registration stack |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; eighteen integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
@@ -31,7 +31,7 @@ Azazel6 is not playable. See
 | Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, six writebacks and graphics memory setup; the 323-root slice executes the checked next state callback 0x08862200 and completes its 512 KiB writeback and stops at guarded matrix call 0x08AC3DF0 (observed target 0x08AC3CD8); both workers remain Waiting |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, six writebacks and graphics memory setup; the 327-root slice completes the 512 KiB writeback and four guarded matrix setters, then stops at resource call 0x08ACF848 (observed target 0x08ACE2D8); both workers remain Waiting |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

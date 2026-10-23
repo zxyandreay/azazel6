@@ -9,6 +9,31 @@ BASE = 0x08804000
 
 
 class IndirectCallTests(unittest.TestCase):
+    def test_related_slot_calls_keep_separate_targets_and_terminal_tail(self):
+        # Synthetic three-call/final-tail sequence, with independent slot identity.
+        words = [0x0040F809, 0x24840004, 0x0040F809, 0,
+                 0x0040F809, 0, 0x03200008, 0x27BD0010,
+                 BASE + 48, BASE + 56, BASE + 64, BASE + 72,
+                 0x03E00008, 0, 0x03E00008, 0, 0x03E00008, 0, 0x03E00008, 0]
+        elf = program(words)
+        calls = pointer_maps(elf, [dict(site=hex(BASE + i * 8), register=2,
+                                       pointers=[hex(BASE + 32 + i * 4)]) for i in range(3)])
+        tails = pointer_maps(elf, [dict(site=hex(BASE + 24), register=25,
+                                       pointers=[hex(BASE + 44)])], tail=True)
+        cfg = discover_entry(elf, indirect_calls={s: m['targets'] for s, m in calls.items()},
+                             indirect_tails={s: m['targets'] for s, m in tails.items()})
+        self.assertEqual(cfg['ranges'], [[BASE, 32]])
+        self.assertEqual(cfg['indirect_calls'], {BASE + i * 8: [BASE + 48 + i * 8] for i in range(3)})
+        self.assertEqual(cfg['indirect_tails'], {BASE + 24: [BASE + 72]})
+        for site, row in (calls | tails).items():
+            text = guard_generated(f'L_{site:08X}:\n    ctx.gpr[4] += 4;\n', {site: row})
+            self.assertLess(text.index('guard_indirect_call'), text.index('ctx.gpr[4]'))
+            self.assertIn(f'{{0x{row["targets"][0]:08X}u}}', text)
+        words[11] = 0xFFFFFFFF
+        with self.assertRaises(ValidationError):
+            pointer_maps(program(words), [dict(site=hex(BASE + 24), register=25,
+                                               pointers=[hex(BASE + 44)])], tail=True)
+
     def test_tail_traps_stop_before_delay_without_authorizing_targets(self):
         elf = program([0x03200008, 0x24040001, 0xFFFFFFFF])
         desc = dict(site=hex(BASE), register=25)
