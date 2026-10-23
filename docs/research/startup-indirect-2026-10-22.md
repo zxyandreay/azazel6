@@ -177,3 +177,21 @@ All 69 Python tests, 18 CTest suites (29.38 seconds), Windows Release and
 Android ARM64 builds pass locally. The uncovered-code stop is exit 1 / `failed`.
 Static inspection of `0x0885ECE4` requires a terminal diagnostic at indirect
 call `0x0885ED34`; no target for that new subsystem has been authorized.
+
+## State transition after graphics initialization (2026-10-23)
+
+**VERIFIED:** adding root `0x0885ECE4` with an empty-target register-2 guard
+at `0x0885ED34` produces 315 roots / 25,198 words. The actual startup takes
+the empty-list path and returns; the guarded cleanup callback does not execute.
+The next stop is the existing state-callback guard:
+`Unverified indirect target 0x08862200 at 0x08860FBC`. PC is `0x08860F88`,
+RA `0x0885FBAC`, SP `0x09FFE680`. This call uses a1 (register 5), not v0;
+the observed a0 is `0x090B17C0`, whose checked first word is `0x08B8FE80`.
+
+The established initial callback remains authorized. Static review traces the
+new address from the exact LUI/ADDIU pair `0x08861444` / `0x08861448`, through
+the store at `0x08861464` into object offset `0x60`, to the existing dispatcher.
+That provenance needs a separate reviewed immediate-source mapping before the
+new callback may execute. The alternate virtual-member path stays trapped.
+All 69 Python tests, 18 CTest suites (28.30 seconds) and Windows/ARM64 builds
+pass. The prior graphics/cache/display observations remain unchanged.
