@@ -137,3 +137,21 @@ All 69 Python tests, 18 CTest suites (57.03 seconds), Windows Release and
 Android ARM64 builds pass. The native guarded stop remains exit 1 / `failed`,
 with logs retained locally. Static inspection of the next target stops at
 unverified indirect call `0x08AC7A58`; its target must be diagnosed before use.
+
+## Nested graphics-object diagnostic (2026-10-23)
+
+**VERIFIED:** the observed object at `0x08C52884` uses vtable `0x08BCF5D8`;
+its file-backed slot `0x08BCF5F4` (`+0x1C`) selects `0x08AC7A24`.
+That single target is now guarded at `0x08AC757C`. Its bounded prefix calls
+the already covered object accessor and stops at a new empty-target guard at
+`0x08AC7A58`. The later caller site `0x08AC75B8` also remains terminal.
+
+The 311-root / 24,974-word Windows probe actually reaches the nested guard:
+`Unverified indirect target 0x08ACF924 at 0x08AC7A58`. PC and RA are
+`0x08AC7A40`; SP is `0x09FFE610`; a0 is `0x08C44E44`. Both the checked
+object word and v1 are `0x08BCFC88`, with v0 `0x08ACF924`. The call's stack
+store delay slot has not executed. Exact-input static slot `0x08BCFCC0`
+(`+0x38`) matches the observed target; this diagnostic does not authorize it.
+The earlier GE/display/cache counts remain unchanged. All 69 Python tests,
+18 CTest suites and Windows/ARM64 builds pass locally. This remains a deliberate
+guarded stop, not a successful boot or Android game execution.
