@@ -62,12 +62,15 @@ python tools/run_probe.py local/game/EBOOT.BIN --binary local/build/probe/profil
 
 For faster coverage iterations, configure with `-DAZAZEL6_PROBE_FAST_BUILD=ON`.
 This disables optimization only for the research probe; the default remains
-optimized, and kernel tests/framework settings are unchanged.
+optimized, and kernel tests/framework settings are unchanged. Generation uses a
+[validated static registration table](../research/aot-registration.md) to keep
+host stack use bounded even without optimization.
 
 On Linux remove `/Release` and `.exe`. The generator discovers a bounded startup
 control-flow graph, follows both branch paths and call continuations, and excludes
 callees. Unsupported indirect transfers and invalid delay slots fail closed. The
-current startup profile yields 23187 instruction words, including delay slots. Regenerate
+current coverage and execution boundary are recorded in
+[progress](../project/progress.md). Regenerate
 older probe outputs: the current host requires generated `imports.cpp` wrappers.
 The native process
 returns 3 at a research boundary; the runner records it and returns 0 only to mark
@@ -76,19 +79,22 @@ never a game-boot success. The runner limits native execution to 15 seconds, the
 host to 32768 dispatches, and interpreter fallback is explicitly disabled. The two
 [settings services](../research/startup-imports.md) and bounded
 [dormant thread creation/deletion](../research/dormant-threads.md) are implemented;
-StartThread and exit services now support bounded priority handoff; waiting, timers and general scheduling remain unimplemented. Dispatch exhaustion, uncovered code and rejected
+StartThread and exit support bounded priority scheduling, with owned event-flag
+waits and bounded idle display events. General timeouts and active timers remain
+unimplemented. Dispatch exhaustion, uncovered code and rejected
 SDK versions are experiment failures, not completed research boundaries.
 
 
 ## Inspect the next uncovered startup helper (no game output committed)
 
-The bounded entry probe currently stops at direct helper `0x08ACD010`. The
-new inspector reuses the strict profile fingerprint and conservative entry CFG
-scanner to inspect this root **without changing** `startup.json` or authorizing
-AOT execution. Run on a computer with your own decrypted, exact-hash input:
+The inspector reuses the strict profile fingerprint and conservative entry CFG
+scanner without changing `startup.json` or authorizing AOT execution. Select
+the next address from the actual probe stop and the
+[research record](../research/startup-indirect-2026-10-22.md). For example,
+audit a helper already covered by the current profile with:
 
 ```sh
-python tools/inspect_root.py local/game/EBOOT.BIN --root 0x08ACD010
+python tools/inspect_root.py local/game/EBOOT.BIN --root 0x08ACD010 --inspect-existing-root
 ```
 
 The report is written to ignored

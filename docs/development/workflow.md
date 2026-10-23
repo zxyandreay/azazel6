@@ -21,5 +21,6 @@ this project's authorization.
 Make scoped Conventional Commits, review staged diffs and run relevant checks
 before pushing. Update progress and the milestone evidence when behavior changes.
 Record unresolved limitations plainly. Avoid force pushes and unrelated cleanup.
-For this initialization the authorized target is `origin/main`; later sessions
-should follow the user's requested branch/review workflow.
+Current development continues directly on `main`, pushing reviewed increments
+to `origin/main`. Preserve local edits and existing stashes. Only prune a branch
+after verifying its complete history is incorporated in the pushed main branch.

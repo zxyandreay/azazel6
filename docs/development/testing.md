@@ -1,7 +1,8 @@
 # Testing and debugging
 
-**Executed 2026-10-18 on Windows x64:** 34 Python test cases and nine integrated
-CTest suites (aspect math, bootstrap HLE, threads, shared memory, module identity, indirect guards and three upstream suites) all passed.
+**Executed 2026-10-23 on Windows x64:** 69 Python test cases and 18 integrated
+CTest suites passed. These cover profile tooling, math/input, startup HLE,
+thread/memory ownership, display/GE contracts and three upstream suites.
 Python cases include every
 truncation of a synthetic ELF, invalid format/headers/segments, BSS/offset conversion,
 overflow/overlap, hash mismatch, missing input, profile validation, output confinement,
@@ -62,3 +63,14 @@ regression for each parser/runtime boundary change. Browser tests are not releva
 to this milestone. The synthetic host has executed on an official local Android
 AVD; this does not verify physical ARM64 hardware or game rendering. No sanitizer
 run, full-corpus compilation or gameplay benchmark has been performed locally.
+
+For a new indirect boundary, first inspect the current profile and preserve local
+work. Add only the bounded caller and an empty-target terminal guard after
+checking for conflicting descriptors. Run the exact-hash probe and record the
+actual target, object/register evidence and call-delay semantics. Authorize a
+nonempty mapping only after reviewing target provenance, memory ownership and
+bounded callee coverage; retain guards against every other target. Add synthetic
+boundary/failure regressions, rebuild locally and report the actual next stop.
+The [graphics startup record](../research/startup-indirect-2026-10-22.md) shows
+this procedure in use. If the exact local executable is unavailable, report that
+limitation and distinguish synthetic validation from guest execution.

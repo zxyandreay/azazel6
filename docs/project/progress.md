@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-10-22: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-10-23: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
