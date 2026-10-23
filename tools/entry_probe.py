@@ -9,6 +9,7 @@ from elf import load_profile, validate
 from psp_module import module_report
 from entry_cfg import discover_entry
 from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, immediate_maps, guard_generated, verify_break_stops
+from aot_registration import compact_registration
 
 
 def language_mode(startup):
@@ -121,7 +122,7 @@ def main():
     source = generated.read_text()
     verify_break_stops(source, {site: word for graph in cfg.values()
                                for site, word in graph['break_traps'].items()})
-    generated.write_text(guard_generated(source, indirect | jumps | traps | tails), encoding="utf-8")
+    generated.write_text(compact_registration(guard_generated(source, indirect | jumps | traps | tails)), encoding="utf-8")
     wrappers = ['#include "azazel6/bootstrap.hpp"', 'namespace azazel6 {']
     for index, imp in enumerate(module["imports"]):
         wrappers.append(f'void import_{index}(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {{ '
