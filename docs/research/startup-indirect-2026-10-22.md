@@ -354,3 +354,43 @@ events and two waiting workers remain. This is not real rendering or title boot.
 All 76 Python tests and 19 CTest suites pass, as do Windows Release and Android
 ARM64 builds. **PLANNED:** inspect the next frame/list helper chain and retain
 strict draw/producer refusal until ownership and rendering are implemented.
+
+
+## Frame flip and next-edge wait (2026-10-25)
+
+**VERIFIED:** ten reviewed roots extend the slice to **373 roots / 26,800 words**.
+The guarded frame-flip method at `0x08AC7154` reads slot `0x08BCF5F0` and
+enters `0x08AC7898`. Its two resource queries reuse the already verified
+`0x08ACF924` adjustment thunk. Four descriptor calls use slots `0x08BCFAF8`
+(getter `0x08ACD028`) and `0x08BCFAF4` (setter `0x08ACD018`). The getter's
+return delay slot loads object+0x0C; the setter's branch-likely delay slot stores
+only for nonzero input. Exact instructions, observed objects/tables and Ghidra
+pseudocode were reviewed independently. Seven slot guards preserve fail-closed
+indirect dispatch. Related direct helpers cover framebuffer submission,
+writeback and subsequent buffer reset; coverage does not imply all ran.
+
+**DOCUMENTED:** pinned PSPSDK display imports identify NID `0x46F186C3` as
+sceDisplayWaitVblankStartCB. **VERIFIED:** the profile now waits for the next
+VBLANK edge even if already inside VBLANK, using the existing owned scheduler,
+interrupt delivery and framebuffer latch. Only inactive PSP callbacks exist;
+notification and general callback delivery remain unimplemented. Synthetic
+contracts check both phases, inactive callback retention, full saved context,
+disabled interrupts and interrupt-context rejection.
+
+The exact-input Windows run returns from that wait, executes the real VBLANK
+handler a third time and latches framebuffer `0x04044000`, stride 512, format 1.
+A seventh writeback covers the 256 KiB command allocation at `0x09BF4280`.
+The new boundary is **GE enqueue at `0x08B890E8`**, RA `0x08AC6E24`,
+SP `0x09FFE640`, with a0=`0x09BF4280`, a1=0, a2=0, a3=0. The current HLE
+rejects this dynamic span and owned callback ID rather than pretending to draw.
+One initialization list/209 state writes remain; both workers remain Waiting.
+
+**VERIFIED validation:** all 20 native CTest suites and 79 Python cases pass;
+Windows Release and Android ARM64 compile/link. The bounded game probe exits 1
+at the explicit GE rejection, not success. Local evidence is under
+`local/re-frame-sync-ghidra`, `local/re-flip-complete-execution` and
+`local/re-cbwait-execution`; generated translations and raw evidence stay local.
+
+**PLANNED:** validate the dynamic command-buffer extent and callback lifetime,
+inspect its first drawing commands, and implement the required GE behavior with
+independent ownership/renderer tests. No title screen or game rendering is verified.

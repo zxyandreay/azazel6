@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-10-24: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-10-25: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -27,13 +27,13 @@ Azazel6 is not playable. See
 | Graphics memory | VERIFIED immutable EDRAM size/base queries backed by allocated guest VRAM; GE rendering remains unimplemented |
 | GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; real initialization EnQueue/ListSync and completed-work DrawSync return; draws and asynchronous guest submission remain unimplemented |
 | VBLANK | VERIFIED real-input registration/enable and four-word handler AOT coverage; synthetic owned delivery and full context restoration |
-| Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes two VBLANK handlers and SetMode under bounded idle events; runnable guest-time accounting remains unimplemented |
+| Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes three VBLANK handlers, SetMode and next-edge WaitVblankStartCB with inactive callbacks under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests; bounded interpreter comparison only. GE synchronization, disc, renderer and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, six writebacks and graphics memory setup; the 363-root slice enters callback 0x088610C4, generates a clear/sprite command block and returns from completed-work DrawSync, then stops at uncovered 0x08AC713C; the new block is not submitted or rendered; both workers remain Waiting |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, seven writebacks and graphics memory setup; the 373-root slice completes the frame-flip queries/setters and next-edge wait, then rejects dynamic GE enqueue at 0x08B890E8 (buffer 0x09BF4280, callback 0); no draw executes; both workers remain Waiting |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

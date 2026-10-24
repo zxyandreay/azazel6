@@ -122,6 +122,52 @@ void mode_contracts() {
     check(rt->stop_reason() == "synthetic mode ready" && display->clock.frames() == 2 &&
           c.gpr[2] == 0 && threads->current_uid() == kBootstrapUid, "SetMode next-edge wakeup");
 }
+void callback_wait_contracts() {
+    using namespace azazel6;
+    for (bool already_in_vblank : {false, true}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+        auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+            0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+        auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+        auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+        auto display = register_display_hle(*rt, threads, delivery, 1);
+        rt->register_function(0x08001008u, [](auto& runtime, auto&) { runtime.stop("Unnotified callback executed"); }, "inactive_callback");
+        auto& c = rt->cpu();
+        rt->memory().store8(0x08004000u, 0);
+        c.gpr[4] = 0x08004000u; c.gpr[5] = 0x08001008u; c.gpr[6] = 0;
+        rt->invoke_import("ThreadManForUser", 0xE81CAF8Fu, c);
+        check(!rt->stopped() && threads->callbacks().size() == 1, "Inactive callback setup");
+        if (already_in_vblank) display->advance(*rt, DisplayClock::ticks_per_frame);
+        const auto frame = display->clock.frames();
+        c.pc = 0x08001000u; c.gpr[31] = 0x08001004u; c.gpr[16] = 42; c.vfpu[127] = 19;
+        rt->register_function(0x08001004u, [](auto& runtime, auto&) { runtime.stop("CB wait next edge"); }, "cb_wait_continuation");
+        rt->invoke_import("sceDisplay", 0x46F186C3u, c);
+        check(!rt->stopped() && threads->current_uid() == 0 && c.pc == kDisplayIdleGate &&
+              display->clock.frames() == frame, "CB wait returned before next VBLANK");
+        rt->run(c.pc, 4);
+        check(rt->stop_reason() == "CB wait next edge" && threads->current_uid() == kBootstrapUid &&
+              display->clock.frames() == frame + 1 && display->idle_frames() == 1 &&
+              c.gpr[2] == 0 && c.gpr[16] == 42 && c.vfpu[127] == 19 && threads->callbacks().size() == 1,
+              "CB wait lost context or dispatched an inactive callback");
+    }
+    for (bool interrupt : {false, true}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+        auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+            0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+        auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+        auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+        auto display = register_display_hle(*rt, threads, delivery, 1);
+        auto& c = rt->cpu();
+        if (interrupt) check(threads->enter_interrupt(), "Enter interrupt fixture");
+        else rt->invoke_import("Kernel_Library", 0x092968F4u, c);
+        c.gpr[2] = 42;
+        rt->invoke_import("sceDisplay", 0x46F186C3u, c);
+        check(rt->stopped() && c.gpr[2] == 42 && threads->current_uid() == kBootstrapUid &&
+              display->clock.frames() == 0, "CB wait accepted noninterruptible context");
+    }
+}
 }
 int main() {
     try {
@@ -130,6 +176,7 @@ int main() {
         event_contracts(true);
         idle_boundaries();
         mode_contracts();
+        callback_wait_contracts();
         using namespace azazel6;
         DisplayClock clock;
         constexpr auto frame = DisplayClock::ticks_per_frame;

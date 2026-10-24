@@ -48,6 +48,10 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
   elapsed guest cycles.
 - **VERIFIED:** checked framebuffer descriptors/latches and the observed display-off
   SetFrameBuf/WaitVblank path. Other display services remain observation-driven.
+- **VERIFIED (2026-10-25):** the real frame-flip path latches framebuffer
+  `0x04044000` after WaitVblankStartCB waits for a new edge. Only inactive PSP
+  callbacks are supported; callback notification/delivery remain unimplemented.
+  Dynamic GE enqueue is the next rejecting boundary, before any drawing executes.
 - **VERIFIED:** [GE control-stream contracts](../research/ge-lists.md), including
   stalls, control-flow budgets, stale callback generations and actual synthetic
   AOT callback returns. The first real initialization list completes EnQueue/ListSync with retained
