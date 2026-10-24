@@ -326,7 +326,30 @@
     "0x08AC3CD8",
     "0x08AC3CB0",
     "0x08ACE044",
-    "0x08ACF820"
+    "0x08ACF820",
+    "0x08ACE2D8",
+    "0x08ACF660",
+    "0x08ACB2E8",
+    "0x08ACB2F0",
+    "0x08ACC198",
+    "0x08AEB2DC",
+    "0x08AEB794",
+    "0x08AEB79C",
+    "0x08AEB7E0",
+    "0x08AEB868",
+    "0x08AEBA68",
+    "0x08AEBA70",
+    "0x08AEBAB4",
+    "0x08AEBB10",
+    "0x08AEBD5C",
+    "0x08AEBD68",
+    "0x08ACBE40",
+    "0x08AAC414",
+    "0x08AD047C",
+    "0x08AD1060",
+    "0x08ACFD2C",
+    "0x08ACFD14",
+    "0x08AE032C"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup, direct-call and validated pointer-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -402,10 +425,6 @@
     },
     {
       "site": "0x0885ED34",
-      "register": 2
-    },
-    {
-      "site": "0x08ACF848",
       "register": 2
     }
   ],
@@ -710,6 +729,13 @@
       "register": 2,
       "pointers": [
         "0x08BCF524"
+      ]
+    },
+    {
+      "site": "0x08ACF848",
+      "register": 2,
+      "pointers": [
+        "0x08BCFC7C"
       ]
     }
   ],

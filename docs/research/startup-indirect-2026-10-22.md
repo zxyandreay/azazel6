@@ -253,3 +253,38 @@ All 76 Python tests pass, including grouped call/tail-slot and refusal regressio
 All 18 CTest suites pass using a local temporary directory (the sandbox's default
 temporary path initially caused two upstream rename failures). Windows Release
 and Android ARM64 cross-compilation pass. No Android game execution is claimed.
+
+## Resource layout and clock conversion (2026-10-24)
+
+**VERIFIED:** the `0x08ACF848` guard now admits only `0x08ACE2D8` from exact
+slot `0x08BCFC7C`. Seventeen bounded roots cover the resource sizing,
+subobject initialization and linked-list helpers. Ghidra byte checks and advisory
+decompilation of `0x08ACE2D8`, `0x08ACF660` and `0x08ACBE40` supplement CFG,
+delay-slot and memory-layout review. The 344-root / 25,783-word native run
+returns through `0x08ACE064` to the state callback, stopping at `0x08AAC414`.
+Five further allocation helpers yield 349 roots / 25,952 words and reach
+`0x08AE032C`. Local grouped evidence retains the intermediate boundaries.
+
+That 34-word routine calls `ThreadManForUser` NID `0xE1619D7C` through stub
+`0x08B88E38`: `sceKernelSysClock2USecWide`. Its arguments are 1,000,000 ticks,
+null seconds output and a word on the caller's stack. The new original HLE
+performs unsigned conversion without advancing any clock. Both output ranges
+are checked before either write; only aligned live-caller-stack words are
+accepted. Aliases, null pairs, interrupt context and unsupported ownership stop.
+The null-first form must return the full low word, not the fractional remainder:
+this prevents the observed call from incorrectly receiving zero. PSP autotests
+and pinned PPSSPP behavior support this distinction; Yakumo's implementation
+does not supply it. No upstream implementation was copied.
+
+The resulting **350-root / 25,986-word** Windows run returns through
+`0x08AE034C` and reaches `0x08AE0404` from call site `0x08862294`,
+RA `0x0886229C`, SP `0x09FFE670`. Six writebacks, nine cache ranges,
+one GE list, 209 state writes, two idle VBLANK events and two waiting workers
+remain observed. The exit-1 uncovered-root stop is expected research evidence,
+not successful boot, drawing or gameplay.
+
+All 76 Python tests and 18 CTest suites pass locally. Added native tests cover
+64-bit extremes, rollover, each optional-output form, register/return behavior,
+atomic refusal, stack bounds/alignment and another thread's stack. Windows
+Release and Android ARM64 builds pass. **PLANNED:** inspect `0x08AE0404` and
+its indirect method before authorizing more coverage. Title boot remains open.

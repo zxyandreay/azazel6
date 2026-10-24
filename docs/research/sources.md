@@ -53,3 +53,11 @@ Vulkan surface glue, window safe-area, touch and gamepad headers were inspected.
 Its Java activity/native library are compiled externally for the synthetic probe;
 the unchanged Zlib notice is packaged with it. PSPSDK controller constants from
 the existing pinned checkout inform the original host input adapter.
+
+**Additional inspection, 2026-10-24:** PSP autotests `tests/misc/timeconv.cpp`
+and `.expected`, PSPSDK/uOFW export declarations, and PPSSPP
+[`Core/HLE/sceKernelTime.cpp`](https://github.com/hrydgard/ppsspp/blob/cd94e414cde964bf25ec67267f64fcd3d01283bb/Core/HLE/sceKernelTime.cpp)
+at the same pinned revision support wide-clock conversion behavior. No PPSSPP
+implementation was copied or linked. Null-first output returns the whole low
+word; the pinned Yakumo implementation's unconditional remainder does not
+satisfy the observed Tekken call. No PSP hardware run is claimed.

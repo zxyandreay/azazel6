@@ -456,10 +456,54 @@ void mutex_boundaries() {
     Scheduled bad; mutex_call(bad, 0xB7D098C6u, 0xFFFFFFFFu);
     check(bad.rt->stopped() && bad.threads->mutexes().empty(), "Invalid name mutated mutex registry");
 }
+void clock_conversion() {
+    constexpr auto first = arena.end, last = arena.end + 508;
+    for (const auto ticks : {0ull, 999999ull, 1000000ull, 1000001ull, 0x100000000ull, 0xFFFFFFFFFFFFFFFFull}) {
+        for (unsigned mode = 1; mode <= 3; ++mode) {
+            Scheduled f;
+            auto& c = f.rt->cpu();
+            c.pc = arena.executable_begin; c.gpr[31] = arena.executable_begin + 4;
+            c.gpr[4] = static_cast<std::uint32_t>(ticks); c.gpr[5] = static_cast<std::uint32_t>(ticks >> 32);
+            c.gpr[6] = mode & 1 ? first : 0; c.gpr[7] = mode & 2 ? last : 0;
+            f.rt->memory().store32(first, 0xCCCCCCCCu); f.rt->memory().store32(last, 0xCCCCCCCCu);
+            const auto before = c;
+            invoke_returning_import(*f.rt, c, "ThreadManForUser", 0xE1619D7Cu);
+            check(!f.rt->stopped() && c.gpr[2] == 0 && c.pc == before.gpr[31], "Clock conversion return");
+            check(f.rt->memory().load32(first) == (mode & 1 ? static_cast<std::uint32_t>(ticks / 1000000u) : 0xCCCCCCCCu),
+                  "Clock seconds/wrap result");
+            check(f.rt->memory().load32(last) == (mode & 2 ? static_cast<std::uint32_t>(mode & 1 ? ticks % 1000000u : ticks) : 0xCCCCCCCCu),
+                  "Clock null-first output must preserve full low word");
+            for (unsigned i = 0; i < 32; ++i) if (i != 2) check(c.gpr[i] == before.gpr[i], "Clock conversion clobbered register");
+            check(f.threads->current_uid() == kBootstrapUid && f.threads->timers().empty(), "Conversion changed scheduler/timers");
+        }
+    }
+    for (auto bad : {first - 4, first + 1, last + 4, 0xFFFFFFFFu, 0x88011000u}) {
+        for (bool second : {false, true}) {
+            Scheduled f; auto& c = f.rt->cpu();
+            c.gpr[2] = 0xDEADBEEFu; c.gpr[4] = 1000001; c.gpr[5] = 0;
+            c.gpr[6] = second ? first : bad; c.gpr[7] = second ? bad : first;
+            f.rt->memory().store32(first, 0xCCCCCCCCu);
+            const auto before = c;
+            invoke_returning_import(*f.rt, c, "ThreadManForUser", 0xE1619D7Cu);
+            check(f.rt->stopped() && c.gpr == before.gpr && c.pc == before.pc &&
+                  f.rt->memory().load32(first) == 0xCCCCCCCCu, "Bad clock pointer partially mutated state");
+        }
+    }
+    for (auto same : {0u, first}) {
+        Scheduled f; auto& c = f.rt->cpu(); c.gpr[6] = same; c.gpr[7] = same;
+        f.rt->invoke_import("ThreadManForUser", 0xE1619D7Cu, c);
+        check(f.rt->stopped(), "Unsupported null pair/aliased outputs accepted");
+    }
+    Scheduled switched;
+    const auto child = switched.create(8); switched.start(child);
+    auto& c = switched.rt->cpu(); c.gpr[6] = 0; c.gpr[7] = first;
+    switched.rt->invoke_import("ThreadManForUser", 0xE1619D7Cu, c);
+    check(switched.rt->stopped(), "Conversion wrote another thread's stack");
+}
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers();
+          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

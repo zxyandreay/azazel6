@@ -1,13 +1,15 @@
 # Milestone 003: boot sequence
 
-**IN PROGRESS, 2026-10-23.** Native bring-up is implemented; title-screen boot is
+**IN PROGRESS, 2026-10-24.** Native bring-up is implemented; title-screen boot is
 not. The current bounded experiment completes the full 59-entry constructor loop, creates
 four mutexes and eight inactive timers, registers its exit callback and completes
 the post-constructor object's 2048-record initialization loop. It allocates a
 single-block fixed pool, completes language get/set and creates an event flag.
 Both workers now wait on their shared event flag. The main thread completes
 VBLANK registration, the first GE initialization list and display-mode setup
-under bounded idle events, then advances through guarded graphics methods. See
+under bounded idle events, then advances through guarded graphics methods,
+resource layout/allocation and checked wide clock conversion. The latest
+350-root native slice stops at uncovered `0x08AE0404`; title boot remains open. See
 [current startup evidence](../research/startup-indirect-2026-10-22.md),
 [constructor-completion evidence](../research/constructor-coverage.md) and
 [object/exception-boundary evidence](../research/startup-objects.md) and

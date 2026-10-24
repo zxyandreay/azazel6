@@ -5,11 +5,12 @@ ARM64 port of Tekken 6 for PSP.** Azazel6 translates verified Allegrex/MIPS code
 ahead of time to C++ and supplies the PSP runtime around it. Users must supply
 compatible files from their own game copy.
 
-**Status (2026-10-23): Milestone 002 implemented; Milestones 003 and 004 in
+**Status (2026-10-24): Milestone 002 implemented; Milestones 003 and 004 in
 progress. Not playable. No title screen, real game rendering, audio or guest
 controls.** The bounded translated-game startup reaches graphics initialization,
 two VBLANK returns, GE state setup and guarded graphics-object calls, then
-executes the matrix-setter group and stops at guarded resource call `0x08ACF848`. A **separate synthetic** SDL/Vulkan
+executes matrix/resource setup and checked clock conversion, then stops at
+uncovered helper `0x08AE0404`. A **separate synthetic** SDL/Vulkan
 Android probe APK builds for ARM64 and x86_64, and has run on an official x86_64
 AVD. That APK does not execute Tekken 6.
 
@@ -22,7 +23,7 @@ AVD. That APK does not execute Tekken 6.
 - Bounded translated startup with modeled thread, display/VBLANK and GE initialization
   services. The title-screen boot gate is still open.
 - Checked, local-only inspection of the next uncovered helper via
-  `python tools/inspect_root.py local/game/EBOOT.BIN --root 0x08ACE2D8`;
+  `python tools/inspect_root.py local/game/EBOOT.BIN --root 0x08AE0404`;
   this does not authorize new AOT roots.
 - Tested semantic HUD aspect mathematics, with no gameplay hooks installed.
 - Android ARM64 cross-compilation of the expanded entry probe and a separate
