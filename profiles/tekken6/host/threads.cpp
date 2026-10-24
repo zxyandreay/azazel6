@@ -1,4 +1,5 @@
 #include "azazel6/threads.hpp"
+#include "azazel6/clock_conversion.hpp"
 #include "psprecomp/common.hpp"
 #include <algorithm>
 
@@ -89,29 +90,10 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     rt.nids().add("ThreadManForUser", 0xE1619D7Cu, "sceKernelSysClock2USecWide");
     rt.register_hle("ThreadManForUser", 0xE1619D7Cu, [state](auto& runtime, auto& c) {
         const auto* current = state->find(state->current_uid_);
-        const auto seconds = c.gpr[6], microseconds = c.gpr[7];
-        // Initial output contract: the live caller's stack, not arbitrary RAM.
-        // Preflight both writes before mutation; unsupported pointers stop research.
-        if (!current || current->status != ThreadStatus::Running || state->in_interrupt_ ||
-            (!seconds && !microseconds) || (seconds && seconds == microseconds)) {
-            runtime.stop("Unsupported clock-conversion context or output alias"); return;
+        if (!current || current->status != ThreadStatus::Running || state->in_interrupt_) {
+            runtime.stop("Unsupported clock-conversion context"); return;
         }
-        for (const auto address : {seconds, microseconds}) {
-            if (address && ((address & 3u) || address < current->stack_base ||
-                static_cast<std::uint64_t>(address) + 4 >
-                    static_cast<std::uint64_t>(current->stack_base) + current->stack_size ||
-                runtime.has_function(address))) {
-                runtime.stop("Clock-conversion output outside live caller stack"); return;
-            }
-        }
-        const auto ticks = static_cast<std::uint64_t>(c.gpr[4]) |
-                           (static_cast<std::uint64_t>(c.gpr[5]) << 32);
-        if (seconds) runtime.memory().store32(seconds, static_cast<std::uint32_t>(ticks / 1000000u));
-        // Null first output requests the low 32 bits, NOT the subsecond remainder.
-        if (microseconds) runtime.memory().store32(microseconds,
-            static_cast<std::uint32_t>(seconds ? ticks % 1000000u : ticks));
-        c.set_gpr(2, 0);
-        // Pure unit conversion: no clock advancement, scheduling or timer activation.
+        convert_sysclock_wide(runtime, c, current->stack_base, current->stack_size);
     });
     rt.register_hle("ThreadManForUser", 0x55C20A00u,
         [state](auto& runtime, auto& c) { state->create_event(runtime, c); });

@@ -5,6 +5,12 @@
     "license": "MIT",
     "paths": ["cmake", "configs", "include", "src", "tools", "tests", "docs"]
   },
+  "portablekit": {
+    "url": "https://github.com/TeamGDB/PortableKit.git",
+    "revision": "33800c4060c53f3233e08f8ab2cc4590a0872063",
+    "license": "MIT",
+    "scope": "Optional headless compatibility research; does not replace the Yakumo AOT baseline"
+  },
   "sdl": {
     "url": "https://github.com/libsdl-org/SDL.git",
     "revision": "829a65d769d935c4852f8159e964312c0957260a",

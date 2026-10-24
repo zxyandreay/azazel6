@@ -43,6 +43,7 @@ Reviewed 2026-10-20. Evidence labels apply to individual claims:
 - [Guarded constructor calls](research/constructor-calls.md)
 - [Bounded AOT registration stack](research/aot-registration.md)
 - [Guarded graphics startup continuation](research/startup-indirect-2026-10-22.md)
+- [PortableKit compatibility and reuse](research/portablekit.md)
 - [Startup mutex ownership](research/mutexes.md)
 - [Guarded formatter jump table](research/jump-tables.md)
 - [Formatter callback boundaries](research/formatter-callbacks.md)

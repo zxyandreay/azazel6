@@ -20,6 +20,13 @@ not supply a ready-to-use generic PSP OS or a Tekken renderer. Yakumo's actual
 kernel, Vulkan GE, audio, SDL input and mod implementations live in its game profile;
 they require an extraction/design review before reuse.
 
+The newer [PortableKit evaluation](../research/portablekit.md) already exposes
+much of that system layer through a generic profile. It is pinned separately
+for optional headless comparison; GE synchronization and other ownership gaps still
+prevent replacing the verified primary runtime. The existing AOT build is unchanged.
+Only original bootstrap metadata and checked clock conversion are shared between
+the two research hosts; each retains its own kernel and memory ownership.
+
 **PLANNED runtime:** keep guest CPU state and deterministic PSP scheduling on an
 owned execution thread. HLE models guest-visible objects and returns scheduling
 events. Platform code owns Android surfaces, file descriptors and input queues.
