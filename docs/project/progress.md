@@ -13,7 +13,7 @@ Azazel6 is not playable. See
 | Windows framework build/regressions | VERIFIED, three suites passed |
 | Python/profile tools | VERIFIED, 76 cases passed locally; bounded host registration stack |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; eighteen integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; nineteen integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
@@ -25,14 +25,14 @@ Azazel6 is not playable. See
 | Language settings | VERIFIED explicit English/Cross defaults and checked runtime-local get/set; no host locale dependency |
 | Event flags | VERIFIED create/delete, set/clear, polling, queued waits, FIFO wakeups and cancellation; timeouts remain rejecting |
 | Graphics memory | VERIFIED immutable EDRAM size/base queries backed by allocated guest VRAM; GE rendering remains unimplemented |
-| GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; real initialization EnQueue/ListSync complete; draws and asynchronous guest submission remain unimplemented |
+| GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; real initialization EnQueue/ListSync and completed-work DrawSync return; draws and asynchronous guest submission remain unimplemented |
 | VBLANK | VERIFIED real-input registration/enable and four-word handler AOT coverage; synthetic owned delivery and full context restoration |
 | Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes two VBLANK handlers and SetMode under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, six writebacks and graphics memory setup; the 357-root slice completes callback 0x08862200 and its resource/clock/scalar graphics helpers, then stops at guarded next-state callback 0x088610C4 at 0x08860FBC; both workers remain Waiting |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, six writebacks and graphics memory setup; the 363-root slice enters callback 0x088610C4, generates a clear/sprite command block and returns from completed-work DrawSync, then stops at uncovered 0x08AC713C; the new block is not submitted or rendered; both workers remain Waiting |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

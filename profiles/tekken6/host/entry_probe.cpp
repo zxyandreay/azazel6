@@ -137,6 +137,9 @@ int main(int argc, char** argv) {
             for (unsigned i = 0; i < 32; ++i)
                 std::cout << " r" << i << '=' << hex32(rt->cpu().gpr[i]);
             std::cout << std::endl;
+            std::cout << "indirect_vfpu_prefixes s=" << hex32(rt->cpu().vfpu_ctrl[0])
+                      << " t=" << hex32(rt->cpu().vfpu_ctrl[1])
+                      << " d=" << hex32(rt->cpu().vfpu_ctrl[2]) << std::endl;
         }
         std::cout << "settings_completed=" << bootstrap->completed_calls
                   << " sdk_argument=" << hex32(bootstrap->last_sdk_argument)

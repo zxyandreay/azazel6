@@ -9,8 +9,8 @@ compatible files from their own game copy.
 progress. Not playable. No title screen, real game rendering, audio or guest
 controls.** The bounded translated-game startup reaches graphics initialization,
 two VBLANK returns, GE state setup and guarded graphics-object calls, then
-completes the matrix/resource setup callback and checked clock queries, then stops
-at guarded next-state callback `0x088610C4`. A **separate synthetic** SDL/Vulkan
+completes matrix/resource setup, builds a clear command block and synchronizes
+completed GE work, then stops at uncovered `0x08AC713C`. A **separate synthetic** SDL/Vulkan
 Android probe APK builds for ARM64 and x86_64, and has run on an official x86_64
 AVD. That APK does not execute Tekken 6.
 
@@ -23,7 +23,7 @@ AVD. That APK does not execute Tekken 6.
 - Bounded translated startup with modeled thread, display/VBLANK and GE initialization
   services. The title-screen boot gate is still open.
 - Checked, local-only inspection of the next uncovered helper via
-  `python tools/inspect_root.py local/game/EBOOT.BIN --root 0x088610C4`;
+  `python tools/inspect_root.py local/game/EBOOT.BIN --root 0x08AC713C`;
   this does not authorize new AOT roots.
 - Tested semantic HUD aspect mathematics, with no gameplay hooks installed.
 - Android ARM64 cross-compilation of the expanded entry probe and a separate

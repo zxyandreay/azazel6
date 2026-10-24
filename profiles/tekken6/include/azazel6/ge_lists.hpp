@@ -37,6 +37,7 @@ public:
     [[nodiscard]] const GeList& list(std::uint32_t id) const;
     [[nodiscard]] const GeState& state() const { return state_; }
     [[nodiscard]] std::size_t size() const { return lists_.size(); }
+    [[nodiscard]] bool all_complete() const;
     [[nodiscard]] bool owns_memory(const psprecomp::GuestMemory& memory) const { return &memory_ == &memory; }
     // FIFO, one head per call. Per-call and total-list budgets are mandatory.
     void run(std::uint32_t budget);

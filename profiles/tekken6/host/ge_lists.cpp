@@ -41,6 +41,11 @@ std::uint32_t GeQueue::enqueue(std::uint32_t begin, std::uint32_t end, std::uint
     return id;
 }
 const GeList& GeQueue::list(std::uint32_t id) const { return lists_.at(id); }
+bool GeQueue::all_complete() const {
+    return std::all_of(lists_.begin(), lists_.end(), [](const auto& entry) {
+        return entry.second.status == GeStatus::Complete;
+    });
+}
 void GeQueue::update_stall(std::uint32_t id, std::uint32_t stall) {
     auto& item = lists_.at(id);
     if (item.status == GeStatus::Complete || item.status == GeStatus::Failed)
@@ -186,6 +191,16 @@ std::shared_ptr<GeQueue> register_ge_list_hle(psprecomp::Runtime& rt, std::share
             }
             c.set_gpr(2, 0);
         } catch (const std::out_of_range&) { runtime.stop("GE sync list ID is not owned"); }
+    });
+    rt.register_hle("sceGe_user", 0xB287BD61u, [queue, threads](auto& runtime, auto& c) {
+        if (!threads->current_uid() || threads->in_interrupt() || !threads->interrupts_enabled()) {
+            runtime.stop("GE draw sync requires an interruptible thread"); return;
+        }
+        if (c.gpr[4] > 1) { runtime.stop("Unsupported GE draw sync mode"); return; }
+        // The observed call synchronizes already completed initialization work.
+        // Pending/failed work must not masquerade as completion in either mode.
+        if (!queue->all_complete()) { runtime.stop("GE draw sync requires completed work"); return; }
+        c.set_gpr(2, 0);
     });
     return queue;
 }

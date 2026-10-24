@@ -125,6 +125,42 @@ void hle_contracts() {
     check(bad.rt->stopped() && b.gpr[2] == 42 && bad_queue->list(1).status == GeStatus::Failed,
           "Failed GE work returned success");
 }
+void draw_sync_contracts() {
+    for (unsigned state = 0; state < 6; ++state) for (auto mode : {0u, 1u, 2u, 0xFFFFFFFFu}) {
+        Fixture f;
+        auto threads = register_thread_hle(*f.rt, {0x08010000u, 0x08020000u, code, 0x08010000u,
+            code, code + 256, record, 32, 4096});
+        auto queue = register_ge_list_hle(*f.rt, f.callbacks, threads, {});
+        // Empty, complete, queued, stalled, callback pending, failed.
+        if (state) {
+            f.words({state == 5 ? 0x04000001u : 0x0F000000u, 0x0C000000u});
+            if (state == 4) f.callback();
+            queue->enqueue(base, base + 8, state == 3 ? base : 0,
+                           state == 4 ? std::optional<std::uint32_t>{0} : std::nullopt);
+            if (state != 2) queue->run(8);
+        }
+        const auto writes = queue->state().writes(), count = queue->size();
+        auto& c = f.rt->cpu(); c.pc = code; c.gpr[31] = code + 4;
+        c.gpr[2] = 42; c.gpr[4] = mode;
+        const auto before = c;
+        invoke_returning_import(*f.rt, c, "sceGe_user", 0xB287BD61u);
+        const bool success = state < 2 && mode < 2;
+        check(f.rt->stopped() != success && queue->all_complete() == (state < 2), "GE draw completion predicate");
+        check(queue->state().writes() == writes && queue->size() == count, "Draw sync mutated queue");
+        if (success) {
+            check(c.pc == code + 4 && c.gpr[2] == 0, "Draw sync return ABI");
+            for (unsigned r = 0; r < 32; ++r) if (r != 2) check(c.gpr[r] == before.gpr[r], "Draw sync clobbered register");
+        } else check(c.pc == before.pc && c.gpr == before.gpr, "Rejected draw sync changed state");
+    }
+    Fixture f;
+    auto threads = register_thread_hle(*f.rt, {0x08010000u, 0x08020000u, code, 0x08010000u,
+        code, code + 256, record, 32, 4096});
+    auto queue = register_ge_list_hle(*f.rt, f.callbacks, threads, {});
+    f.rt->invoke_import("Kernel_Library", 0x092968F4u, f.rt->cpu());
+    f.rt->cpu().gpr[4] = 0; f.rt->cpu().gpr[2] = 42;
+    f.rt->invoke_import("sceGe_user", 0xB287BD61u, f.rt->cpu());
+    check(f.rt->stopped() && f.rt->cpu().gpr[2] == 42 && queue->all_complete(), "Draw sync accepted disabled interrupts");
+}
 }
 int main() {
     try {
@@ -187,6 +223,7 @@ int main() {
         callback_execution();
         state_contracts();
         hle_contracts();
+        draw_sync_contracts();
         std::cout << "Synthetic bounded GE control-stream contracts passed\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

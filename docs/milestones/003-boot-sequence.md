@@ -9,8 +9,8 @@ Both workers now wait on their shared event flag. The main thread completes
 VBLANK registration, the first GE initialization list and display-mode setup
 under bounded idle events, then advances through guarded graphics methods,
 resource layout/allocation and checked wide clock conversion. The latest
-357-root native slice completes callback `0x08862200`, then stops at guarded
-next-state callback `0x088610C4` at `0x08860FBC`; title boot remains open. See
+363-root native slice enters callback `0x088610C4`, builds a clear command block,
+returns from completed-work DrawSync and stops at `0x08AC713C`; title boot remains open. See
 [current startup evidence](../research/startup-indirect-2026-10-22.md),
 [constructor-completion evidence](../research/constructor-coverage.md) and
 [object/exception-boundary evidence](../research/startup-objects.md) and

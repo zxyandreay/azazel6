@@ -319,3 +319,38 @@ All 76 Python cases and 18 CTest suites pass (30.83 seconds). Windows Release
 and Android ARM64 builds pass. Local Ghidra reports preserve the grouped
 instructions/pseudocode and uncertainty warnings. **PLANNED:** review the
 31-word next callback and its `0x08AC5B78` / `0x08AAB7C8` helper chain.
+
+## Clear-command production and DrawSync (2026-10-24)
+
+**VERIFIED:** the callback source `0x088622FC` / `0x08862300` reaches the
+existing store at `0x08862248`, installing `0x088610C4` at object offset `0x60`.
+The immediate guard preserves the prior two targets and admits this third
+verified source. Six bounded roots cover the callback, clear generator and
+submission wrapper; unknown callback loops at `0x08AC6E7C` / `0x08AC6EAC`
+remain terminal. Ghidra's nine-function report supplies byte-checked advisory
+evidence, including its unreachable-code and PIC warnings; conservative CFG
+coverage retains branches the decompiler discards.
+
+The clear generator's VFPU matrix loads, scalar one, pair dot product and
+nearest-integer conversion were checked independently in the pinned decoder,
+emitter and context helpers. New synthetic tests exercise matrix-lane selection,
+poisoned unused lanes, signed affine values and positive/negative half-way
+rounding. The actual pre-callback stop has neutral source/target prefixes
+`0xE4` and destination prefix zero; the generator introduces no new prefixes.
+No pseudocode translation or timing adjustment was made.
+
+The **363-root / 26,589-word** native slice executes the clear/sprite command
+producer at `0x08AC67E8`, then reaches `sceGeDrawSync(0)` at `0x08B890F0`.
+The new original HLE returns DONE only when every owned list is complete (or
+the queue is empty). It checks mode/context and refuses queued, stalled,
+callback-held or failed work without mutation. Polling incomplete work and
+asynchronous waits remain unimplemented. This uses the documented PSPSDK
+`pspge.h` contract; PortableKit's unconditional DrawSync success is not reused.
+
+After that call the real run stops at **`0x08AC713C`**, RA `0x08AC6DD0`,
+SP `0x09FFE640`. The newly generated command block has not been submitted;
+the same single completed initialization list, 209 state writes, two display
+events and two waiting workers remain. This is not real rendering or title boot.
+All 76 Python tests and 19 CTest suites pass, as do Windows Release and Android
+ARM64 builds. **PLANNED:** inspect the next frame/list helper chain and retain
+strict draw/producer refusal until ownership and rendering are implemented.
