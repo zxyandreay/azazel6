@@ -23,6 +23,7 @@ std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
         previous = hi;
     }
     auto state = std::make_shared<DataCacheState>();
+    state->owner = &rt;
     const auto operation = [state, begin, end, writeback_spans, partition](auto& runtime, auto& c, bool writeback) {
         const auto address = c.gpr[4], size = c.gpr[5];
         const auto finish = static_cast<std::uint64_t>(address) + size;
@@ -51,6 +52,15 @@ std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
         ++state->completed_ranges;
         if (writeback) ++state->writeback_ranges;
         state->last_address = address; state->last_size = size;
+        state->writeback_lease.reset();
+        if (writeback && size && partition) {
+            for (const auto& [uid, block] : partition->blocks) {
+                if (address >= block.base && finish <= static_cast<std::uint64_t>(block.base) + block.size) {
+                    state->writeback_lease = GuestAllocation{block.ticket, address, size};
+                    break;
+                }
+            }
+        }
         c.set_gpr(2, 0); // Inspected successful L1 range paths finish with v0 zero.
     };
     rt.register_hle("UtilsForUser", 0x34B9FA9Eu, [operation](auto& runtime, auto& c) { operation(runtime, c, false); });

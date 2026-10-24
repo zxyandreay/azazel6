@@ -145,3 +145,47 @@ return address `0x08AC61F0`. It retains the two VBLANK returns, one completed
 initialization list and 209 state writes. There are three new texture-state
 writebacks, but no second list submission or drawing evidence. The next coverage
 step needs a bounded CFG and terminal guards for that helper's indirect calls.
+
+
+## Live written submissions (2026-10-25)
+
+**VERIFIED:** the cache HLE records a writeback span with its live partition
+allocation ticket. GE admission rechecks that ticket and the complete span,
+requires the exact start, aligned nonempty size at most 512 KiB, an idle queue,
+null stall/options and runtime-local cache/partition/interrupt owners. A freed
+allocation or a new allocation at the same address cannot revive an old lease.
+Invalidation drops the lease. Every consumed command/branch remains inside the
+lease; command budgets are unchanged. The extent is not guessed by scanning END.
+
+An owned callback additionally requires AOT coverage. Bounded FINISH/END invokes
+the existing interrupt bridge, saving the import continuation and returned list
+ID; completion is acknowledged only after the guest callback returns. No list
+memory is consumed after entering FINISH. Mid-stream SIGNAL resumption, stalled
+producer updates and concurrent submissions still reject. The implementation is
+a synchronous consumer, not a claim of measured PSP GPU/CPU scheduling.
+
+Synthetic tests cover successful null/FINISH callbacks, context restoration,
+freed/reused allocation tickets, invalidation, misalignment, wrong start, stalls,
+missing AOT, bad callback IDs, foreign cache ownership and unsupported drawing.
+All 20 CTest suites and 79 Python cases pass; Windows/Android ARM64 build.
+
+**VERIFIED real-input boundary:** the 374-root / 26,826-word slice admits the
+second list `[0x09BF4280, 0x09C34280)`, then stops at `0x09BF42B0` after eight
+commands, with `0x0406001E` (30 sprite vertices). Six new state writes bring the
+total to 215. Clear mode is `0x701`, vertex type `0x80011C`, vertex data begins
+at `0x09BF42C0`, and offset is zero. The first two vertices describe x=0..32,
+y=0..272, color=0 and depth=16. This is command/vertex evidence, not pixels.
+The guest PC remains the EnQueue import `0x08B890E8`; no success is returned.
+
+**VERIFIED coverage, not callback execution:** Ghidra/byte inspection of
+`0x08AC6CE4` shows a timing query, timing-field update and optional callback-array
+walk. Its root is included, but unresolved indirect call `0x08AC6D44` stays
+trapped. The real FINISH callback has not yet run because PRIM fails first.
+Private evidence is retained in `local/re-gefinish-ghidra` and
+`local/re-geprim-execution`. The probe reports bounded register/word context
+inside the failed list lease to make the next investigation reproducible.
+
+**PLANNED:** integrate the checked drawing subset and evaluate external
+PortableKit decoded draw calls/Vulkan, including vertex ownership, framebuffer
+format/stride, depth/color aliasing and rejection of unsupported state. Do not
+replace failed draws with success or infer rendering from command acceptance.

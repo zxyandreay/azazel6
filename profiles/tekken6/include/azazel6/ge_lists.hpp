@@ -37,6 +37,7 @@ public:
     [[nodiscard]] const GeList& list(std::uint32_t id) const;
     [[nodiscard]] const GeState& state() const { return state_; }
     [[nodiscard]] std::size_t size() const { return lists_.size(); }
+    [[nodiscard]] const auto& lists() const { return lists_; }
     [[nodiscard]] bool all_complete() const;
     [[nodiscard]] bool owns_memory(const psprecomp::GuestMemory& memory) const { return &memory_ == &memory; }
     // FIFO, one head per call. Per-call and total-list budgets are mandatory.
@@ -57,9 +58,16 @@ private:
     GeState state_;
 };
 struct GeSpan { std::uint32_t begin, end; };
-// Observed synchronous, callback-free initialization path. Other producers reject.
+struct GeSubmissionSource {
+    std::shared_ptr<const PartitionMemory> partition;
+    std::shared_ptr<const DataCacheState> cache;
+    std::shared_ptr<InterruptDelivery> interrupts;
+    std::uint32_t gp = 0;
+};
+// Bounded synchronous streams: configured initialization or freshly written live
+// partition spans. Optional FINISH is acknowledged only after the guest returns.
 std::shared_ptr<GeQueue> register_ge_list_hle(psprecomp::Runtime&, std::shared_ptr<GeCallbacks>,
-    std::shared_ptr<ThreadRegistry>, std::vector<GeSpan>);
+    std::shared_ptr<ThreadRegistry>, std::vector<GeSpan>, GeSubmissionSource = {});
 // One callback at an outer boundary. Completion is acknowledged only by the guarded guest return.
 bool dispatch_ge_callback(psprecomp::Runtime&, const std::shared_ptr<GeQueue>&,
                           InterruptDelivery&, std::uint32_t module_gp);

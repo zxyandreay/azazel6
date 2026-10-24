@@ -51,11 +51,13 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
 - **VERIFIED (2026-10-25):** the real frame-flip path latches framebuffer
   `0x04044000` after WaitVblankStartCB waits for a new edge. Only inactive PSP
   callbacks are supported; callback notification/delivery remain unimplemented.
-  Dynamic GE enqueue is the next rejecting boundary, before any drawing executes.
+  Dynamic GE enqueue now checks live writeback ownership and FINISH delivery.
+  The next boundary is the first clear-mode sprite PRIM; no drawing executes.
 - **VERIFIED:** [GE control-stream contracts](../research/ge-lists.md), including
   stalls, control-flow budgets, stale callback generations and actual synthetic
   AOT callback returns. The first real initialization list completes EnQueue/ListSync with retained
-  state. Drawing commands and asynchronous guest submissions remain rejecting.
+  state. Written live-partition submissions and synthetic FINISH delivery are checked;
+  drawing commands and asynchronous guest producers remain rejecting.
 - **VERIFIED:** a separate [Android host probe](../development/android-host.md)
   compiles SDL/Vulkan surface ownership, a synthetic clear presenter and a sampled
   input adapter into signed ARM64 and x86_64 APKs. ELF and APK 16 KiB alignment checks pass.

@@ -86,7 +86,8 @@ int main(int argc, char** argv) {
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
         const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
-        const auto ge_queue = azazel6::register_ge_list_hle(*rt, ge_callbacks, threads, AZAZEL6_GE_LIST_SPANS);
+        const auto ge_queue = azazel6::register_ge_list_hle(*rt, ge_callbacks, threads, AZAZEL6_GE_LIST_SPANS,
+            {partition, data_cache, interrupt_delivery, module.gp});
         std::cout << "guest_clock_mode=bounded_idle_events frame_budget=64" << std::endl;
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
@@ -112,6 +113,25 @@ int main(int argc, char** argv) {
                   << " edram_address_reads=" << graphics_memory->address_reads << std::endl;
         std::cout << "ge_callback_count=" << ge_callbacks->count() << std::endl;
         std::cout << "ge_list_count=" << ge_queue->size() << " ge_state_writes=" << ge_queue->state().writes() << std::endl;
+        for (const auto& [id, list] : ge_queue->lists()) {
+            std::cout << "ge_list=" << id << " begin=" << hex32(list.begin) << " end=" << hex32(list.end)
+                      << " pc=" << hex32(list.pc) << " commands=" << list.commands
+                      << " status=" << static_cast<unsigned>(list.status) << std::endl;
+            if (list.status != azazel6::GeStatus::Failed) continue;
+            const auto& state = ge_queue->state();
+            for (auto op : {0x12u, 0x13u, 0x9Cu, 0x9Du, 0x9Eu, 0x9Fu, 0xD2u, 0xD3u, 0xD4u, 0xD5u, 0xE8u, 0xE9u})
+                std::cout << "ge_register=" << hex32(op) << " value=" << hex32(state.word(op)) << std::endl;
+            // Bounded private evidence, only inside this already checked list lease.
+            const auto context_begin = list.pc >= list.begin + 32u ? list.pc - 32u : list.begin;
+            for (std::uint64_t address = context_begin; address < static_cast<std::uint64_t>(list.pc) + 36 &&
+                 address + 4 <= list.end; address += 4)
+                std::cout << "ge_word=" << hex32(static_cast<std::uint32_t>(address))
+                          << " value=" << hex32(mem.load32(static_cast<std::uint32_t>(address))) << std::endl;
+            const auto vertex = state.vertex_address();
+            if (!(vertex & 3u) && vertex >= list.begin && static_cast<std::uint64_t>(vertex) + 32 <= list.end)
+                for (auto address = vertex; address < vertex + 32; address += 4)
+                    std::cout << "ge_vertex_word=" << hex32(address) << " value=" << hex32(mem.load32(address)) << std::endl;
+        }
         std::cout << "vblank_registered=" << interrupts->vblank.has_value()
                   << " vblank_enabled=" << interrupts->enabled << std::endl;
         std::cout << "display_buffer_requests=" << display->buffer_requests

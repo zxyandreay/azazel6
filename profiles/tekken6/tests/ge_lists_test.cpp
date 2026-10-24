@@ -125,6 +125,75 @@ void hle_contracts() {
     check(bad.rt->stopped() && b.gpr[2] == 42 && bad_queue->list(1).status == GeStatus::Failed,
           "Failed GE work returned success");
 }
+void dynamic_submission_contracts() {
+    // Real cache HLE produces each lease. Allocation reuse must not revive it.
+    for (unsigned scenario = 0; scenario < 12; ++scenario) {
+        Fixture f;
+        auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08050000u);
+        auto partition = register_memory_hle(*f.rt, allocator);
+        auto threads = register_thread_hle(*f.rt, {0x08010000u, 0x08050000u, code, 0x08010000u,
+            code, code + 256, record, 32, 4096}, allocator);
+        auto interrupts = register_interrupt_hle(*f.rt, code, code + 256, record);
+        auto delivery = register_interrupt_delivery(*f.rt, interrupts, threads, allocator);
+        auto cache = register_data_cache_hle(*f.rt, base, 0x08060000u, {}, partition);
+        const auto allocation = *allocator->allocate(0x10000u);
+        partition->blocks.emplace(0x10000000u, allocation);
+        f.rt->register_function(code, [](auto& runtime, auto& c) {
+            runtime.memory().store32(record + 16, c.gpr[4]); c.gpr[16] = 0; c.pc = c.gpr[31];
+        }, "dynamic_finish");
+        f.rt->register_function(code + 4, [](auto& runtime, auto&) { runtime.stop("dynamic GE returned"); }, "continuation");
+        auto& m = f.rt->memory(); auto& c = f.rt->cpu();
+        m.store32(record, 0); m.store32(record + 4, 0);
+        m.store32(record + 8, scenario == 8 ? code + 8 : code); m.store32(record + 12, 0);
+        c.gpr[4] = record; f.rt->invoke_import("sceGe_user", 0xA4FC06A4u, c);
+        m.store32(allocation.base, scenario == 10 ? 0x04000001u : 0x0F00002Au);
+        m.store32(allocation.base + 4, 0x0C000000u);
+        c.gpr[4] = allocation.base; c.gpr[5] = scenario == 4 ? 7 : 8;
+        f.rt->invoke_import("UtilsForUser", 0x3EE30821u, c);
+        check(cache->writeback_lease && cache->writeback_lease->ticket == allocation.ticket,
+              "Writeback did not retain live allocation identity");
+        if (scenario == 2 || scenario == 3) {
+            allocator->release(allocation.ticket); partition->blocks.clear();
+            if (scenario == 3) {
+                const auto replacement = *allocator->allocate(0x10000u);
+                check(replacement.base == allocation.base && replacement.ticket != allocation.ticket, "Reuse fixture");
+                partition->blocks.emplace(0x10000000u, replacement);
+            }
+        }
+        if (scenario == 5) {
+            c.gpr[4] = allocation.base; c.gpr[5] = 8;
+            f.rt->invoke_import("UtilsForUser", 0x34B9FA9Eu, c);
+            check(!cache->writeback_lease, "Invalidation retained writeback lease");
+        }
+        const GeSubmissionSource source{partition, cache, delivery, record};
+        if (scenario == 11) {
+            Fixture foreign;
+            auto other_cache = register_data_cache_hle(*foreign.rt, base, 0x08060000u);
+            rejects([&] { register_ge_list_hle(*f.rt, f.callbacks, threads, {},
+                {partition, other_cache, delivery, record}); }, "Foreign cache accepted");
+            continue;
+        }
+        auto queue = register_ge_list_hle(*f.rt, f.callbacks, threads, {}, source);
+        c.pc = code + 12; c.gpr[31] = code + 4; c.gpr[16] = 77; c.vfpu[127] = 19;
+        c.gpr[2] = 42; c.gpr[4] = allocation.base + (scenario == 6 ? 4 : 0);
+        c.gpr[5] = scenario == 7 ? allocation.base : 0;
+        c.gpr[6] = scenario == 1 ? 0xFFFFFFFFu : scenario == 9 ? 15 : 0; c.gpr[7] = 0;
+        invoke_returning_import(*f.rt, c, "sceGe_user", 0xAB49E76Au);
+        if (scenario <= 1) {
+            check(!f.rt->stopped() && c.gpr[2] == 1 && queue->size() == 1, "Dynamic enqueue return");
+            if (!scenario) check(delivery->active() && queue->list(1).status == GeStatus::Callback,
+                                 "FINISH completed before guest return");
+            f.rt->run(c.pc, 8);
+            check(f.rt->stop_reason() == "dynamic GE returned" && queue->all_complete() &&
+                  c.gpr[2] == 1 && c.gpr[16] == 77 && c.vfpu[127] == 19 &&
+                  m.load32(record + 16) == (scenario ? 0u : 42u), "Dynamic FINISH return/context");
+        } else {
+            check(f.rt->stopped() && c.gpr[2] == 42 && !delivery->active() &&
+                  queue->size() == (scenario == 10 ? 1u : 0u), "Rejected dynamic submission mutated ownership/ABI");
+            if (scenario == 10) check(queue->list(1).status == GeStatus::Failed, "Draw silently completed");
+        }
+    }
+}
 void draw_sync_contracts() {
     for (unsigned state = 0; state < 6; ++state) for (auto mode : {0u, 1u, 2u, 0xFFFFFFFFu}) {
         Fixture f;
@@ -224,6 +293,7 @@ int main() {
         state_contracts();
         hle_contracts();
         draw_sync_contracts();
+        dynamic_submission_contracts();
         std::cout << "Synthetic bounded GE control-stream contracts passed\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

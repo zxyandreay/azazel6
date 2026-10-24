@@ -10,8 +10,8 @@ progress. Not playable. No title screen, real game rendering, audio or guest
 controls.** The bounded translated-game startup reaches graphics initialization,
 three VBLANK returns, GE state setup and guarded graphics-object calls, then
 completes matrix/resource setup, builds a clear command block and synchronizes
-completed GE work and latches the next framebuffer. It stops at the next GE
-enqueue (`0x08B890E8`), pending verified dynamic-list ownership and drawing support. A **separate synthetic** SDL/Vulkan
+completed GE work and latches the next framebuffer. Its second GE list reaches the first clear-mode sprite draw at `0x09BF42B0`,
+which still rejects pending drawing support. A **separate synthetic** SDL/Vulkan
 Android probe APK builds for ARM64 and x86_64, and has run on an official x86_64
 AVD. That APK does not execute Tekken 6.
 

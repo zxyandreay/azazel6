@@ -148,8 +148,16 @@ void GeQueue::complete_callback(std::uint64_t token) {
     if (finish) queue_.pop_front();
 }
 std::shared_ptr<GeQueue> register_ge_list_hle(psprecomp::Runtime& rt, std::shared_ptr<GeCallbacks> callbacks,
-    std::shared_ptr<ThreadRegistry> threads, std::vector<GeSpan> spans) {
+    std::shared_ptr<ThreadRegistry> threads, std::vector<GeSpan> spans, GeSubmissionSource source) {
     if (!threads || spans.size() > 64) throw psprecomp::Error("Invalid GE HLE ownership");
+    if (source.partition || source.cache || source.interrupts || source.gp) {
+        if (!source.partition || source.partition->owner != &rt || !source.cache || source.cache->owner != &rt ||
+            !source.interrupts || !source.interrupts->owns_runtime(rt) ||
+            source.gp < psprecomp::GuestMemory::kPhysicalBase ||
+            static_cast<std::uint64_t>(source.gp) >= psprecomp::GuestMemory::kPhysicalBase +
+                static_cast<std::uint64_t>(rt.memory().size()))
+            throw psprecomp::Error("Invalid GE dynamic submission ownership");
+    }
     std::sort(spans.begin(), spans.end(), [](auto a, auto b) { return a.begin < b.begin; });
     std::uint32_t previous = 0;
     for (const auto span : spans) {
@@ -160,19 +168,55 @@ std::shared_ptr<GeQueue> register_ge_list_hle(psprecomp::Runtime& rt, std::share
             throw psprecomp::Error("Invalid GE HLE list lease");
         previous = span.end;
     }
-    auto queue = std::make_shared<GeQueue>(rt.memory(), std::move(callbacks));
-    rt.register_hle("sceGe_user", 0xAB49E76Au, [queue, threads, spans](auto& runtime, auto& c) {
+    auto queue = std::make_shared<GeQueue>(rt.memory(), callbacks);
+    rt.register_hle("sceGe_user", 0xAB49E76Au, [queue, callbacks, threads, spans, source](auto& runtime, auto& c) {
         if (!threads->current_uid() || threads->in_interrupt() || !threads->interrupts_enabled()) {
             runtime.stop("GE enqueue requires an interruptible thread"); return;
         }
+        std::optional<GeSpan> lease;
         const auto span = std::find_if(spans.begin(), spans.end(), [&](auto s) { return s.begin == c.gpr[4]; });
-        if (span == spans.end() || c.gpr[5] || c.gpr[6] != 0xFFFFFFFFu || c.gpr[7]) {
-            runtime.stop("GE enqueue requires a verified span and callback-free unstalled arguments"); return;
+        if (span != spans.end()) lease = *span;
+        else if (source.cache && source.cache->writeback_lease) {
+            const auto written = *source.cache->writeback_lease;
+            const auto end = static_cast<std::uint64_t>(written.base) + written.size;
+            if (written.base == c.gpr[4] && written.size <= 0x80000u && written.size &&
+                !((written.base | written.size) & 3u) && end <= 0xFFFFFFFFu) {
+                for (const auto& [uid, block] : source.partition->blocks) {
+                    if (block.ticket == written.ticket && written.base >= block.base &&
+                        end <= static_cast<std::uint64_t>(block.base) + block.size)
+                        lease = GeSpan{written.base, static_cast<std::uint32_t>(end)};
+                }
+            }
+        }
+        if (!lease || c.gpr[5] || c.gpr[7] || !queue->all_complete()) {
+            runtime.stop("GE enqueue requires a live written span, idle queue and unstalled arguments"); return;
+        }
+        std::optional<std::uint32_t> callback;
+        if (c.gpr[6] != 0xFFFFFFFFu) {
+            const auto id = c.gpr[6];
+            if (!source.interrupts || !source.interrupts->available() ||
+                id >= callbacks->slots.size() || !callbacks->slots[id]) {
+                runtime.stop("GE enqueue callback is not owned or deliverable"); return;
+            }
+            for (auto target : {callbacks->slots[id]->signal_function, callbacks->slots[id]->finish_function})
+                if (target && !runtime.has_function(target)) {
+                    runtime.stop("GE enqueue callback requires AOT coverage " + psprecomp::hex32(target)); return;
+                }
+            callback = id;
         }
         try {
-            const auto id = queue->enqueue(span->begin, span->end);
+            const auto id = queue->enqueue(lease->begin, lease->end, 0, callback);
             queue->run(65536);
             const auto& list = queue->list(id);
+            if (list.status == GeStatus::Callback && list.event && list.event->finish) {
+                // This bounded consumer has reached FINISH/END. No list memory
+                // is read after entering the callback; asynchronous producers
+                // and mid-stream SIGNAL resumption remain unsupported.
+                c.set_gpr(2, id); c.pc = c.gpr[31];
+                if (!dispatch_ge_callback(runtime, queue, *source.interrupts, source.gp))
+                    runtime.stop("GE FINISH callback could not be delivered");
+                return;
+            }
             if (list.status != GeStatus::Complete) {
                 runtime.stop(list.error.empty() ? "GE initialization did not complete within its command budget" : list.error);
                 return;

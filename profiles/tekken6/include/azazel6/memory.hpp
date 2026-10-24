@@ -31,8 +31,12 @@ struct PartitionMemory {
 };
 std::shared_ptr<PartitionMemory> register_memory_hle(psprecomp::Runtime&, std::shared_ptr<GuestAllocator>);
 struct DataCacheState {
+    const psprecomp::Runtime* owner = nullptr;
     std::uint64_t completed_ranges = 0, writeback_ranges = 0;
     std::uint32_t last_address = 0, last_size = 0;
+    // Most recent successful cache operation, only when it writes back one live
+    // partition span. ticket identifies the allocation, not merely its address.
+    std::optional<GuestAllocation> writeback_lease;
 };
 // Single-threaded coherent RAM. Additional reviewed file-backed data leases
 // authorize writeback only; invalidation retains its original BSS/RAM boundary.

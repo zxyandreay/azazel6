@@ -394,3 +394,15 @@ at the explicit GE rejection, not success. Local evidence is under
 **PLANNED:** validate the dynamic command-buffer extent and callback lifetime,
 inspect its first drawing commands, and implement the required GE behavior with
 independent ownership/renderer tests. No title screen or game rendering is verified.
+
+
+## First submitted primitive (2026-10-25)
+
+**VERIFIED:** the next increment adds the guarded FINISH callback root and
+live written GE leases. The **374-root / 26,826-word** slice reaches command
+`0x0406001E` at `0x09BF42B0`, the first clear-mode sprite draw. The GE HLE rejects
+that primitive; guest PC remains `0x08B890E8` and no FINISH callback executes.
+See [submission ownership and exact state](ge-lists.md#live-written-submissions-2026-10-25).
+This supersedes the preceding span-admission blocker. Twenty native suites,
+79 Python cases and Android ARM64 compilation pass. One diagnostic relink hit a
+Windows executable lock while CTest was running; a sequential retry passed.

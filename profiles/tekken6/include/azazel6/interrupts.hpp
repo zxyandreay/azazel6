@@ -28,6 +28,7 @@ public:
     bool dispatch_callback(psprecomp::Runtime&, std::uint32_t function, std::uint32_t value,
                            std::uint32_t argument, std::uint32_t gp, std::function<void()> completion);
     [[nodiscard]] bool active() const noexcept { return saved_.has_value(); }
+    [[nodiscard]] bool owns_runtime(const psprecomp::Runtime& rt) const noexcept { return runtime_ == &rt; }
     [[nodiscard]] std::size_t pending() const noexcept { return pending_.size(); }
 private:
     friend std::shared_ptr<InterruptDelivery> register_interrupt_delivery(psprecomp::Runtime&,
