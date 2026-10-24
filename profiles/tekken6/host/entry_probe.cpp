@@ -131,6 +131,12 @@ int main(int argc, char** argv) {
                 static_cast<std::uint64_t>(GuestMemory::kPhysicalBase) + mem.size())
                 std::cout << " arg0_word=" << hex32(mem.load32(arg0));
             std::cout << std::endl;
+            // A guard stops before link/delay-slot effects; a0 may not yet be
+            // the callee's argument. Retain all registers for target provenance.
+            std::cout << "indirect_gpr";
+            for (unsigned i = 0; i < 32; ++i)
+                std::cout << " r" << i << '=' << hex32(rt->cpu().gpr[i]);
+            std::cout << std::endl;
         }
         std::cout << "settings_completed=" << bootstrap->completed_calls
                   << " sdk_argument=" << hex32(bootstrap->last_sdk_argument)

@@ -288,3 +288,34 @@ All 76 Python tests and 18 CTest suites pass locally. Added native tests cover
 atomic refusal, stack bounds/alignment and another thread's stack. Windows
 Release and Android ARM64 builds pass. **PLANNED:** inspect `0x08AE0404` and
 its indirect method before authorizing more coverage. Title boot remains open.
+
+## Setup callback completion (2026-10-24)
+
+**VERIFIED:** diagnostic guards observe `0x08AC7610` at `0x08AE0430`.
+The pre-delay registers hold object/s0 `0x08C52884` and table/a1 `0x08BCF5D8`;
+a0 has not yet received s0. Guard diagnostics now retain every GPR to avoid
+misidentifying stale argument registers as the callee's arguments. Exact slot
+`0x08BCF5E8` (`+0x10`) supplies the target. Its three instructions return the
+file-backed float at `0x08BCF620` (approximately 59.94) in f0, including the
+return delay slot. No host timing constant is changed.
+
+Both `0x08AE0404` and `0x08AE04AC` read this same global object and method;
+separate slot guards cover `0x08AE0430` and `0x08AE04CC`. The method and shared
+`0x08AC71A0` field accessor do not mutate the table. Ghidra confirms both
+callers' scalar calculations and exact instruction bytes. Three subsequent
+direct setters cover static state words, packed scalar color conversion and a
+scalar float store. Their conditional/likely branches and return delay slots
+were reviewed against instructions; no VFPU prefix inference is involved.
+
+The **357-root / 26,220-word** Windows run returns through `0x088622F4`,
+completes this state callback and stops at the existing `0x08860FBC` guard with
+new target `0x088610C4`, object `0x090B17C0`, RA `0x0885FBAC`,
+SP `0x09FFE680`. The target is produced by `0x088622FC` / `0x08862300` and
+stored by the already covered state-update path. It remains unauthorized in
+this increment pending review of its direct dependencies. GE/display/cache
+counts and waiting workers remain unchanged; no title or drawing is claimed.
+
+All 76 Python cases and 18 CTest suites pass (30.83 seconds). Windows Release
+and Android ARM64 builds pass. Local Ghidra reports preserve the grouped
+instructions/pseudocode and uncertainty warnings. **PLANNED:** review the
+31-word next callback and its `0x08AC5B78` / `0x08AAB7C8` helper chain.
