@@ -373,7 +373,8 @@
     "0x08AC1174",
     "0x08AC8C6C",
     "0x08AD57D8",
-    "0x08AC6CE4"
+    "0x08AC6CE4",
+    "0x08862338"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup, direct-call and validated pointer-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -1019,7 +1020,12 @@
           "lower": "0x0886164C"
         },
         "0x08861444",
-        "0x088622FC"
+        "0x088622FC",
+        {
+          "upper": "0x088610EC",
+          "lower": "0x088610F4",
+          "delay_slot_branch": "0x1860000A"
+        }
       ]
     }
   ],
