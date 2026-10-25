@@ -11,7 +11,7 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 79 cases passed locally; bounded host registration stack |
+| Python/profile tools | VERIFIED, 80 cases passed locally; bounded host registration stack |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; twenty integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
@@ -30,7 +30,7 @@ Azazel6 is not playable. See
 | Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes three VBLANK handlers, SetMode and next-edge WaitVblankStartCB with inactive callbacks under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
-| PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests; bounded interpreter comparison only. GE synchronization, disc, renderer and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
+| PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. GE synchronization, disc, renderer and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
 | Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, seven writebacks and graphics memory setup; the 374-root slice completes the frame-flip queries/setters and next-edge wait, then admits dynamic GE enqueue at 0x08B890E8 (buffer 0x09BF4280, callback 0) and stops at first clear-mode PRIM 0x0406001E at 0x09BF42B0; no draw executes; both workers remain Waiting |

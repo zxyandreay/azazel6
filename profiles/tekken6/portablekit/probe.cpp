@@ -7,6 +7,9 @@
 #include "azazel6/clock_conversion.hpp"
 #include <iostream>
 
+int portablekit_ge_contracts();
+int portablekit_decode_clear(const char*);
+
 namespace {
 struct Nid { const char* library; std::uint32_t nid; const char* name; };
 constexpr Nid nids[] = {
@@ -35,8 +38,13 @@ const GameProfile& game() {
 }
 int main(int argc, char** argv) {
     try {
-        if (argc != 3 || psprecomp::sha256_file(argv[1]) != portablekit::game().executable_sha256)
+        if (argc == 2 && std::string_view(argv[1]) == "--test-ge") return portablekit_ge_contracts();
+        if ((argc != 3 && argc != 4) || psprecomp::sha256_file(argv[1]) != portablekit::game().executable_sha256)
             throw psprecomp::Error("Exact verified ELF and local output directory required");
+        if (argc == 4) {
+            if (std::string_view(argv[2]) != "--decode-clear") throw psprecomp::Error("Unknown evidence mode");
+            return portablekit_decode_clear(argv[3]);
+        }
         if (!portablekit::env_set("STRICT_HLE")) throw psprecomp::Error("Strict HLE required");
         const auto elf = psprecomp::Elf32Image::from_file(argv[1]);
         psprecomp::Runtime rt(portablekit::game().guest_ram_bytes);

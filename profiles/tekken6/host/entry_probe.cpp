@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
         if (setenv("PSPRECOMP_NO_INTERPRETER", "1", 1) != 0) throw Error("Cannot disable interpreter");
 #endif
         if (sha256_file(argv[1]) != AZAZEL6_EXPECTED_SHA) throw Error("Unsupported input SHA-256");
+        std::cout << "input_sha256=" << AZAZEL6_EXPECTED_SHA << std::endl;
         const auto elf = Elf32Image::from_file(argv[1]);
         auto rt = std::make_unique<Runtime>(elf.required_ram_size());
         const auto relocations = elf.load_and_relocate(rt->memory());
@@ -128,9 +129,17 @@ int main(int argc, char** argv) {
                 std::cout << "ge_word=" << hex32(static_cast<std::uint32_t>(address))
                           << " value=" << hex32(mem.load32(static_cast<std::uint32_t>(address))) << std::endl;
             const auto vertex = state.vertex_address();
-            if (!(vertex & 3u) && vertex >= list.begin && static_cast<std::uint64_t>(vertex) + 32 <= list.end)
-                for (auto address = vertex; address < vertex + 32; address += 4)
+            const auto command = list.pc >= list.begin && static_cast<std::uint64_t>(list.pc) + 4 <= list.end
+                ? mem.load32(list.pc) : 0;
+            const auto vertex_count = command >> 16 == 0x0406u && state.word(0x12) == 0x80011Cu
+                ? command & 0xFFFFu : 0;
+            const auto vertex_bytes = vertex_count <= 64 ? vertex_count * 12 : 0;
+            if (vertex_bytes && !(vertex & 3u) && vertex >= list.begin &&
+                static_cast<std::uint64_t>(vertex) + vertex_bytes <= list.end) {
+                std::cout << "ge_clear_vertices=" << vertex_count << " address=" << hex32(vertex) << std::endl;
+                for (auto address = vertex; address < vertex + vertex_bytes; address += 4)
                     std::cout << "ge_vertex_word=" << hex32(address) << " value=" << hex32(mem.load32(address)) << std::endl;
+            }
         }
         std::cout << "vblank_registered=" << interrupts->vblank.has_value()
                   << " vblank_enabled=" << interrupts->enabled << std::endl;

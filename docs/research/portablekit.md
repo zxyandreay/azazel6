@@ -82,3 +82,43 @@ PortableKit/PSPRecomp MIT notices are retained in
 The unchanged external checkout retains notices for its dependencies. Shipping
 SDL, FFmpeg, fonts or other optional assets requires their own applicable notices;
 none of those binaries or assets is committed by this integration.
+
+
+## Checked clear-vertex reuse (2026-10-25)
+
+**VERIFIED:** the external `gpu::decode_vertices` implementation is now used by
+an original bounded adapter for the observed `0x80011C` vertex format. Admission
+requires aligned canonical RAM in one supplied lease, 2..64 vertices in pairs,
+and a complete 12-byte-per-vertex extent. Decoded output must describe ordered
+rectangles with constant per-pair color/depth in the reviewed through-mode domain.
+This adapter does not render or complete a GE command. Allocation lifetime remains
+the submitting runtime's responsibility; an offline packet contains copied bytes.
+
+The native probe captures at most 64 vertices inside the failed GE list lease.
+The optional tool rechecks the executable hash and external source pin, requires
+one exact-input trace marker and complete contiguous words, then sends a bounded
+local packet to the external decoder. Trace files and decoded vertices stay local.
+
+```sh
+python tools/portablekit_probe.py build
+python tools/portablekit_probe.py decode-clear local/game/EBOOT.BIN --trace local/native-run/execution.log --output local/clear-evidence
+```
+
+**VERIFIED actual captured data:** all 30 vertices decode into fifteen adjacent
+32-by-272 rectangles covering x=0..480, with color 0 and depth 16. The first pair
+is (0,0)..(32,272), and the last (448,0)..(480,272). The original run still stops
+at PRIM `0x09BF42B0`; no pixels or successful draw are claimed. Evidence is under
+`local/re-clear-trace-execution` and `local/re-clear-decoded`.
+
+**VERIFIED synthetic tests:** nonzero packed colors, unsigned near-maximum depth,
+padding, count limits, truncated/misaligned/aliased ranges, overflow, negative
+coordinates and inconsistent rectangles. Three optional compatibility suites and
+80 Python cases pass. The primary Windows/ARM64 probe compiles with bounded trace
+capture. No reference checkout was modified.
+
+**DOCUMENTED source limitation:** upstream `run_ge_list` catches GE errors and
+marks the list finished; its decoder can also skip malformed primitive data.
+Those policies are unsuitable for the primary strict queue. Reuse the decoder
+behind preflight checks and a verified render sink, not the upstream completion
+policy. The observed initial target also aliases color/depth addresses; renderer
+attachment and VRAM readback semantics need explicit validation before adoption.

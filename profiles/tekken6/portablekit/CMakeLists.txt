@@ -21,10 +21,11 @@ set(PORTABLEKIT_FFMPEG OFF CACHE STRING "No media downloads" FORCE)
 set(PSPRECOMP_MSVC_MP_JOBS 1 CACHE STRING "Bound compiler concurrency")
 add_subdirectory("${AZAZEL6_PORTABLEKIT_SOURCE}" portablekit)
 portablekit_add_game(azazel6_portablekit_probe PROFILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-    HOST_MAIN_NAME unused_portablekit_main SOURCES probe.cpp)
+    HOST_MAIN_NAME unused_portablekit_main SOURCES probe.cpp ge_contracts.cpp)
 target_sources(azazel6_portablekit_probe PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/host/bootstrap.cpp")
 target_include_directories(azazel6_portablekit_probe PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/include")
 enable_testing()
+add_test(NAME portablekit_ge_compatibility COMMAND azazel6_portablekit_probe --test-ge)
 add_executable(azazel6_portablekit_bootstrap_tests "${AZAZEL6_ROOT}/profiles/tekken6/tests/bootstrap_test.cpp"
     "${AZAZEL6_ROOT}/profiles/tekken6/host/bootstrap.cpp")
 target_include_directories(azazel6_portablekit_bootstrap_tests PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/include")
