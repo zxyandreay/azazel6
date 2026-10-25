@@ -98,7 +98,7 @@ class IndirectCallTests(unittest.TestCase):
         mapping = immediate_maps(program(words), [desc])
         self.assertEqual(mapping[BASE]['targets'], [BASE + 64])
         self.assertEqual(mapping[BASE]['source_pairs'], [(BASE + 16, BASE + 24)])
-        guarded = guard_generated(f'L_{BASE:08X}:\\n    jump_target = ctx.gpr[5];\\n', mapping)
+        guarded = guard_generated(f'L_{BASE:08X}:\n    jump_target = ctx.gpr[5];\n', mapping)
         self.assertIn('ctx.gpr[5], {0x08804040u}', guarded)
         self.assertLess(guarded.index('guard_indirect_call'), guarded.index('jump_target'))
         for bad_source in (
