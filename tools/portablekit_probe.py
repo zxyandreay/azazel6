@@ -54,14 +54,14 @@ def clear_packet(trace, expected_sha):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("action", choices=["build", "run", "decode-clear"])
+    p.add_argument("action", choices=["build", "run", "decode-clear", "render-test"])
     p.add_argument("input", nargs="?", type=Path)
     p.add_argument("--source", type=Path, default=ROOT / "local/deps/portablekit")
     p.add_argument("--build", type=Path, default=ROOT / "local/build/portablekit-probe")
     p.add_argument("--output", type=Path, default=ROOT / "local/portablekit-probe")
     p.add_argument("--trace", type=Path, help="Local native execution.log for decode-clear")
     args = p.parse_args(argv)
-    if args.action != "build":
+    if args.action in ("run", "decode-clear"):
         if args.input is None:
             raise ValueError("Run requires an exact supported executable")
         validate(args.input, load_profile(ROOT / "profiles/tekken6/config/profile.json"))
@@ -88,6 +88,23 @@ def main(argv=None):
     output.mkdir(parents=True, exist_ok=False)
     executable = build / ("bin/Release/azazel6_portablekit_probe.exe" if sys.platform == "win32"
                           else "bin/azazel6_portablekit_probe")
+    if args.action == "render-test":
+        env = probe_environment(output)
+        del env["AZAZEL6_EVAL_NO_RENDER"]
+        result = {"scope": "SYNTHETIC Vulkan GE readback only; no game execution",
+                  "portablekit_revision": revision, "timeout_seconds": 30, "status": "failed"}
+        with (output / "renderer.log").open("w", encoding="utf-8") as log:
+            try:
+                run = subprocess.run([str(executable), "--test-renderer"], env=env,
+                                     stdout=log, stderr=subprocess.STDOUT, timeout=30)
+                result["returncode"] = run.returncode
+                if run.returncode == 0:
+                    result["status"] = "synthetic_contract_passed"
+            except subprocess.TimeoutExpired:
+                result["status"] = "timeout"
+        (output / "renderer.json").write_text(json.dumps(result, indent=2) + "\n")
+        print(json.dumps(result))
+        return 0 if result["status"] == "synthetic_contract_passed" else 1
     if packet is not None:
         packet_path = output / "clear.packet"
         packet_path.write_text(packet)

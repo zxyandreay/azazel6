@@ -189,3 +189,37 @@ inside the failed list lease to make the next investigation reproducible.
 PortableKit decoded draw calls/Vulkan, including vertex ownership, framebuffer
 format/stride, depth/color aliasing and rejection of unsupported state. Do not
 replace failed draws with success or infer rendering from command acceptance.
+
+
+## Native bounded clear execution (2026-10-25)
+
+**VERIFIED:** the queue now executes the observed RGB565 clear-sprite subset into
+its owned VRAM. It accepts only through-mode RGBA8888/16-bit vertices, 2..64
+vertices in pairs, clear flags 7, and zero write masks. The entire vertex range
+must belong to the current list lease. All rectangles, scissor intersections,
+canonical color/depth destinations, strides and a one-million-pixel limit are
+checked before any write; an invalid later pair cannot partially clear memory.
+Other formats, masked clears, general primitives and textures remain rejecting.
+VADDR's internal pointer advances after success while its command register stays.
+
+**DOCUMENTED:** pinned PSPSDK sceGuClear and PortableKit vertex decoding establish
+the packed format. PPSSPP `GPU/Software/Rasterizer.cpp::ClearRectangle` at
+`cd94e414cde964bf25ec67267f64fcd3d01283bb` writes depth before color and honors
+scissor/endpoints. The independently authored restricted rasterizer preserves
+that order when VRAM destinations alias. No PPSSPP code is copied or linked,
+and this is not a new PSP hardware measurement. General aliasing/render-target
+semantics still require investigation before adopting a full Vulkan backend.
+
+**VERIFIED real execution:** PRIM `0x0406001E` at `0x09BF42B0` clears **130,560
+pixel positions**. Its list reaches FINISH/END (16 consumed commands, 218 total
+state writes) and enters callback `0x08AC6CE4` on the owned interrupt stack.
+The new boundary is **sceKernelGetSystemTimeLow at `0x08B88EC0`**, RA
+`0x08AC6D08`, SP `0x09FFFBE0`. The list remains Callback until its guest FINISH
+returns; no completion is fabricated. The input slice remains 374 roots/26,826
+words. Private execution evidence is in `local/re-native-clear-execution`.
+
+Synthetic tests cover color packing, unsigned depth, alias order, scissor clipping,
+row padding, wrong formats/masks/counts/ranges, invalid later vertices and terminal
+queue behavior. Twenty-one native suites, 81 Python cases and Android ARM64 build
+validate this increment. The first clear is a native VRAM operation, not a
+presented game scene, title screen or general graphics implementation.

@@ -406,3 +406,14 @@ See [submission ownership and exact state](ge-lists.md#live-written-submissions-
 This supersedes the preceding span-admission blocker. Twenty native suites,
 79 Python cases and Android ARM64 compilation pass. One diagnostic relink hit a
 Windows executable lock while CTest was running; a sequential retry passed.
+
+
+## Clear execution and FINISH callback (2026-10-25)
+
+**VERIFIED:** the bounded clear operation now consumes the first primitive and
+writes 130,560 pixel positions in guest VRAM. FINISH dispatch enters
+`0x08AC6CE4`, then stops at missing `sceKernelGetSystemTimeLow`, stub
+`0x08B88EC0`, RA `0x08AC6D08`. The callback has not returned and the queue does
+not report completion. See [clear ownership and validation](ge-lists.md#native-bounded-clear-execution-2026-10-25).
+The next task is a clock query tied to the existing explicit guest timeline,
+without inventing time on reads or converting host execution time to PSP time.

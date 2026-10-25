@@ -14,6 +14,11 @@ gate remains open: display events and graphics integration are now required to
 continue toward it. Filesystem, module-loading and additional kernel contracts
 remain Milestone 003 work when observed. Neither milestone has a playable result.
 
+A separate optional PortableKit Windows Vulkan contract verifies synthetic colored
+stripes and 139,264 pixel/padding words by GPU readback. It does not execute the
+game or satisfy the Android visual gate. Its depth-address handling remains an
+integration gap; see [reuse evidence](../research/portablekit.md).
+
 ## Ordered implementation tasks
 
 1. Implement checked VBLANK subinterrupt registration, enable/disable/release and
@@ -52,20 +57,22 @@ remain Milestone 003 work when observed. Neither milestone has a playable result
   `0x04044000` after WaitVblankStartCB waits for a new edge. Only inactive PSP
   callbacks are supported; callback notification/delivery remain unimplemented.
   Dynamic GE enqueue now checks live writeback ownership and FINISH delivery.
-  The next boundary is the first clear-mode sprite PRIM; no drawing executes.
+  The first clear-mode sprite PRIM now writes guest VRAM; FINISH reaches a
+  missing clock import. General scene drawing and presentation remain open.
 - **VERIFIED:** [GE control-stream contracts](../research/ge-lists.md), including
   stalls, control-flow budgets, stale callback generations and actual synthetic
   AOT callback returns. The first real initialization list completes EnQueue/ListSync with retained
   state. Written live-partition submissions and synthetic FINISH delivery are checked;
-  drawing commands and asynchronous guest producers remain rejecting.
+  only the bounded RGB565 clear subset executes; general drawing and asynchronous
+  guest producers remain rejecting.
 - **VERIFIED:** a separate [Android host probe](../development/android-host.md)
   compiles SDL/Vulkan surface ownership, a synthetic clear presenter and a sampled
   input adapter into signed ARM64 and x86_64 APKs. ELF and APK 16 KiB alignment checks pass.
   Synthetic input tests cover stable device/finger identity, safe-area letterboxing,
   invalid contacts, capacity, cancellation and analog boundaries.
 - **PLANNED:** connect an observed GE drawing subset and guest controller services.
-  A 211-command game initialization stream has executed; no draw stream or menu
-  has yet executed. **VERIFIED:** the official API 37 x86_64 / 16 KiB AVD installs
+  The 211-command initialization stream and one clear primitive have executed;
+  no menu or displayed scene is verified. **VERIFIED:** the official API 37 x86_64 / 16 KiB AVD installs
   and launches the host, presents Vulkan pixels, handles touch and a virtual
   controller (including held disconnect), survives three Home/resume cycles and
   continues rendering over a subsequent 30-second interval. This is synthetic

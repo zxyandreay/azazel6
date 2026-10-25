@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from test_elf import ROOT, fixture
 from elf import ValidationError
@@ -57,3 +58,17 @@ class PortableKitProbeTests(unittest.TestCase):
         for value in bad:
             with self.subTest(value=value[:80]), self.assertRaises(ValueError):
                 clear_packet(value, sha)
+
+    def test_renderer_probe_is_bounded_and_separate_from_game_run(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'local') as directory:
+            output = Path(directory) / 'renderer'
+            with patch('portablekit_probe.checked_source', return_value='a' * 40), patch(
+                    'portablekit_probe.subprocess.run', return_value=SimpleNamespace(returncode=0)) as run:
+                self.assertEqual(main(['render-test', '--output', str(output)]), 0)
+            command = run.call_args.args[0]
+            self.assertEqual(command[1:], ['--test-renderer'])
+            self.assertEqual(run.call_args.kwargs['timeout'], 30)
+            self.assertNotIn('AZAZEL6_EVAL_NO_RENDER', run.call_args.kwargs['env'])
+            report = json.loads((output / 'renderer.json').read_text())
+            self.assertEqual(report['status'], 'synthetic_contract_passed')
+            self.assertIn('no game execution', report['scope'])

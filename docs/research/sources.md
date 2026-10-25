@@ -61,3 +61,11 @@ at the same pinned revision support wide-clock conversion behavior. No PPSSPP
 implementation was copied or linked. Null-first output returns the whole low
 word; the pinned Yakumo implementation's unconditional remainder does not
 satisfy the observed Tekken call. No PSP hardware run is claimed.
+
+
+**Additional inspection, 2026-10-25:** PPSSPP
+[`GPU/Software/Rasterizer.cpp`](https://github.com/hrydgard/ppsspp/blob/cd94e414cde964bf25ec67267f64fcd3d01283bb/GPU/Software/Rasterizer.cpp)
+was read at the same pinned revision for ClearRectangle depth-before-color order,
+scissor/endpoints and pixel masks. RasterizerRectangle.cpp was inspected to locate
+that path. No implementation was copied or linked; these are source-supported
+behavioral references, not reproduced PSP hardware results.

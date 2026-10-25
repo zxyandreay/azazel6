@@ -13,6 +13,7 @@ public:
     [[nodiscard]] std::uint32_t vertex_address() const { return vertex_; }
     [[nodiscard]] std::uint32_t index_address() const { return index_; }
     [[nodiscard]] std::uint64_t writes() const { return writes_; }
+    void advance_vertices(std::uint32_t bytes);
 private:
     std::array<std::uint32_t, 256> words_{};
     std::array<std::uint32_t, 12> view_{};

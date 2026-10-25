@@ -15,13 +15,20 @@ execute_process(COMMAND "${GIT_EXECUTABLE}" -C "${AZAZEL6_PORTABLEKIT_SOURCE}" s
 if(NOT result EQUAL 0 OR NOT dirty STREQUAL "")
     message(FATAL_ERROR "PortableKit checkout must be clean")
 endif()
-# No implicit downloads, renderer, installer or media dependency in this probe.
-set(PORTABLEKIT_RENDERER OFF CACHE BOOL "Headless research" FORCE)
+# Renderer evaluation is explicit; normal compatibility runs remain headless.
+option(AZAZEL6_PORTABLEKIT_RENDERER "Build the optional renderer contract probe" OFF)
+set(PORTABLEKIT_RENDERER ${AZAZEL6_PORTABLEKIT_RENDERER} CACHE BOOL "Explicit renderer research" FORCE)
 set(PORTABLEKIT_FFMPEG OFF CACHE STRING "No media downloads" FORCE)
 set(PSPRECOMP_MSVC_MP_JOBS 1 CACHE STRING "Bound compiler concurrency")
 add_subdirectory("${AZAZEL6_PORTABLEKIT_SOURCE}" portablekit)
 portablekit_add_game(azazel6_portablekit_probe PROFILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
-    HOST_MAIN_NAME unused_portablekit_main SOURCES probe.cpp ge_contracts.cpp)
+    HOST_MAIN_NAME unused_portablekit_main SOURCES probe.cpp ge_contracts.cpp renderer_contracts.cpp)
+if(AZAZEL6_PORTABLEKIT_RENDERER)
+    get_target_property(renderer_definitions azazel6_portablekit_probe COMPILE_DEFINITIONS)
+    if(NOT "PORTABLEKIT_HAS_RENDERER=1" IN_LIST renderer_definitions)
+        message(FATAL_ERROR "Explicit renderer evaluation requires SDL3, Vulkan and glslang; no headless fallback")
+    endif()
+endif()
 target_sources(azazel6_portablekit_probe PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/host/bootstrap.cpp")
 target_include_directories(azazel6_portablekit_probe PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/include")
 enable_testing()

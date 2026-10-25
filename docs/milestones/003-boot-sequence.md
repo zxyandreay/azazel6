@@ -11,8 +11,9 @@ under bounded idle events, then advances through guarded graphics methods,
 resource layout/allocation and checked wide clock conversion. The latest
 374-root native slice enters callback `0x088610C4`, builds a clear command block,
 returns from completed-work DrawSync, swaps framebuffer descriptors and waits for
-a third VBLANK. The next GE enqueue at `0x08B890E8` admits its live written command
-buffer and reaches unsupported sprite command `0x0406001E` at `0x09BF42B0`; title boot remains open. See
+a third VBLANK. The next GE enqueue executes a bounded clear into guest VRAM, then enters
+FINISH callback `0x08AC6CE4` and stops at `sceKernelGetSystemTimeLow`
+(`0x08B88EC0`); title boot remains open. See
 [current startup evidence](../research/startup-indirect-2026-10-22.md),
 [constructor-completion evidence](../research/constructor-coverage.md) and
 [object/exception-boundary evidence](../research/startup-objects.md) and

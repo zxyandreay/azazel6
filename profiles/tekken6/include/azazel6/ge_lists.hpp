@@ -25,7 +25,7 @@ struct GeList {
     bool event_taken = false;
     std::string error;
 };
-// Independently authored control-stream contract model. No draw command is accepted.
+// Independently authored control-stream model with a bounded clear-sprite subset.
 // Spans are explicit canonical-RAM leases supplied by the host.
 class GeQueue {
 public:
@@ -38,6 +38,8 @@ public:
     [[nodiscard]] const GeState& state() const { return state_; }
     [[nodiscard]] std::size_t size() const { return lists_.size(); }
     [[nodiscard]] const auto& lists() const { return lists_; }
+    [[nodiscard]] std::uint64_t clear_draws() const { return clear_draws_; }
+    [[nodiscard]] std::uint64_t clear_pixels() const { return clear_pixels_; }
     [[nodiscard]] bool all_complete() const;
     [[nodiscard]] bool owns_memory(const psprecomp::GuestMemory& memory) const { return &memory_ == &memory; }
     // FIFO, one head per call. Per-call and total-list budgets are mandatory.
@@ -56,6 +58,7 @@ private:
     std::uint32_t next_id_ = 1;
     std::uint64_t next_event_ = 1;
     GeState state_;
+    std::uint64_t clear_draws_ = 0, clear_pixels_ = 0;
 };
 struct GeSpan { std::uint32_t begin, end; };
 struct GeSubmissionSource {

@@ -9,6 +9,7 @@
 
 int portablekit_ge_contracts();
 int portablekit_decode_clear(const char*);
+int portablekit_renderer_contracts();
 
 namespace {
 struct Nid { const char* library; std::uint32_t nid; const char* name; };
@@ -39,6 +40,7 @@ const GameProfile& game() {
 int main(int argc, char** argv) {
     try {
         if (argc == 2 && std::string_view(argv[1]) == "--test-ge") return portablekit_ge_contracts();
+        if (argc == 2 && std::string_view(argv[1]) == "--test-renderer") return portablekit_renderer_contracts();
         if ((argc != 3 && argc != 4) || psprecomp::sha256_file(argv[1]) != portablekit::game().executable_sha256)
             throw psprecomp::Error("Exact verified ELF and local output directory required");
         if (argc == 4) {

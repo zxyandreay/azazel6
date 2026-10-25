@@ -1,4 +1,5 @@
 #include "azazel6/ge_lists.hpp"
+#include "azazel6/ge_clear.hpp"
 #include "psprecomp/common.hpp"
 #include <algorithm>
 #include <limits>
@@ -91,6 +92,11 @@ void GeQueue::run(std::uint32_t budget) {
             std::uint32_t next = item.pc + 4;
             switch (opcode) {
             case 0x00: break;
+            case 0x04:
+                clear_pixels_ += execute_ge_clear(memory_, state_, command, item.begin, item.end);
+                state_.advance_vertices((value & 0xFFFFu) * 12);
+                ++clear_draws_;
+                break;
             case 0x10:
                 if (value & ~0x000F0000u) { fail(item, "Unsupported GE BASE bits"); return; }
                 state_.write(command); break;

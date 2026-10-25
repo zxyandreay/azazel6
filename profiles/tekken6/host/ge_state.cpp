@@ -2,6 +2,11 @@
 #include "psprecomp/common.hpp"
 
 namespace azazel6 {
+void GeState::advance_vertices(std::uint32_t bytes) {
+    if (static_cast<std::uint64_t>(vertex_) + bytes > 0x0FFFFFFFu)
+        throw psprecomp::Error("GE vertex pointer overflow");
+    vertex_ += bytes;
+}
 bool GeState::write(std::uint32_t command) {
     const auto op = command >> 24, value = command & 0xFFFFFFu;
     if (op == 1 || op == 2) {

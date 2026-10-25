@@ -73,8 +73,8 @@ make the comparison advance.
 **VERIFIED validation:** 79 Python cases cover input refusal, revision/dirty
 checkout rejection and environment isolation in addition to the existing suite.
 The standalone target compiles on Windows and both bootstrap and clock
-compatibility suites pass. Its Android, renderer, ISO and audio paths have not
-been tested. All 20 primary CTest suites, including clock ownership/refusal tests,
+compatibility suites pass. At that initial checkpoint its Android, renderer, ISO and audio paths had not
+been tested; the later Windows renderer contract is recorded below. All 20 primary CTest suites, including clock ownership/refusal tests,
 pass; the primary Android ARM64 target also compiles with the shared helper.
 
 PortableKit/PSPRecomp MIT notices are retained in
@@ -122,3 +122,43 @@ Those policies are unsuitable for the primary strict queue. Reuse the decoder
 behind preflight checks and a verified render sink, not the upstream completion
 policy. The observed initial target also aliases color/depth addresses; renderer
 attachment and VRAM readback semantics need explicit validation before adoption.
+
+
+## Optional Vulkan contract (2026-10-25)
+
+**VERIFIED:** a separate Windows renderer build compiles the unchanged pinned
+PortableKit backend and GE shaders. An original synthetic test submits fifteen
+alternating red/green clear sprites, waits for framebuffer readback, and checks
+all **139,264** words in 272 rows at stride 512: 480 visible pixels per row plus
+32 untouched padding words. This passed on the local Radeon RX 560X / Vulkan
+1.3.260 host. An empty window or a skipped draw cannot satisfy the colored-pixel
+and sentinel checks. No game executable runs in this test, and depth readback,
+Android integration, general geometry and texture behavior are not claimed.
+
+The default build remains headless. Renderer evaluation must be requested with
+`AZAZEL6_PORTABLEKIT_RENDERER=ON`; missing dependencies produce a configuration
+error rather than silently building headless. Configure a separate build directory
+with SDL3, Vulkan headers/import library and glslang available, then run:
+
+```sh
+cmake -S profiles/tekken6/portablekit -B local/build/portablekit-vulkan -DAZAZEL6_PORTABLEKIT_RENDERER=ON
+python tools/portablekit_probe.py build --build local/build/portablekit-vulkan
+python tools/portablekit_probe.py render-test --build local/build/portablekit-vulkan --output local/vulkan-contract
+```
+
+Use CMake's `SDL3_DIR`, `Vulkan_INCLUDE_DIR`, `Vulkan_LIBRARY` and
+`PORTABLEKIT_GLSLANG` overrides for local dependencies when needed. This machine
+used the already pinned SDL 3.4.18 checkout, official installed NDK 27.1 Vulkan
+headers, Android emulator glslang 14.3.0 and an import library generated from the
+installed Windows Vulkan loader exports. Build artifacts stayed under `local/`;
+no system installation or reference-source change was needed. The wrapper uses a
+fresh local data directory and a 30-second process limit. The test may briefly
+open a renderer window; pixel readback, not UI inspection, is the verification.
+
+**VERIFIED source gap:** the Vulkan backend does not consume `DrawCall`'s guest
+depth-buffer address. Tekken's first clear aliases color and depth addresses, so
+blindly installing this sink would not establish the required guest-memory
+behavior. The primary runtime instead executes its independently tested bounded
+clear into VRAM, preserving reference-supported depth-before-color order. Reuse
+of the full Vulkan backend remains optional pending depth/alias and completion
+contracts. The adapter's three headless suites and all 81 Python cases pass.
