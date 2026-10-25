@@ -85,6 +85,40 @@ class IndirectCallTests(unittest.TestCase):
             with self.subTest(lower=lower), self.assertRaises(ValidationError):
                 immediate_maps(elf, [desc | {'sources': [dict(upper=hex(BASE + 16), lower=hex(lower))]}])
 
+    def test_explicit_nonlikely_delay_slot_callback_source(self):
+        # LUI r2; BLEZ r3 (ordinary branch); ADDIU r4,r2 in the delay slot.
+        # The address-forming instruction executes on either branch outcome.
+        words = [0x00A0F809, 0, 0x03E00008, 0,
+                 0x3C020880, 0x18600006, 0x24444040, 0,
+                 0, 0, 0, 0, 0x03E00008, 0, 0, 0,
+                 0x03E00008, 0]
+        source = dict(upper=hex(BASE + 16), lower=hex(BASE + 24),
+                      delay_slot_branch='0x18600006')
+        desc = dict(site=hex(BASE), register=5, sources=[source])
+        mapping = immediate_maps(program(words), [desc])
+        self.assertEqual(mapping[BASE]['targets'], [BASE + 64])
+        self.assertEqual(mapping[BASE]['source_pairs'], [(BASE + 16, BASE + 24)])
+        guarded = guard_generated(f'L_{BASE:08X}:\\n    jump_target = ctx.gpr[5];\\n', mapping)
+        self.assertIn('ctx.gpr[5], {0x08804040u}', guarded)
+        self.assertLess(guarded.index('guard_indirect_call'), guarded.index('jump_target'))
+        for bad_source in (
+            {'upper': source['upper'], 'lower': source['lower']},  # no approval
+            source | {'delay_slot_branch': '0x18600005'},  # wrong exact bytes
+            source | {'unknown': True},
+            source | {'lower': hex(BASE + 28)},  # not immediately in delay slot
+        ):
+            with self.subTest(source=bad_source), self.assertRaises(ValidationError):
+                immediate_maps(program(words), [desc | {'sources': [bad_source]}])
+        for bad_branch in (0x58600006,  # branch-likely annuls the delay slot
+                           0x14600006,  # BNE not an explicitly approved form
+                           0x18000006,  # BLEZ r0, not a conditional branch
+                           0x18600000):  # target not beyond the pair
+            broken = list(words)
+            broken[5] = bad_branch
+            with self.subTest(branch=hex(bad_branch)), self.assertRaises(ValidationError):
+                immediate_maps(program(broken), [desc | {
+                    'sources': [source | {'delay_slot_branch': hex(bad_branch)}]}])
+
     def test_two_state_sources_preserve_both_guarded_callbacks(self):
         words = [0x00A0F809, 0, 0x03E00008, 0, 0x3C020880, 0x24454030,
                  0, 0x3C030880, 0x34654038, 0, 0, 0, 0x03E00008, 0,
