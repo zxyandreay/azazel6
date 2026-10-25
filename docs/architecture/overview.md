@@ -22,7 +22,8 @@ they require an extraction/design review before reuse.
 
 The newer [PortableKit evaluation](../research/portablekit.md) already exposes
 much of that system layer through a generic profile. It is pinned separately
-for optional headless comparison; GE synchronization and other ownership gaps still
+for optional headless comparison, checked vertex decoding and a synthetic Vulkan
+readback contract; GE synchronization and depth-address/ownership gaps still
 prevent replacing the verified primary runtime. The existing AOT build is unchanged.
 Only original bootstrap metadata and checked clock conversion are shared between
 the two research hosts; each retains its own kernel and memory ownership.
@@ -56,7 +57,7 @@ Source availability does not demonstrate compatibility with Tekken.
 | Core memory, dispatch, interpreter | Already reused from the pinned framework. Keep interpreter disabled until it preserves service/scheduler boundaries. |
 | Kernel threads, synchronization, timers, interrupts | `kernel/kernel.*` contains useful context-switch and owned-callback models, but includes settings, load tracing and fast-loading/fast-forward clock policy. Preserve Azazel6's tested ownership and deterministic clock; adapt observed missing contracts individually. |
 | Partition memory | `hle/hle_sysmem.cpp` connects to profile HLE globals and GE state. Azazel6 already supplies checked partition/stack/fixed-pool ownership; importing the other allocator would create conflicting owners. |
-| GE decode | `gpu/ge_state.*` is substantially backend-independent and uses core guest memory; frame-stat dependencies remain. A promising extraction boundary is decoded vertices/state, with bounded guest reads and Azazel6's list/callback ownership retained. No actual draw stream has reached that boundary yet. |
+| GE decode | `gpu/ge_state.*` is substantially backend-independent and uses core guest memory; frame-stat dependencies remain. A promising extraction boundary is decoded vertices/state, with bounded guest reads and Azazel6's list/callback ownership retained. The observed clear vertices now pass through the separately pinned PortableKit decoder under checked bounds; the primary queue retains ownership. |
 | Vulkan | `gpu/vulkan_renderer.cpp` imports game HUD, replacement textures, interpolation, installation identity and UI. Reusing the full renderer would pull in title policy. Review texture decoding and primitive/index helpers separately when an observed draw subset is available. |
 | Audio | `audio/guest_pcm.*` supplies a small checked staging interface; SAS/ATRAC/sink layers need HLE and host integration. Consider compiling the external PCM helper when a real audio import is reached, with its own range tests. |
 | I/O and modules | `kernel/iso_image.*` offers a relatively isolated read-only ISO9660 reader. `hle/hle_io.cpp` also imports mods, translation and fast-loading behavior. Prefer the reader behind a checked Tekken file-handle adapter when boot requests files. |

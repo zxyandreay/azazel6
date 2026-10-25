@@ -65,3 +65,22 @@ and lifecycle checks on an official AVD. This does not render guest framebuffers
 or establish title/menu behavior. **BLOCKED hardware verification:** no physical
 ARM64 device/controller is attached. **PLANNED:** runnable guest-time accounting,
 additional observed display services, GE drawing and guest input integration.
+
+
+## FINISH system-time reads (2026-10-25)
+
+**DOCUMENTED:** pinned PSPSDK declares `sceKernelGetSystemTimeLow` / NID
+`0x369ED59D` as the low 32 bits of system time. PortableKit's pinned time handler
+reads its kernel microsecond timeline. **VERIFIED:** Azazel6 now reports the low
+word of its existing explicit LCD/event timeline in microseconds (18 half-ticks
+per microsecond). This is a query, not a new time producer: reads do not advance
+time or use the host clock. Runnable guest CPU cycle accounting remains absent.
+The global query is valid during the observed GE FINISH interrupt.
+
+Synthetic tests cover 17/18-tick truncation, fractional frame boundaries,
+repeat-read stability, interrupt/masked-context reads, register preservation and
+32-bit wrap. The exact-input run executes four reads and reports 66,733 us after
+four explicit VBLANK events. Both GE FINISH callbacks return and three total
+lists are Complete; two clears account for 261,120 pixel positions. Startup then
+stops at guarded target `0x08862338`, call site `0x08860FBC`. Evidence is local in
+`local/re-systemtime-execution`; this is not title boot or measured PSP timing.

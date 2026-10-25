@@ -15,6 +15,7 @@ public:
     static constexpr std::uint64_t vblank_ticks = 13167;
     static constexpr std::uint64_t max_events = 1024;
     [[nodiscard]] std::uint64_t ticks() const noexcept { return ticks_; }
+    [[nodiscard]] std::uint64_t microseconds() const noexcept { return ticks_ / (ticks_per_second / 1000000); }
     [[nodiscard]] std::uint64_t frames() const noexcept { return ticks_ / ticks_per_frame; }
     [[nodiscard]] bool in_vblank() const noexcept { return frames() && ticks_ % ticks_per_frame < vblank_ticks; }
     // Validate the entire advance before mutation. Returned edges are strictly ordered.
@@ -43,6 +44,7 @@ public:
     DisplayClock clock;
     DisplayBuffers buffers;
     std::uint64_t buffer_requests = 0;
+    std::uint64_t system_time_reads = 0;
     bool mode_set = false; // Only the observed LCD 480x272 mode is supported.
     // An explicit time producer must return control for guest callbacks at each edge.
     void advance(psprecomp::Runtime&, std::uint64_t ticks);

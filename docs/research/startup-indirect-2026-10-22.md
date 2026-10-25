@@ -417,3 +417,15 @@ writes 130,560 pixel positions in guest VRAM. FINISH dispatch enters
 not report completion. See [clear ownership and validation](ge-lists.md#native-bounded-clear-execution-2026-10-25).
 The next task is a clock query tied to the existing explicit guest timeline,
 without inventing time on reads or converting host execution time to PSP time.
+
+
+## Two clear/flip cycles (2026-10-25)
+
+**VERIFIED:** read-only system-time HLE lets FINISH return on its owned interrupt
+stack. The real run completes two clear/flip cycles: three Complete GE lists,
+227 retained state writes, two clears/261,120 pixel positions, four VBLANK events
+and four time queries at a final 66,733 us. The next state callback is
+**`0x08862338` at guarded site `0x08860FBC`** (a0=`0x090B17C0`). The previous
+clear callback has installed a later startup state; its provenance and direct
+callees require review before expanding the guard. No title screen is claimed.
+See [clock policy and tests](display-foundation.md#finish-system-time-reads-2026-10-25).

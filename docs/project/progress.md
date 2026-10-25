@@ -18,6 +18,7 @@ Azazel6 is not playable. See
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
 | Clock conversion | VERIFIED unsigned wide microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
+| System-time query | VERIFIED low 32-bit microseconds from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
@@ -27,13 +28,13 @@ Azazel6 is not playable. See
 | Graphics memory | VERIFIED immutable EDRAM size/base queries backed by allocated guest VRAM; first native VRAM clear verified; general GE rendering remains unimplemented |
 | GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; real initialization EnQueue/ListSync and completed-work DrawSync return; written live-partition submissions/FINISH bridge and bounded RGB565 clear sprites tested; general draws and asynchronous producers remain unimplemented |
 | VBLANK | VERIFIED real-input registration/enable and four-word handler AOT coverage; synthetic owned delivery and full context restoration |
-| Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes three VBLANK handlers, SetMode and next-edge WaitVblankStartCB with inactive callbacks under bounded idle events; runnable guest-time accounting remains unimplemented |
+| Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes four VBLANK handlers, SetMode and next-edge WaitVblankStartCB with inactive callbacks under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, seven writebacks and graphics memory setup; the 374-root slice completes the frame-flip queries/setters and next-edge wait, then executes one 130,560-pixel clear into VRAM and enters FINISH callback 0x08AC6CE4, stopping at missing sceKernelGetSystemTimeLow (0x08B88EC0); no scene is presented; both workers remain Waiting |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, seven writebacks and graphics memory setup; the 374-root slice completes the frame-flip queries/setters and next-edge wait, then executes two clears (261,120 pixel positions), completes both FINISH callbacks and stops at guarded target 0x08862338 from 0x08860FBC; no scene is presented; both workers remain Waiting |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

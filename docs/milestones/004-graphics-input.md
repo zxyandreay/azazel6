@@ -57,8 +57,8 @@ integration gap; see [reuse evidence](../research/portablekit.md).
   `0x04044000` after WaitVblankStartCB waits for a new edge. Only inactive PSP
   callbacks are supported; callback notification/delivery remain unimplemented.
   Dynamic GE enqueue now checks live writeback ownership and FINISH delivery.
-  The first clear-mode sprite PRIM now writes guest VRAM; FINISH reaches a
-  missing clock import. General scene drawing and presentation remain open.
+  Two clear-mode sprite PRIMs now write guest VRAM; FINISH clock queries and
+  guarded interrupt returns complete. General scene drawing and presentation remain open.
 - **VERIFIED:** [GE control-stream contracts](../research/ge-lists.md), including
   stalls, control-flow budgets, stale callback generations and actual synthetic
   AOT callback returns. The first real initialization list completes EnQueue/ListSync with retained

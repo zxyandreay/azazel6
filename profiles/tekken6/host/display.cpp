@@ -57,6 +57,12 @@ std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
     auto state = std::make_shared<DisplayState>();
     state->runtime_ = &rt; state->threads_ = std::move(threads); state->interrupts_ = std::move(interrupts);
     state->idle_limit_ = idle_frame_budget;
+    rt.register_hle("ThreadManForUser", 0x369ED59Du, [state](auto&, auto& c) {
+        // Global time is readable during GE/VBLANK interrupts. It comes only
+        // from the explicit guest event producer, never host time or read count.
+        c.set_gpr(2, static_cast<std::uint32_t>(state->clock.microseconds()));
+        ++state->system_time_reads;
+    });
     if (idle_frame_budget) {
         rt.register_hle("Azazel6Host", 3, [state](auto& runtime, auto&) {
             try { state->advance_idle(runtime); }

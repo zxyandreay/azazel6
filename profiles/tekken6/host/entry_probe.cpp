@@ -115,6 +115,8 @@ int main(int argc, char** argv) {
         std::cout << "ge_callback_count=" << ge_callbacks->count() << std::endl;
         std::cout << "ge_list_count=" << ge_queue->size() << " ge_state_writes=" << ge_queue->state().writes() << std::endl;
         std::cout << "ge_clear_draws=" << ge_queue->clear_draws() << " ge_clear_pixels=" << ge_queue->clear_pixels() << std::endl;
+        std::cout << "system_time_reads=" << display->system_time_reads
+                  << " guest_time_us=" << display->clock.microseconds() << std::endl;
         for (const auto& [id, list] : ge_queue->lists()) {
             std::cout << "ge_list=" << id << " begin=" << hex32(list.begin) << " end=" << hex32(list.end)
                       << " pc=" << hex32(list.pc) << " commands=" << list.commands

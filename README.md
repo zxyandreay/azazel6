@@ -8,10 +8,10 @@ compatible files from their own game copy.
 **Status (2026-10-25): Milestone 002 implemented; Milestones 003 and 004 in
 progress. Not playable. No title screen, displayed game scene, audio or guest
 controls.** The bounded translated-game startup reaches graphics initialization,
-three VBLANK returns, GE state setup and guarded graphics-object calls, then
+four VBLANK returns, GE state setup and guarded graphics-object calls, then
 completes matrix/resource setup, builds a clear command block and synchronizes
-completed GE work and latches the next framebuffer. Its second GE list executes a bounded clear into guest VRAM and enters the
-FINISH callback, which stops at `sceKernelGetSystemTimeLow` (`0x08B88EC0`). A **separate synthetic** SDL/Vulkan
+completed GE work and latches the next framebuffer. Two clear/flip cycles write guest VRAM and return through FINISH callbacks.
+Startup then stops at guarded target `0x08862338` from `0x08860FBC`. A **separate synthetic** SDL/Vulkan
 Android probe APK builds for ARM64 and x86_64, and has run on an official x86_64
 AVD. That APK does not execute Tekken 6.
 
