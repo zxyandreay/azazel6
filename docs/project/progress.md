@@ -55,6 +55,8 @@ The [graphics/input foundation](../research/display-foundation.md) is implemente
 Milestone 003 remains open until title boot is verified; this is an observed
 dependency transition, not a claim that boot or rendering is complete.
 
+**2026-10-25 supplemental exact-EBOOT static checkpoint:** Verified the next callback address source at `0x088610EC`/`0x088610F4` across a non-likely BLEZ delay slot, with an exact-word opt-in validator and synthetic refusal tests. The startup profile now declares **375 candidate roots**, including `0x08862338`; the last **executed** profile remains **374 roots / 26,826 words**. New callback code, twelve unregistered direct helpers and three exploratory indirect sites remain unexecuted/unsupported pending regeneration and bounded native tests. See [exact callback evidence](../research/callback-08862338.md). This environment could statically inspect the verified EBOOT but could not fetch the pinned native framework for game execution.
+
 **2026-10-22 supplemental source checkpoint:** A new bounded, fail-closed
 `tools/inspect_root.py` candidate-root inspector and synthetic regression
 tests were added for the next direct helper `0x08ACD010`. The tool never
