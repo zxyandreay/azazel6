@@ -39,6 +39,8 @@ Display interrupt and GE foundations are implemented in
 Keep this milestone's title-screen gate open. Missing kernel/I/O/module services still
 belong here and must be implemented when encountered.
 
+**2026-10-25 STATIC follow-up, NOT native progress:** The next observed callback `0x08862338` is now a guarded **candidate root**. Its exact source is constructed through an ordinary BLEZ delay slot; the verifier requires an opt-in exact-word witness, and synthetic negative tests exercise unsafe alternatives. The current profile has **375** declared roots, but its last actual native experiment remains the **374-root** two-clear checkpoint. The callback's 12 uncovered direct callees have not been authorized or run. See [static investigation](../research/callback-08862338.md) before regenerating and repeating the bounded native experiment.
+
 ## Candidate-root inspection
 
 **VERIFIED tooling:** `tools/inspect_root.py` provides strict-hash, bounded,
