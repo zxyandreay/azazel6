@@ -13,8 +13,18 @@ def immediate_maps(elf, descriptors):
 
     for descriptor in descriptors:
         site, register = int(descriptor['site'], 16), descriptor['register']
-        sources = [(int(value['upper'], 16), int(value['lower'], 16)) if isinstance(value, dict)
-                   else (int(value, 16), int(value, 16) + 4) for value in descriptor['sources']]
+        sources = []
+        delay_branches = {}
+        for value in descriptor['sources']:
+            if isinstance(value, dict):
+                if set(value) not in ({'upper', 'lower'}, {'upper', 'lower', 'delay_slot_branch'}):
+                    raise ValidationError('Invalid immediate source descriptor')
+                pair = (int(value['upper'], 16), int(value['lower'], 16))
+                if 'delay_slot_branch' in value:
+                    delay_branches[pair] = int(value['delay_slot_branch'], 16)
+            else:
+                pair = (int(value, 16), int(value, 16) + 4)
+            sources.append(pair)
         if (not 1 <= register <= 31 or not executable(site, 4) or
                 not 1 <= len(sources) <= 128 or len(set(sources)) != len(sources)):
             raise ValidationError('Invalid immediate call descriptor')
@@ -36,14 +46,30 @@ def immediate_maps(elf, descriptors):
             if (upper >> 21 != 15 << 5 or not dest or opcode not in (9, 13) or
                     (lower >> 21) & 31 != dest or (lower >> 16) & 31 == 0):
                 raise ValidationError('Immediate source is not a canonical address pair')
+            accepted_delay_branch = False
             for middle in range(offset + 4, lower_offset, 4):
                 word = int.from_bytes(elf.data[middle:middle + 4], 'little')
                 op, rt = word >> 26, (word >> 16) & 31
-                # A small whitelist: no control flow, unknown effects or writes to
-                # the address register. Other forms require separate investigation.
+                # A reviewed non-likely BLEZ executes its delay slot on *both* edges.
+                # Require an explicit exact-word witness, LUI/BLEZ/ADDIU adjacency,
+                # and a forward target past the pair. Other intervening branches,
+                # including branch-likely (annulled delay), remain disallowed.
+                if (source, end) in delay_branches and middle == offset + 4 == lower_offset - 4:
+                    expected = delay_branches[(source, end)]
+                    displacement = word & 0xFFFF
+                    if displacement & 0x8000:
+                        displacement -= 0x10000
+                    branch_target = source + 8 + 4 * displacement
+                    if (word == expected and op == 6 and rt == 0 and (word >> 21) & 31 and
+                            end + 4 < branch_target <= 0xFFFFFFFC and executable(branch_target, 4)):
+                        accepted_delay_branch = True
+                        continue
+                # Other forms must not change the address register or control flow.
                 if not (word == 0 or (op in (9, 13) and rt != dest) or
                         (op == 15 and (word >> 21) & 31 == 0 and rt != dest) or op in (40, 41, 43)):
                     raise ValidationError('Intervening instruction invalidates immediate address proof')
+            if (source, end) in delay_branches and not accepted_delay_branch:
+                raise ValidationError('Declared delay-slot branch was not verified')
             low = lower & 0xFFFF
             if opcode == 9 and low & 0x8000:
                 low -= 0x10000
