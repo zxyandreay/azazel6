@@ -14,7 +14,7 @@ from elf import ValidationError, load_profile, validate
 from entry_cfg import discover_entry
 from psp_module import module_report
 from indirect_calls import (constructor_maps, immediate_maps, jump_maps, pointer_maps,
-                            trap_maps)
+                            trap_maps, merge_call_maps)
 
 
 def reviewed_transfers(elf, startup):
@@ -26,14 +26,13 @@ def reviewed_transfers(elf, startup):
     tails = pointer_maps(elf, startup.get("pointer_tails", []), tail=True)
     traps = trap_maps(elf, startup.get("trapped_calls", []))
     tail_traps = trap_maps(elf, startup.get("trapped_tails", []), tail=True)
-    families = (calls, pointers, immediates, jumps, tails, traps, tail_traps)
+    call_maps = merge_call_maps(calls, pointers, immediates)
+    families = (call_maps, jumps, tails, traps, tail_traps)
     if any(set(first) & set(second) for i, first in enumerate(families)
            for second in families[i + 1:]):
         raise ValidationError("Overlapping guarded transfer declarations")
-    calls.update(pointers)
-    calls.update(immediates)
     traps.update(tail_traps)
-    return {"indirect_calls": {site: row["targets"] for site, row in calls.items()},
+    return {"indirect_calls": {site: row["targets"] for site, row in call_maps.items()},
             "indirect_jumps": {site: row["targets"] for site, row in jumps.items()},
             "indirect_tails": {site: row["targets"] for site, row in tails.items()},
             "trapped_calls": traps}

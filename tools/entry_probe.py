@@ -8,7 +8,9 @@ from analyze import ROOT, execute, local_output
 from elf import load_profile, validate
 from psp_module import module_report
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, immediate_maps, guard_generated, verify_break_stops
+from indirect_calls import (constructor_maps, jump_maps, trap_maps, pointer_maps,
+                            immediate_maps, merge_call_maps, guard_generated,
+                            verify_break_stops)
 from aot_registration import compact_registration
 
 
@@ -68,15 +70,10 @@ def main():
     language, button = language_mode(startup)
     ge_spans = ge_list_spans(elf, startup)
     cache_spans = cache_writeback_spans(elf, startup)
-    indirect = constructor_maps(elf, startup.get("constructor_calls", []))
+    constructors = constructor_maps(elf, startup.get("constructor_calls", []))
     pointers = pointer_maps(elf, startup.get("pointer_calls", []))
-    if indirect.keys() & pointers.keys():
-        raise ValueError("Constructor and pointer call maps must own different sites")
-    indirect |= pointers
     immediates = immediate_maps(elf, startup.get("immediate_calls", []))
-    if indirect.keys() & immediates.keys():
-        raise ValueError("Immediate and table call maps must own different sites")
-    indirect |= immediates
+    indirect = merge_call_maps(constructors, pointers, immediates)
     jumps = jump_maps(elf, startup.get("jump_tables", []))
     tails = pointer_maps(elf, startup.get("pointer_tails", []), tail=True)
     traps = trap_maps(elf, startup.get("trapped_calls", []))

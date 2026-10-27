@@ -63,6 +63,16 @@ std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
         c.set_gpr(2, static_cast<std::uint32_t>(state->clock.microseconds()));
         ++state->system_time_reads;
     });
+    rt.register_hle("ThreadManForUser", 0x82BC5777u, [state](auto&, auto& c) {
+        const auto microseconds = state->clock.microseconds();
+        c.set_gpr(2, static_cast<std::uint32_t>(microseconds));
+        c.set_gpr(3, static_cast<std::uint32_t>(microseconds >> 32));
+        ++state->system_time_reads;
+    });
+    rt.register_hle("sceDisplay", 0x773DD3A3u, [state](auto&, auto& c) {
+        c.set_gpr(2, state->clock.current_hcount());
+        ++state->hcount_reads;
+    });
     if (idle_frame_budget) {
         rt.register_hle("Azazel6Host", 3, [state](auto& runtime, auto&) {
             try { state->advance_idle(runtime); }

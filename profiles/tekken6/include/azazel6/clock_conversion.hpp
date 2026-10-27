@@ -28,4 +28,29 @@ inline void convert_sysclock_wide(psprecomp::Runtime& rt, psprecomp::AllegrexCon
         static_cast<std::uint32_t>(seconds ? ticks % 1000000u : ticks));
     c.set_gpr(2, 0);
 }
+
+inline void convert_sysclock(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c,
+                             std::uint32_t stack_base, std::uint32_t stack_size) {
+    const auto input = c.gpr[4], seconds = c.gpr[5], microseconds = c.gpr[6];
+    const auto stack_end = static_cast<std::uint64_t>(stack_base) + stack_size;
+    auto stack_word = [&](std::uint32_t address, std::uint32_t size) {
+        return address >= stack_base && !(address & 3u) &&
+            static_cast<std::uint64_t>(address) + size <= stack_end &&
+            address >= psprecomp::GuestMemory::kPhysicalBase &&
+            static_cast<std::uint64_t>(address) + size <=
+                static_cast<std::uint64_t>(psprecomp::GuestMemory::kPhysicalBase) + rt.memory().size() &&
+            !rt.has_function(address);
+    };
+    if (!stack_word(input, 8) || (!seconds && !microseconds) ||
+        (seconds && seconds == microseconds) || (seconds && !stack_word(seconds, 4)) ||
+        (microseconds && !stack_word(microseconds, 4))) {
+        rt.stop("Clock-conversion range outside live caller stack"); return;
+    }
+    const auto ticks = static_cast<std::uint64_t>(rt.memory().load32(input)) |
+        (static_cast<std::uint64_t>(rt.memory().load32(input + 4)) << 32);
+    if (seconds) rt.memory().store32(seconds, static_cast<std::uint32_t>(ticks / 1000000u));
+    if (microseconds) rt.memory().store32(microseconds,
+        static_cast<std::uint32_t>(seconds ? ticks % 1000000u : ticks));
+    c.set_gpr(2, 0);
+}
 }

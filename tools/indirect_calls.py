@@ -2,6 +2,21 @@
 from elf import ValidationError
 
 
+def merge_call_maps(*maps):
+    """Combine independently verified target sources for one guarded call site."""
+    result = {}
+    for mapping in maps:
+        for site, row in mapping.items():
+            if site not in result:
+                result[site] = dict(row)
+                continue
+            if result[site]['register'] != row['register']:
+                raise ValidationError('Conflicting guarded-call registers')
+            result[site]['targets'] = list(dict.fromkeys(
+                result[site]['targets'] + row['targets']))
+    return result
+
+
 def immediate_maps(elf, descriptors):
     """Resolve reviewed bounded LUI/ADDIU or LUI/ORI address constructions."""
     result = {}

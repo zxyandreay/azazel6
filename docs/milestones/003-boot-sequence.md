@@ -1,6 +1,6 @@
 # Milestone 003: boot sequence
 
-**IN PROGRESS, 2026-10-25.** Native bring-up is implemented; title-screen boot is
+**IN PROGRESS, 2026-10-27.** Native bring-up is implemented; title-screen boot is
 not. The current bounded experiment completes the full 59-entry constructor loop, creates
 four mutexes and eight inactive timers, registers its exit callback and completes
 the post-constructor object's 2048-record initialization loop. It allocates a
@@ -8,12 +8,12 @@ single-block fixed pool, completes language get/set and creates an event flag.
 Both workers now wait on their shared event flag. The main thread completes
 VBLANK registration, the first GE initialization list and display-mode setup
 under bounded idle events, then advances through guarded graphics methods,
-resource layout/allocation and checked wide clock conversion. The latest
-374-root native slice enters callback `0x088610C4`, builds a clear command block,
-returns from completed-work DrawSync, swaps framebuffer descriptors and waits for
-a third VBLANK. Two GE clears now write guest VRAM, and both FINISH callbacks return after
-reading the explicit guest clock. The new boundary is guarded callback target
-`0x08862338` from `0x08860FBC`; title boot remains open. See
+resource layout/allocation and checked clock conversion. The latest 423-root
+native slice follows the post-clear object graph and later state callback,
+executes five VBLANK events and completes four GE lists. Two GE clears write
+261,120 guest-VRAM pixel positions. The new boundary is missing
+`scePowerGetPllClockFrequencyInt` (`0x34F9C463`) at `0x08B89218`; title boot
+remains open. See
 [current startup evidence](../research/startup-indirect-2026-10-22.md),
 [constructor-completion evidence](../research/constructor-coverage.md) and
 [object/exception-boundary evidence](../research/startup-objects.md) and
@@ -39,7 +39,10 @@ Display interrupt and GE foundations are implemented in
 Keep this milestone's title-screen gate open. Missing kernel/I/O/module services still
 belong here and must be implemented when encountered.
 
-**2026-10-25 STATIC follow-up, NOT native progress:** The next observed callback `0x08862338` is now a guarded **candidate root**. Its exact source is constructed through an ordinary BLEZ delay slot; the verifier requires an opt-in exact-word witness, and synthetic negative tests exercise unsafe alternatives. The current profile has **375** declared roots, but its last actual native experiment remains the **374-root** two-clear checkpoint. The callback's 12 uncovered direct callees have not been authorized or run. See [static investigation](../research/callback-08862338.md) before regenerating and repeating the bounded native experiment.
+**2026-10-25 static checkpoint:** The exact ordinary-BLEZ delay-slot source for
+`0x08862338` and its candidate callees were recorded before native continuation.
+That static gate is now superseded by the 2026-10-27 executed checkpoint above;
+its provenance remains in [static investigation](../research/callback-08862338.md).
 
 ## Candidate-root inspection
 

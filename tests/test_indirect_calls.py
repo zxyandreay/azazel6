@@ -2,7 +2,9 @@ import struct
 import unittest
 from elf import Elf, ValidationError
 from entry_cfg import discover_entry
-from indirect_calls import constructor_maps, jump_maps, trap_maps, pointer_maps, immediate_maps, guard_generated, verify_break_stops
+from indirect_calls import (constructor_maps, jump_maps, trap_maps, pointer_maps,
+                            immediate_maps, merge_call_maps, guard_generated,
+                            verify_break_stops)
 from test_entry_cfg import program
 
 BASE = 0x08804000
@@ -134,6 +136,14 @@ class IndirectCallTests(unittest.TestCase):
         words[8] = 0x34454038  # Second pair reads the wrong upper register.
         with self.assertRaises(ValidationError):
             immediate_maps(program(words), [desc])
+
+    def test_same_site_provenance_merges_only_matching_registers(self):
+        left = {BASE: {'register': 5, 'targets': [BASE + 16, BASE + 24]}}
+        right = {BASE: {'register': 5, 'targets': [BASE + 24, BASE + 32]}}
+        self.assertEqual(merge_call_maps(left, right)[BASE]['targets'],
+                         [BASE + 16, BASE + 24, BASE + 32])
+        with self.assertRaises(ValidationError):
+            merge_call_maps(left, {BASE: {'register': 4, 'targets': [BASE + 32]}})
 
     def test_immediate_pairs_reject_unverified_sources_and_targets(self):
         def fixture(upper=0x3C020880, lower=0x24424020):

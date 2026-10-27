@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-10-25: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-10-27: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -11,14 +11,14 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 81 cases passed locally; bounded host registration stack |
+| Python/profile tools | VERIFIED, 83 cases passed locally; bounded host registration stack |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-one integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
-| Clock conversion | VERIFIED unsigned wide microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
-| System-time query | VERIFIED low 32-bit microseconds from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
+| Clock conversion | VERIFIED unsigned immediate and pointer-form microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
+| System-time query | VERIFIED low and wide microseconds plus current Hcount from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
@@ -34,7 +34,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries, seven writebacks and graphics memory setup; the 374-root slice completes the frame-flip queries/setters and next-edge wait, then executes two clears (261,120 pixel positions), completes both FINISH callbacks and stops at guarded target 0x08862338 from 0x08860FBC; no scene is presented; both workers remain Waiting |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 423-root slice executes two clears (261,120 pixel positions), five VBLANK events and four Complete GE lists, then stops at missing `scePowerGetPllClockFrequencyInt` (`0x34F9C463`); no scene is presented; both workers remain Waiting |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
@@ -55,7 +55,11 @@ The [graphics/input foundation](../research/display-foundation.md) is implemente
 Milestone 003 remains open until title boot is verified; this is an observed
 dependency transition, not a claim that boot or rendering is complete.
 
-**2026-10-25 supplemental exact-EBOOT static checkpoint:** Verified the next callback address source at `0x088610EC`/`0x088610F4` across a non-likely BLEZ delay slot, with an exact-word opt-in validator and synthetic refusal tests. The startup profile now declares **375 candidate roots**, including `0x08862338`; the last **executed** profile remains **374 roots / 26,826 words**. New callback code, twelve unregistered direct helpers and three exploratory indirect sites remain unexecuted/unsupported pending regeneration and bounded native tests. See [exact callback evidence](../research/callback-08862338.md). This environment could statically inspect the verified EBOOT but could not fetch the pinned native framework for game execution.
+**2026-10-25 supplemental exact-EBOOT static checkpoint:** The callback address
+source at `0x088610EC`/`0x088610F4` was verified across a non-likely BLEZ delay
+slot with an exact-word witness and refusal tests. Its original static-only
+limitations are preserved in [exact callback evidence](../research/callback-08862338.md);
+the 2026-10-27 native checkpoint above supersedes its execution status.
 
 **2026-10-22 supplemental source checkpoint:** A new bounded, fail-closed
 `tools/inspect_root.py` candidate-root inspector and synthetic regression

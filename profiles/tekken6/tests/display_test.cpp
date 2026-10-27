@@ -133,6 +133,19 @@ void system_time_contracts() {
     auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
     auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
     auto display = register_display_hle(*rt, threads, delivery);
+    auto query_wide = [&](std::uint64_t expected) {
+        auto& c = rt->cpu(); c.pc = 0x08001000u; c.gpr[31] = 0x08001004u;
+        c.gpr[2] = 42; c.gpr[3] = 43; c.gpr[4] = 0xFFFFFFFFu; c.gpr[16] = 77;
+        const auto before = c; const auto ticks = display->clock.ticks();
+        const auto reads = display->system_time_reads;
+        invoke_returning_import(*rt, c, "ThreadManForUser", 0x82BC5777u);
+        check(!rt->stopped() && c.gpr[2] == static_cast<std::uint32_t>(expected) &&
+              c.gpr[3] == static_cast<std::uint32_t>(expected >> 32) && c.pc == 0x08001004u &&
+              display->clock.ticks() == ticks && display->system_time_reads == reads + 1,
+              "Wide system time query advanced time or violated return ABI");
+        for (unsigned i = 0; i < 32; ++i) if (i != 2 && i != 3)
+            check(c.gpr[i] == before.gpr[i], "Wide clock query clobbered register");
+    };
     auto query = [&](std::uint32_t expected) {
         auto& c = rt->cpu(); c.pc = 0x08001000u; c.gpr[31] = 0x08001004u;
         c.gpr[2] = 42; c.gpr[4] = 0xFFFFFFFFu; c.gpr[16] = 77;
@@ -144,7 +157,7 @@ void system_time_contracts() {
               "System time query advanced time or violated return ABI");
         for (unsigned i = 0; i < 32; ++i) if (i != 2) check(c.gpr[i] == before.gpr[i], "Clock query clobbered register");
     };
-    query(0); display->clock.advance(17); query(0);
+    query_wide(0); query(0); display->clock.advance(17); query(0);
     display->clock.advance(1); query(1); query(1);
     display->clock.advance(DisplayClock::ticks_per_frame - 18); query(16683);
     display->clock.advance(DisplayClock::ticks_per_frame); query(33366);
@@ -158,7 +171,36 @@ void system_time_contracts() {
     while (display->clock.ticks() < wrap)
         display->clock.advance(std::min(wrap - display->clock.ticks(),
             DisplayClock::ticks_per_frame * DisplayClock::max_events));
-    query(0); display->clock.advance(7 * 18); query(7);
+    query_wide(std::uint64_t{1} << 32); query(0);
+    display->clock.advance(7 * 18); query(7); query_wide((std::uint64_t{1} << 32) + 7);
+}
+void hcount_contracts() {
+    using namespace azazel6;
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+    auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+        0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+    auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+    auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+    auto display = register_display_hle(*rt, threads, delivery);
+    auto query = [&](std::uint32_t expected) {
+        auto& c = rt->cpu(); c.pc = 0x08001000u; c.gpr[31] = 0x08001004u;
+        c.gpr[2] = 42; c.gpr[4] = 0xFFFFFFFFu; c.gpr[16] = 77;
+        const auto before = c; const auto ticks = display->clock.ticks();
+        const auto reads = display->hcount_reads;
+        invoke_returning_import(*rt, c, "sceDisplay", 0x773DD3A3u);
+        check(!rt->stopped() && c.gpr[2] == expected && c.pc == 0x08001004u &&
+              display->clock.ticks() == ticks && display->hcount_reads == reads + 1,
+              "Current Hcount query advanced time or violated return ABI");
+        for (unsigned i = 0; i < 32; ++i) if (i != 2)
+            check(c.gpr[i] == before.gpr[i], "Current Hcount query clobbered register");
+    };
+    query(0);
+    display->clock.advance(DisplayClock::ticks_per_hcount - 1); query(0);
+    display->clock.advance(1); query(1);
+    display->clock.advance(DisplayClock::ticks_per_frame - DisplayClock::ticks_per_hcount); query(0);
+    check(threads->enter_interrupt(), "Hcount interrupt fixture"); query(0);
+    threads->leave_interrupt();
 }
 void callback_wait_contracts() {
     using namespace azazel6;
@@ -216,6 +258,7 @@ int main() {
         mode_contracts();
         callback_wait_contracts();
         system_time_contracts();
+        hcount_contracts();
         using namespace azazel6;
         DisplayClock clock;
         constexpr auto frame = DisplayClock::ticks_per_frame;

@@ -70,16 +70,24 @@ additional observed display services, GE drawing and guest input integration.
 ## FINISH system-time reads (2026-10-25)
 
 **DOCUMENTED:** pinned PSPSDK declares `sceKernelGetSystemTimeLow` / NID
-`0x369ED59D` as the low 32 bits of system time. PortableKit's pinned time handler
-reads its kernel microsecond timeline. **VERIFIED:** Azazel6 now reports the low
-word of its existing explicit LCD/event timeline in microseconds (18 half-ticks
-per microsecond). This is a query, not a new time producer: reads do not advance
-time or use the host clock. Runnable guest CPU cycle accounting remains absent.
-The global query is valid during the observed GE FINISH interrupt.
+`0x369ED59D` as the low 32 bits of system time and
+`sceKernelGetSystemTimeWide` / NID `0x82BC5777` as the complete 64-bit value.
+PortableKit's pinned time handler reads its kernel microsecond timeline.
+**VERIFIED:** Azazel6 reports its existing explicit LCD/event timeline in
+microseconds (18 half-ticks per microsecond), returning the wide value in
+`v0:v1`. These are queries, not new time producers: reads do not advance time or
+use the host clock. Runnable guest CPU cycle accounting remains absent. The
+global queries are valid during the observed GE FINISH interrupt.
+
+The same explicit LCD timeline supplies `sceDisplayGetCurrentHcount` / NID
+`0x773DD3A3`: one Hcount spans 525 clocks at 9 MHz, represented as 1,050
+half-ticks, and the current count wraps after 286 lines. Reading it does not
+advance the timeline. Synthetic contracts cover line boundaries, frame wrap,
+interrupt context, register preservation and stable repeated reads.
 
 Synthetic tests cover 17/18-tick truncation, fractional frame boundaries,
-repeat-read stability, interrupt/masked-context reads, register preservation and
-32-bit wrap. The exact-input run executes four reads and reports 66,733 us after
+repeat-read stability, interrupt/masked-context reads, register preservation,
+and low/wide values across 32-bit wrap. The exact-input run executes four reads and reports 66,733 us after
 four explicit VBLANK events. Both GE FINISH callbacks return and three total
 lists are Complete; two clears account for 261,120 pixel positions. Startup then
 stops at guarded target `0x08862338`, call site `0x08860FBC`. Evidence is local in

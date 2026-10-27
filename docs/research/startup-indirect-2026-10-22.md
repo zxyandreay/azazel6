@@ -429,3 +429,37 @@ and four time queries at a final 66,733 us. The next state callback is
 clear callback has installed a later startup state; its provenance and direct
 callees require review before expanding the guard. No title screen is claimed.
 See [clock policy and tests](display-foundation.md#finish-system-time-reads-2026-10-25).
+
+
+## Post-clear timing and state callback (2026-10-27)
+
+**VERIFIED:** the exact input still hashes to
+`e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f`.
+The reviewed startup profile now contains 423 roots and generates 28,992
+instruction words. It follows the post-clear object graph through callback
+`0x08862338`, five file-backed vtable/list callback families, graphics-state
+setup, and later state callback `0x08862578`. Guards combine independently
+verified pointer and immediate provenance only when the call register agrees.
+Immediate address construction may cross an ordinary branch only when the
+lower instruction is its explicit always-executed delay slot; branch-likely,
+link and unknown forms remain rejected.
+
+Three newly observed read-only services use existing owned state. NID
+`0x82BC5777` returns the full 64-bit system time from the explicit LCD/event
+timeline, NID `0x773DD3A3` returns the current 0..285 Hcount, and
+`sceKernelGetThreadId` returns the running scheduler UID. Pointer-form
+`sceKernelSysClock2USec` converts a checked eight-byte clock value and writes
+only checked words in the live caller stack. None of these queries advances
+time or reads a host clock. Synthetic tests cover return registers, wrap,
+range/alias rejection, interrupt boundaries and preservation of unrelated
+state.
+
+The bounded native run advances from four to five VBLANK events, from three to
+four Complete GE lists, from four to nine system-time reads, and from 66,733 to
+83,416 guest microseconds. The fourth list contains eight commands. Retained GE
+state reaches 230 writes; two clears still account for 261,120 pixel positions.
+The current boundary is missing `scePowerGetPllClockFrequencyInt`, NID
+`0x34F9C463`, at stub `0x08B89218`, RA `0x089CFBA0`. The pinned PSPSDK export
+table and pinned PPSSPP service table identify the ABI as a no-argument integer
+query, but no power-clock policy is implemented in this slice. No title, menu,
+scene presentation or measured guest CPU timing is claimed.

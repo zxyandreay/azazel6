@@ -95,6 +95,14 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         }
         convert_sysclock_wide(runtime, c, current->stack_base, current->stack_size);
     });
+    rt.nids().add("ThreadManForUser", 0xBA6B92E2u, "sceKernelSysClock2USec");
+    rt.register_hle("ThreadManForUser", 0xBA6B92E2u, [state](auto& runtime, auto& c) {
+        const auto* current = state->find(state->current_uid_);
+        if (!current || current->status != ThreadStatus::Running || state->in_interrupt_) {
+            runtime.stop("Unsupported clock-conversion context"); return;
+        }
+        convert_sysclock(runtime, c, current->stack_base, current->stack_size);
+    });
     rt.register_hle("ThreadManForUser", 0x55C20A00u,
         [state](auto& runtime, auto& c) { state->create_event(runtime, c); });
     rt.register_hle("ThreadManForUser", 0xEF9E4C70u,
@@ -149,6 +157,14 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
             runtime.stop("Current priority query requires a running thread"); return;
         }
         ctx.set_gpr(2, current->priority);
+    });
+    rt.nids().add("ThreadManForUser", 0x293B45B8u, "sceKernelGetThreadId");
+    rt.register_hle("ThreadManForUser", 0x293B45B8u, [state](auto& runtime, auto& ctx) {
+        const auto* current = state->find(state->current_uid_);
+        if (!current || current->status != ThreadStatus::Running || state->in_interrupt_) {
+            runtime.stop("Thread ID query requires a running thread context"); return;
+        }
+        ctx.set_gpr(2, state->current_uid_);
     });
     rt.register_hle("ThreadManForUser", 0x20FFF560u,
         [state](auto& runtime, auto& ctx) { state->create_timer(runtime, ctx); });

@@ -500,10 +500,26 @@ void clock_conversion() {
     switched.rt->invoke_import("ThreadManForUser", 0xE1619D7Cu, c);
     check(switched.rt->stopped(), "Conversion wrote another thread's stack");
 }
+void current_thread_id() {
+    Scheduled running;
+    auto& c = running.rt->cpu(); c.pc = arena.executable_begin; c.gpr[31] = arena.executable_begin + 4;
+    c.gpr[2] = 0xDEADBEEFu; c.gpr[4] = 0x12345678u;
+    const auto before = c;
+    invoke_returning_import(*running.rt, c, "ThreadManForUser", 0x293B45B8u);
+    check(!running.rt->stopped() && c.gpr[2] == kBootstrapUid && c.pc == before.gpr[31],
+          "Current thread ID return");
+    for (unsigned i = 0; i < 32; ++i) if (i != 2)
+        check(c.gpr[i] == before.gpr[i], "Current thread ID clobbered register");
+    Scheduled interrupt;
+    check(interrupt.threads->enter_interrupt(), "Thread ID interrupt fixture");
+    interrupt.rt->invoke_import("ThreadManForUser", 0x293B45B8u, interrupt.rt->cpu());
+    check(interrupt.rt->stopped() && interrupt.rt->cpu().gpr[2] == 0,
+          "Interrupt thread ID fabricated a caller");
+}
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); current_priority(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
+          mutex_ownership(); mutex_boundaries(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

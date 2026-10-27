@@ -35,7 +35,11 @@ or PRX plugin. AOT still requires memory semantics, kernel/HLE, GE graphics,
 audio, file I/O and a controlled fallback for uncovered code. Performance relative
 to PPSSPP is unmeasured.
 
-**Latest source-only investigation:** The profile now includes a 375th guarded callback candidate (`0x08862338`) and a verified non-likely delay-slot address source. This has **not** been executed in the native probe: the last verified real-input boundary and not-playable status above remain unchanged. See [exact callback research](docs/research/callback-08862338.md).
+**Latest bounded investigation:** The verified non-likely delay-slot source for
+callback `0x08862338` has now been exercised in the native probe. The 423-root
+slice reaches five VBLANK events and four Complete GE lists before stopping at
+missing PLL-clock query `0x34F9C463`. This remains startup research, with no
+title/menu or playable-game claim. See [executed continuation](docs/research/startup-indirect-2026-10-22.md#post-clear-timing-and-state-callback-2026-10-27).
 
 ## Start without game files
 
