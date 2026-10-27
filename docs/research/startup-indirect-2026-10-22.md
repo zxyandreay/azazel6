@@ -463,3 +463,31 @@ The current boundary is missing `scePowerGetPllClockFrequencyInt`, NID
 table and pinned PPSSPP service table identify the ABI as a no-argument integer
 query, but no power-clock policy is implemented in this slice. No title, menu,
 scene presentation or measured guest CPU timing is claimed.
+
+## Nominal clocks and source-only callback setup (2026-10-27)
+
+**VERIFIED:** the exact input still hashes to
+`e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f`.
+The reviewed profile now contains 438 roots and generates 29,719 instruction
+words. The clock-selection object reads PLL, CPU and bus frequencies once each.
+Its selected file-backed profile row is 222/222/111 MHz, matching the immutable
+startup state, so it does not call the unimplemented clock setter. These queries
+do not advance or rescale the guest timeline.
+
+The continued object chain creates a callback and invokes `sceIoDevctl` for
+device `fatms0:`, command `0x02415821`, with a four-byte callback UID in the live
+caller stack and null output arguments. The implemented contract validates the
+exact device and command, current-thread stack ownership, callback ownership and
+duplicates. It records callback ownership only: it opens no host path, reports no
+media insertion or capacity, and delivers no callback. Synthetic contracts cover
+the successful ABI and atomic rejection of unsupported devices, commands, ranges
+and duplicates.
+
+The bounded native counters remain five VBLANK events, four Complete GE lists,
+230 GE state writes, two clears/261,120 pixel positions, nine system-time reads
+and 83,416 guest microseconds. One `fatms0:` callback is registered and three
+guest callbacks exist in total. The current boundary is missing
+`scePowerRegisterCallback`, NID `0x04B7766E`, at stub `0x08B89210`, RA
+`0x089CF4A8`, with auto-slot `-1` and callback UID `0x50000002`. Power-state
+notification and general callback delivery remain unimplemented. No title, menu,
+scene presentation, filesystem access or measured guest CPU timing is claimed.

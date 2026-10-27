@@ -2,7 +2,8 @@ set(AZAZEL6_ENTRY_DIR "" CACHE PATH "Directory produced by tools/entry_probe.py"
 option(AZAZEL6_PROBE_FAST_BUILD "Disable entry-probe optimization for coverage research" OFF)
 add_library(azazel6_bootstrap STATIC host/bootstrap.cpp host/threads.cpp host/memory.cpp host/module.cpp
     host/fixed_pools.cpp host/settings.cpp host/event_flags.cpp host/graphics_memory.cpp host/ge_callbacks.cpp
-    host/interrupts.cpp host/display.cpp host/ge_lists.cpp host/ge_state.cpp host/ge_clear.cpp)
+    host/interrupts.cpp host/display.cpp host/ge_lists.cpp host/ge_state.cpp host/ge_clear.cpp host/power.cpp
+    host/io.cpp)
 target_include_directories(azazel6_bootstrap PUBLIC include)
 target_link_libraries(azazel6_bootstrap PUBLIC psprecomp_core)
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
@@ -27,6 +28,12 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_executable(azazel6_bootstrap_tests tests/bootstrap_test.cpp)
     target_link_libraries(azazel6_bootstrap_tests PRIVATE azazel6_bootstrap)
     add_test(NAME azazel6_bootstrap COMMAND azazel6_bootstrap_tests)
+    add_executable(azazel6_power_tests tests/power_test.cpp)
+    target_link_libraries(azazel6_power_tests PRIVATE azazel6_bootstrap)
+    add_test(NAME azazel6_power COMMAND azazel6_power_tests)
+    add_executable(azazel6_io_tests tests/io_test.cpp)
+    target_link_libraries(azazel6_io_tests PRIVATE azazel6_bootstrap)
+    add_test(NAME azazel6_io COMMAND azazel6_io_tests)
     add_executable(azazel6_thread_tests tests/threads_test.cpp)
     target_link_libraries(azazel6_thread_tests PRIVATE azazel6_bootstrap)
     add_test(NAME azazel6_threads COMMAND azazel6_thread_tests)

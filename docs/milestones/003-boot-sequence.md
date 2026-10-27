@@ -8,11 +8,13 @@ single-block fixed pool, completes language get/set and creates an event flag.
 Both workers now wait on their shared event flag. The main thread completes
 VBLANK registration, the first GE initialization list and display-mode setup
 under bounded idle events, then advances through guarded graphics methods,
-resource layout/allocation and checked clock conversion. The latest 423-root
+resource layout/allocation and checked clock conversion. The latest 438-root
 native slice follows the post-clear object graph and later state callback,
 executes five VBLANK events and completes four GE lists. Two GE clears write
-261,120 guest-VRAM pixel positions. The new boundary is missing
-`scePowerGetPllClockFrequencyInt` (`0x34F9C463`) at `0x08B89218`; title boot
+261,120 guest-VRAM pixel positions. It reads the nominal 222/222/111 MHz clock
+profile, constructs the next startup objects and registers a checked source-only
+`fatms0:` callback without accessing a host filesystem. The new boundary is missing
+`scePowerRegisterCallback` (`0x04B7766E`) at `0x08B89210`; title boot
 remains open. See
 [current startup evidence](../research/startup-indirect-2026-10-22.md),
 [constructor-completion evidence](../research/constructor-coverage.md) and

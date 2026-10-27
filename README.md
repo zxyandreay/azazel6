@@ -36,9 +36,10 @@ audio, file I/O and a controlled fallback for uncovered code. Performance relati
 to PPSSPP is unmeasured.
 
 **Latest bounded investigation:** The verified non-likely delay-slot source for
-callback `0x08862338` has now been exercised in the native probe. The 423-root
-slice reaches five VBLANK events and four Complete GE lists before stopping at
-missing PLL-clock query `0x34F9C463`. This remains startup research, with no
+callback `0x08862338` has now been exercised in the native probe. The 438-root
+slice reaches five VBLANK events, four Complete GE lists and source-only Memory
+Stick callback registration before stopping at missing power-callback registration
+`0x04B7766E`. This remains startup research, with no
 title/menu or playable-game claim. See [executed continuation](docs/research/startup-indirect-2026-10-22.md#post-clear-timing-and-state-callback-2026-10-27).
 
 ## Start without game files

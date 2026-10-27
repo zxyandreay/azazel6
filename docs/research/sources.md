@@ -30,6 +30,12 @@ was read through GitHub's API at that fixed revision. Only language-mode API
 behavior was used as reference evidence. No PPSSPP implementation was copied into
 Azazel6 or linked; this is emulator behavior, not a reproduced hardware result.
 
+**Additional inspection, 2026-10-27:** PPSSPP `Core/HLE/sceIo.cpp` at the same
+pinned `cd94e414cde964bf25ec67267f64fcd3d01283bb` revision was read directly for
+the `fatms0:` command `0x02415821` ABI and callback meaning. Azazel6 implements a
+narrow ownership contract and does not copy PPSSPP code, access a host filesystem
+or assume Memory Stick insertion.
+
 **Additional inspection, 2026-10-20:** the same pinned PSPSDK GE/display and
 interrupt headers/export tables, and uOFW GE callback registration/unset behavior
 were inspected for the graphics handoff. No source implementation was copied.

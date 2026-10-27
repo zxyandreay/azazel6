@@ -4,6 +4,13 @@
 #include <algorithm>
 
 namespace azazel6 {
+std::optional<GuestThread> ThreadRegistry::current_thread() const {
+    if (current_uid_ == kBootstrapUid) return bootstrap_;
+    const auto found = std::find_if(threads_.begin(), threads_.end(),
+        [this](const auto& thread) { return thread.uid == current_uid_; });
+    return found == threads_.end() ? std::nullopt : std::optional<GuestThread>(*found);
+}
+
 bool ThreadRegistry::can_idle_display() const {
     if (current_uid_ || in_interrupt_ || !interrupts_enabled_) return false;
     bool display_wait = false;

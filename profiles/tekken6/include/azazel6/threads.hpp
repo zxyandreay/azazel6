@@ -55,6 +55,7 @@ struct GuestEventFlag {
 class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
+    [[nodiscard]] std::optional<GuestThread> current_thread() const;
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
     [[nodiscard]] bool in_interrupt() const { return in_interrupt_; }
