@@ -456,6 +456,50 @@ void mutex_boundaries() {
     Scheduled bad; mutex_call(bad, 0xB7D098C6u, 0xFFFFFFFFu);
     check(bad.rt->stopped() && bad.threads->mutexes().empty(), "Invalid name mutated mutex registry");
 }
+void semaphore_creation() {
+    Scheduled f;
+    f.rt->memory().store8(0x08004000u, 'x');
+    f.rt->memory().store8(0x08004001u, 0);
+    auto call = [&](std::uint32_t name, std::uint32_t attr, std::uint32_t initial,
+                    std::uint32_t maximum, std::uint32_t options = 0) {
+        auto& c = f.rt->cpu();
+        c.gpr[4] = name; c.gpr[5] = attr; c.gpr[6] = initial; c.gpr[7] = maximum; c.gpr[8] = options;
+        f.rt->invoke_import("ThreadManForUser", 0xD6DA4BA1u, c);
+        return c.gpr[2];
+    };
+    const auto uid = call(0x08004000u, 0x100u, 2, 4);
+    const auto& semaphore = f.threads->semaphores().at(uid);
+    check(uid == 0x71000000u && semaphore.name == "x" && semaphore.attributes == 0x100u &&
+          semaphore.initial_count == 2 && semaphore.count == 2 && semaphore.maximum == 4,
+          "Semaphore creation ownership");
+    check(call(0x08004000u, 0, 5, 4) == 0x800201BDu && f.threads->semaphores().size() == 1,
+          "Invalid semaphore count mutated registry");
+    check(call(0x08004000u, 0x200u, 0, 1) == 0x80020191u, "Invalid semaphore attribute");
+    check(call(0, 0, 0, 1) == 0x80020001u, "Null semaphore name");
+    Scheduled available;
+    auto& ac = available.rt->cpu();
+    ac.gpr[4] = 0x08004000u; ac.gpr[5] = 0; ac.gpr[6] = 1; ac.gpr[7] = 2; ac.gpr[8] = 0;
+    available.rt->invoke_import("ThreadManForUser", 0xD6DA4BA1u, ac);
+    const auto available_uid = ac.gpr[2];
+    ac.gpr[4] = available_uid; ac.gpr[5] = 1; ac.gpr[6] = 0;
+    available.rt->invoke_import("ThreadManForUser", 0x4E3A1105u, ac);
+    check(ac.gpr[2] == 0 && available.threads->semaphores().at(available_uid).count == 0,
+          "Available semaphore wait did not consume count");
+    Scheduled blocked;
+    auto& bc = blocked.rt->cpu();
+    bc.gpr[4] = 0x08004000u; bc.gpr[5] = 0; bc.gpr[6] = 0; bc.gpr[7] = 1; bc.gpr[8] = 0;
+    blocked.rt->invoke_import("ThreadManForUser", 0xD6DA4BA1u, bc);
+    const auto blocked_uid = bc.gpr[2], high = blocked.create(8); blocked.start(high);
+    bc.gpr[4] = blocked_uid; bc.gpr[5] = 1; bc.gpr[6] = 0;
+    blocked.rt->invoke_import("ThreadManForUser", 0x4E3A1105u, bc);
+    check(blocked.threads->current_uid() == kBootstrapUid &&
+          blocked.threads->semaphores().at(blocked_uid).waiters.size() == 1 &&
+          blocked.threads->snapshot().at(0).status == ThreadStatus::Waiting,
+          "Empty semaphore wait did not block and reschedule");
+    call(0x08004000u, 0, 0, 1, 0x08004100u);
+    check(f.rt->stopped() && f.threads->semaphores().size() == 1,
+          "Unsupported semaphore options fabricated an object");
+}
 void clock_conversion() {
     constexpr auto first = arena.end, last = arena.end + 508;
     for (const auto ticks : {0ull, 999999ull, 1000000ull, 1000001ull, 0x100000000ull, 0xFFFFFFFFFFFFFFFFull}) {
@@ -519,7 +563,7 @@ void current_thread_id() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
+          mutex_ownership(); mutex_boundaries(); semaphore_creation(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

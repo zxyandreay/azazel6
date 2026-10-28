@@ -516,3 +516,31 @@ research boundary. Counters remain five VBLANK events, four Complete GE lists,
 230 GE state writes, two clears/261,120 pixel positions and 83,416 guest
 microseconds. This bounded native startup evidence does not establish title boot,
 scene presentation, controller input or gameplay.
+
+## Semaphore worker and later object passes (2026-10-28)
+
+**VERIFIED:** the exact input still hashes to
+`e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f`.
+The reviewed profile now contains 472 roots and generates 30,841 instruction
+words. The prior object boundary expands through file-backed vtables and a
+callback installed from the immediate pair at `0x0889E2BC`/`0x0889E2C0`.
+Guards admit each observed target only through its reviewed pointer slot or
+immediate construction; unresolved paths retain traps.
+
+The continued initialization creates two semaphores: one empty semaphore with
+maximum `0x7fffffff`, and one binary semaphore initially holding one count. The
+owned `sceKernelCreateSema` service validates names, attributes, counts and
+options. `sceKernelWaitSema` consumes an available count or records an untimed
+FIFO wait in the running thread before rescheduling. The newly created priority
+19 worker enters `0x08AE1268`, waits for one count on the empty semaphore and
+becomes Waiting; the bootstrap thread resumes. Signaling, deletion, priority
+wait ordering and timeouts remain unimplemented and fail closed.
+
+The bounded run then completes two additional idle/display cycles. It reaches
+seven VBLANK events, six Complete GE lists, 236 retained GE state writes, 19
+system-time reads and 116,783 guest microseconds. The two verified clears still
+cover 261,120 pixel positions. The next direct helper is `0x08B60854`, called
+from `0x0889B5F8`; static inspection stops at its indirect transfer
+`0x08B608C0`, which has no reviewed target map yet. This is bounded native
+startup evidence, not title boot, scene presentation, controller input or
+gameplay.

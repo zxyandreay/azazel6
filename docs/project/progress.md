@@ -16,6 +16,7 @@ Azazel6 is not playable. See
 | Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-four integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
+| Semaphore lifecycle | VERIFIED bounded creation, immediate count consumption and FIFO blocking handoff to the scheduler; signaling, deletion, priority waits and timeouts remain unimplemented |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
 | Clock conversion | VERIFIED unsigned immediate and pointer-form microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
 | System-time query | VERIFIED low and wide microseconds plus current Hcount from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
@@ -37,7 +38,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 443-root slice covers 29,840 words, executes two clears (261,120 pixel positions), five VBLANK events and four Complete GE lists, registers power and `fatms0:` callbacks, applies controller idle thresholds 64/-1 and stops at a guarded object dispatch to `0x0889E1DC`; no scene is presented; both workers remain Waiting |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 472-root slice covers 30,841 words, executes two clears (261,120 pixel positions), seven VBLANK events and six Complete GE lists, registers two semaphores and blocks the new worker on its empty semaphore, then stops at direct helper `0x08B60854`, whose indirect transfer at `0x08B608C0` needs target review; no scene is presented |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

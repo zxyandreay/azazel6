@@ -31,10 +31,17 @@ struct GuestThread {
     std::uint64_t stack_ticket = 0;
     std::optional<std::uint64_t> display_deadline;
     std::optional<std::uint32_t> event_wait;
+    std::optional<std::uint32_t> semaphore_wait;
 };
+struct SemaphoreWait { std::uint32_t thread, count; };
 struct GuestMutex {
     std::string name;
     std::uint32_t attributes, initial_count, count, owner;
+};
+struct GuestSemaphore {
+    std::string name;
+    std::uint32_t attributes, initial_count, count, maximum;
+    std::vector<SemaphoreWait> waiters;
 };
 // Only inactive timers are supported until a guest clock is established.
 struct GuestVTimer { std::string name; };
@@ -67,6 +74,7 @@ public:
     bool cancel_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint32_t uid);
     void reschedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) { if (!in_interrupt_) schedule(rt, c); }
     [[nodiscard]] const std::map<std::uint32_t, GuestMutex>& mutexes() const { return mutexes_; }
+    [[nodiscard]] const std::map<std::uint32_t, GuestSemaphore>& semaphores() const { return semaphores_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestVTimer>& timers() const { return timers_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestCallback>& callbacks() const { return callbacks_; }
     [[nodiscard]] std::uint32_t exit_callback() const { return exit_callback_; }
@@ -88,6 +96,8 @@ private:
     void delete_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void lock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
     void unlock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void create_semaphore(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void wait_semaphore(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void create_timer(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void create_callback(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     bool callback_context(psprecomp::Runtime&);
@@ -115,6 +125,8 @@ private:
     bool in_interrupt_ = false;
     std::map<std::uint32_t, GuestMutex> mutexes_;
     std::uint32_t next_mutex_uid_ = 0x30000000u;
+    std::map<std::uint32_t, GuestSemaphore> semaphores_;
+    std::uint32_t next_semaphore_uid_ = 0x71000000u;
     std::map<std::uint32_t, GuestVTimer> timers_;
     std::uint32_t next_timer_uid_ = 0x40000000u;
     std::map<std::uint32_t, GuestCallback> callbacks_;

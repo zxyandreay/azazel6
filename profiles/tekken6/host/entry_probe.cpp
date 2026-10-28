@@ -205,6 +205,7 @@ int main(int argc, char** argv) {
             std::cout << "partition_block=" << uid << " base=" << hex32(block.base)
                       << " size=" << hex32(block.size) << std::endl;
         std::cout << "mutex_count=" << threads->mutexes().size() << std::endl;
+        std::cout << "semaphore_count=" << threads->semaphores().size() << std::endl;
         std::cout << "inactive_timer_count=" << threads->timers().size() << std::endl;
         std::cout << "fixed_pool_count=" << threads->fixed_pools().size() << std::endl;
         std::cout << "event_flag_count=" << threads->event_flags().size() << std::endl;
