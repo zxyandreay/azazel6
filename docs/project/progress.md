@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-10-27: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-10-28: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -13,13 +13,14 @@ Azazel6 is not playable. See
 | Windows framework build/regressions | VERIFIED, three suites passed |
 | Python/profile tools | VERIFIED, 83 cases passed locally; bounded host registration stack |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-three integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-four integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attribute addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; waits/timeouts remain rejecting |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
 | Clock conversion | VERIFIED unsigned immediate and pointer-form microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
 | System-time query | VERIFIED low and wide microseconds plus current Hcount from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
-| Power-clock queries | VERIFIED immutable nominal startup PLL/CPU/bus reads at 222/222/111 MHz; no host clock, clock transitions or timing rescale |
+| Power services | VERIFIED immutable nominal startup PLL/CPU/bus reads at 222/222/111 MHz plus owned callback-slot registration and queued initial `0x10E4` notification; delivery, host clocks, clock transitions and timing rescale remain unimplemented |
+| Controller settings | VERIFIED runtime-local idle-cancel thresholds, including signed `-1` and checked 0..128 values; guest pad sampling remains unimplemented |
 | Startup device control | VERIFIED source-only `fatms0:` callback ownership registration with checked live-stack input; no host path, media state, capacity, file or callback delivery |
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB; code/alias/unowned ranges reject |
@@ -36,7 +37,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 438-root slice executes two clears (261,120 pixel positions), five VBLANK events and four Complete GE lists, reads nominal clocks, registers one `fatms0:` callback and stops at missing `scePowerRegisterCallback` (`0x04B7766E`); no scene is presented; both workers remain Waiting |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 443-root slice covers 29,840 words, executes two clears (261,120 pixel positions), five VBLANK events and four Complete GE lists, registers power and `fatms0:` callbacks, applies controller idle thresholds 64/-1 and stops at a guarded object dispatch to `0x0889E1DC`; no scene is presented; both workers remain Waiting |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

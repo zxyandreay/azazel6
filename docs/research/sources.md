@@ -36,6 +36,12 @@ the `fatms0:` command `0x02415821` ABI and callback meaning. Azazel6 implements 
 narrow ownership contract and does not copy PPSSPP code, access a host filesystem
 or assume Memory Stick insertion.
 
+**Additional inspection, 2026-10-28:** PPSSPP
+[`sceCtrl.cpp` at `cd94e414cde964bf25ec67267f64fcd3d01283bb`](https://github.com/hrydgard/ppsspp/blob/cd94e414cde964bf25ec67267f64fcd3d01283bb/Core/HLE/sceCtrl.cpp)
+was inspected for NID `0xA7144800`, its two signed threshold arguments, accepted
+`-1`/0..128 range and invalid-value return. Azazel6 keeps that state per runtime;
+no PPSSPP code was copied and this does not implement guest pad sampling.
+
 **Additional inspection, 2026-10-20:** the same pinned PSPSDK GE/display and
 interrupt headers/export tables, and uOFW GE callback registration/unset behavior
 were inspected for the graphics handoff. No source implementation was copied.

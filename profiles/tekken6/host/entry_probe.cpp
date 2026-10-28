@@ -7,6 +7,7 @@
 #include "azazel6/threads.hpp"
 #include "azazel6/module.hpp"
 #include "azazel6/power.hpp"
+#include "azazel6/controller.hpp"
 #include "azazel6/settings.hpp"
 #include "azazel6/graphics_memory.hpp"
 #include "azazel6/ge_callbacks.hpp"
@@ -14,6 +15,7 @@
 #include "azazel6/io.hpp"
 #include "azazel6/display.hpp"
 #include "azazel6/ge_lists.hpp"
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -49,6 +51,7 @@ int main(int argc, char** argv) {
         azazel6::register_profile_imports(*rt);
         const auto bootstrap = azazel6::register_bootstrap_hle(*rt);
         const auto power = azazel6::register_power_clock_hle(*rt);
+        const auto controller = azazel6::register_controller_settings_hle(*rt);
         rt->cpu().gpr[28] = module.gp;
         // Stack size/priority come from the validated module-start export.
         const auto stack_top = GuestMemory::kPhysicalBase + mem.size();
@@ -86,6 +89,7 @@ int main(int argc, char** argv) {
             image_segment->vaddr, image_end, image_segment->vaddr,
             image_segment->vaddr + image_segment->file_size, module.gp,
             AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size}, allocator);
+        azazel6::register_power_callback_hle(*rt, power, threads);
         const auto io = azazel6::register_io_startup_hle(*rt, threads);
         const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
         // Bounded research mode: jump only while every thread is blocked.
@@ -185,7 +189,13 @@ int main(int argc, char** argv) {
                   << " compiler_version=" << hex32(bootstrap->compiler_version) << std::endl;
         std::cout << "power_clocks_mhz=" << power->pll_mhz << '/' << power->cpu_mhz << '/'
                   << power->bus_mhz << " power_clock_reads=" << power->pll_reads << '/'
-                  << power->cpu_reads << '/' << power->bus_reads << std::endl;
+                  << power->cpu_reads << '/' << power->bus_reads
+                  << " power_callbacks="
+                  << std::count_if(power->callback_slots.begin(), power->callback_slots.end(),
+                                   [](const auto& slot) { return slot.has_value(); })
+                  << " power_notifications=" << power->pending_notifications.size() << std::endl;
+        std::cout << "controller_idle_thresholds=" << controller->idle_reset << '/'
+                  << controller->idle_back << " controller_setting_writes=" << controller->writes << std::endl;
         for (const auto& thread : threads->snapshot())
             std::cout << "thread=" << thread.uid << " status=" << static_cast<std::uint32_t>(thread.status)
                       << " entry=" << hex32(thread.entry)

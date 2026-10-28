@@ -1,6 +1,6 @@
 # Azazel6 technical knowledge base
 
-Reviewed 2026-10-20. Evidence labels apply to individual claims:
+Reviewed 2026-10-28. Evidence labels apply to individual claims:
 
 - **VERIFIED:** inspected source/bytes or reproduced execution/test in this project.
 - **DOCUMENTED:** reported by a reference project, not reproduced here.

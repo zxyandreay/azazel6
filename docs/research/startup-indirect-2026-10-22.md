@@ -491,3 +491,28 @@ guest callbacks exist in total. The current boundary is missing
 `0x089CF4A8`, with auto-slot `-1` and callback UID `0x50000002`. Power-state
 notification and general callback delivery remain unimplemented. No title, menu,
 scene presentation, filesystem access or measured guest CPU timing is claimed.
+
+## Power registration and controller idle policy (2026-10-28)
+
+**VERIFIED:** `scePowerRegisterCallback` now owns sixteen runtime-local slots,
+implements automatic and explicit allocation with PSP-compatible error returns,
+and records the initial `0x10E4` notification for the registered callback. The
+notification remains pending because general guest callback delivery is not yet
+implemented. Synthetic contracts cover invalid UIDs and slots, occupied and full
+tables, disabled-interrupt context, state isolation and atomic failures.
+
+The exact-hash bounded startup run registers callback `0x50000002` in automatic
+slot 0, then follows reviewed direct helpers `0x08AAB810`, `0x08B610F4` and
+`0x08AAB870`. NID `0xA7144800` is `sceCtrlSetIdleCancelThreshold`; its narrow HLE
+accepts signed `-1` or 0..128 and records the observed 64/-1 policy. This setting
+does not sample, synthesize or deliver controller input.
+
+The reviewed profile now contains 443 roots and generates 29,840 instruction
+words. It follows vtable `0x08BCB1A0` through `0x08A76224` and its file-backed
+default no-op callback `0x08A762B8`. The next object uses vtable `0x08B954F8` and
+reaches guarded target `0x0889E1DC` at tail site `0x08808314`; that target contains
+an unresolved indirect transfer at `0x0889E254`, so its provenance is the next
+research boundary. Counters remain five VBLANK events, four Complete GE lists,
+230 GE state writes, two clears/261,120 pixel positions and 83,416 guest
+microseconds. This bounded native startup evidence does not establish title boot,
+scene presentation, controller input or gameplay.
