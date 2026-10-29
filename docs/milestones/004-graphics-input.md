@@ -45,6 +45,14 @@ integration gap; see [reuse evidence](../research/portablekit.md).
 
 ## Implementation checkpoint
 
+- **VERIFIED synthetic (2026-10-29):** CPU readback converts the current
+  480x272 framebuffer to tightly packed RGBA bytes for 5650, 5551, 4444 and
+  8888 formats. It validates canonical RAM/VRAM ranges, omits stride padding,
+  respects pending base latches and returns no pixels when display is off.
+  A synthetic GE command list now passes through clear execution, framebuffer
+  latch and pixel readback. This diagnostic API does not present a scene or
+  advance guest time; Vulkan presentation and game drawing remain open.
+
 - **VERIFIED synthetic (2026-10-29):** simultaneous display and timeout waits
   become ready together before priority selection. The framebuffer latch is
   published before thread selection, and existing VBLANK handler restoration

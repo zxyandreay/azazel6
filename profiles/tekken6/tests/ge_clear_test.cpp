@@ -1,5 +1,6 @@
 #include "azazel6/ge_clear.hpp"
 #include "azazel6/ge_lists.hpp"
+#include "azazel6/display.hpp"
 #include "psprecomp/common.hpp"
 #include <iostream>
 #include <stdexcept>
@@ -99,6 +100,17 @@ void queue_contract() {
     check(queue.list(id).status == GeStatus::Complete && queue.clear_draws() == 1 && queue.clear_pixels() == 128 &&
           queue.state().vertex_address() == input + 24 && queue.state().word(1) == 0x4000u,
           "Queue clear/FINISH or internal vertex-pointer advance");
+    DisplayBuffers display;
+    check(display.set(f.memory, {color_base, 512, 0}, 1) == 0, "GE scanout descriptor");
+    display.vblank();
+    const auto pixels = display.readback_rgba(f.memory);
+    for (unsigned y = 0; y < 16; ++y) for (unsigned x = 0; x < 480; ++x) {
+        const bool red = x < 16 && y < 8;
+        const auto at = (y * 480 + x) * 4;
+        check(pixels[at] == (red ? 255 : 214) && pixels[at + 1] == (red ? 0 : 170) &&
+              pixels[at + 2] == (red ? 0 : 165) && pixels[at + 3] == 255,
+              "Synthetic GE clear to latched RGBA readback");
+    }
 }
 }
 int main() {

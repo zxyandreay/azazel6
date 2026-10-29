@@ -50,6 +50,39 @@ std::uint32_t DisplayBuffers::set(const psprecomp::GuestMemory& mem, Framebuffer
 void DisplayBuffers::vblank() noexcept {
     if (pending_) { current_ = latched_; pending_ = false; }
 }
+std::vector<std::uint8_t> DisplayBuffers::readback_rgba(const psprecomp::GuestMemory& memory) const {
+    const auto f = current_;
+    if (!f.address) return {};
+    check_range(memory, f);
+    std::vector<std::uint8_t> result(480 * 272 * 4);
+    const auto expand5 = [](std::uint32_t v) { return (v << 3) | (v >> 2); };
+    const auto expand6 = [](std::uint32_t v) { return (v << 2) | (v >> 4); };
+    for (std::uint32_t y = 0; y < 272; ++y) for (std::uint32_t x = 0; x < 480; ++x) {
+        const auto address = f.address + (y * f.stride + x) * (f.format == 3 ? 4 : 2);
+        const std::uint32_t pixel = f.format == 3 ? memory.load32(address) : memory.load16(address);
+        std::uint32_t r, g, b, a;
+        switch (f.format) {
+        case 0: // PSP 5650: red occupies the low five bits, no stored alpha.
+            r = expand5(pixel & 31); g = expand6((pixel >> 5) & 63);
+            b = expand5((pixel >> 11) & 31); a = 255; break;
+        case 1:
+            r = expand5(pixel & 31); g = expand5((pixel >> 5) & 31);
+            b = expand5((pixel >> 10) & 31); a = (pixel >> 15) * 255; break;
+        case 2:
+            r = (pixel & 15) * 17; g = ((pixel >> 4) & 15) * 17;
+            b = ((pixel >> 8) & 15) * 17; a = ((pixel >> 12) & 15) * 17; break;
+        default: // Validated 8888 descriptor; preserve stored alpha for diagnostics.
+            r = pixel & 255; g = (pixel >> 8) & 255;
+            b = (pixel >> 16) & 255; a = pixel >> 24; break;
+        }
+        const auto output = (y * 480 + x) * 4;
+        result[output] = static_cast<std::uint8_t>(r);
+        result[output + 1] = static_cast<std::uint8_t>(g);
+        result[output + 2] = static_cast<std::uint8_t>(b);
+        result[output + 3] = static_cast<std::uint8_t>(a);
+    }
+    return result;
+}
 std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
     std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<InterruptDelivery> interrupts,
     std::uint64_t idle_frame_budget) {

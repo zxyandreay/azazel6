@@ -40,6 +40,9 @@ public:
     // PSP error for malformed descriptors; unsupported alias/range throws a research boundary.
     std::uint32_t set(const psprecomp::GuestMemory&, Framebuffer, std::uint32_t sync);
     void vblank() noexcept;
+    // Diagnostic CPU snapshot: tightly packed 480x272 RGBA bytes, top row first.
+    // Reads current scanout only; display-off returns empty. Does not advance time.
+    [[nodiscard]] std::vector<std::uint8_t> readback_rgba(const psprecomp::GuestMemory&) const;
 private:
     Framebuffer current_{}, latched_{};
     bool pending_ = false;

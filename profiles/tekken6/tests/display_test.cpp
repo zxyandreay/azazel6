@@ -2,6 +2,7 @@
 #include "azazel6/bootstrap.hpp"
 #include "azazel6/threads.hpp"
 #include <algorithm>
+#include <array>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -37,6 +38,38 @@ void wait_contracts() {
     check(c.gpr[2] == 0x800201A9u, "Stale edge overwrote cancellation");
     rt->invoke_import("Kernel_Library", 0x092968F4u, c);
     check(!threads->wait_display(*rt, c, 4) && rt->stopped(), "Wait while interrupts suspended");
+}
+void framebuffer_readback_contracts() {
+    using namespace azazel6;
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    struct Pixel { std::uint32_t format, packed; std::array<std::uint8_t, 4> rgba; };
+    const Pixel cases[] = {
+        {0, 0x001F, {255, 0, 0, 255}}, {0, 0x07E0, {0, 255, 0, 255}},
+        {0, 0xF800, {0, 0, 255, 255}}, {0, 0x8410, {132, 130, 132, 255}},
+        {1, 0x7C1F, {255, 0, 255, 0}}, {1, 0x83E0, {0, 255, 0, 255}},
+        {2, 0xA531, {17, 51, 85, 170}}, {3, 0x78563412, {18, 52, 86, 120}}
+    };
+    for (const auto base : {0x04000000u, 0x08010000u}) for (const auto& test : cases) {
+        DisplayBuffers buffers;
+        const auto bytes = test.format == 3 ? 4u : 2u;
+        for (std::uint32_t y = 0; y < 272; ++y) for (std::uint32_t x = 0; x < 512; ++x) {
+            const auto value = x < 480 ? test.packed : 0xDEADBEEFu;
+            if (bytes == 4) rt->memory().store32(base + (y * 512 + x) * bytes, value);
+            else rt->memory().store16(base + (y * 512 + x) * bytes, static_cast<std::uint16_t>(value));
+        }
+        check(buffers.set(rt->memory(), {base, 512, test.format}, 1) == 0, "Readback setup");
+        check(buffers.readback_rgba(rt->memory()).empty() && buffers.pending(), "Pending base scanned out early");
+        buffers.vblank();
+        const auto pixels = buffers.readback_rgba(rt->memory());
+        check(pixels.size() == 480 * 272 * 4, "Readback shape includes padding");
+        for (std::size_t i = 0; i < pixels.size(); ++i)
+            check(pixels[i] == test.rgba[i % 4], "Readback format/channel/stride mismatch");
+        check(buffers.set(rt->memory(), {0, 512, test.format}, 1) == 0, "Readback disable setup");
+        check(buffers.readback_rgba(rt->memory()) == pixels && buffers.pending(), "Readback mutated pending latch");
+        buffers.vblank();
+        check(buffers.readback_rgba(rt->memory()).empty(), "Disabled display returned pixels");
+        check(pixels[0] == test.rgba[0], "Snapshot changed after latch");
+    }
 }
 void mixed_wait_contracts() {
     using namespace azazel6;
@@ -342,6 +375,7 @@ void callback_wait_contracts() {
 int main() {
     try {
         wait_contracts();
+        framebuffer_readback_contracts();
         mixed_wait_contracts();
         short_timeout_budget();
         clock_context_boundaries();
