@@ -37,8 +37,8 @@ with another 96,000-microsecond timeout.
 The modeled timeout error `0x800201A8` is signed-negative, so it follows this
 retry path. **VERIFIED static:** returning timeout does not let this worker pass
 the READY gate. **CONDITIONAL prediction:** if native execution resumes this
-worker with that error, its next import is the currently unsupported delay
-service. The order of activity in other runnable threads is not established by
+worker with that error, its next import is the delay service (now modeled for
+this duration with synthetic verification). The order of activity in other runnable threads is not established by
 this inspection.
 
 A nonnegative wait result instead checks a field at offset 8 in the worker's
@@ -55,9 +55,20 @@ Neither the success path nor the retry path was executed during this analysis.
 
 ## Consequence and next evidence
 
-**PLANNED:** model a bounded delay service using the existing shared guest
-timeline and test it synthetically before any native continuation. This can
-make the empty-drive retry behavior accurate; it cannot make a medium READY.
+**VERIFIED synthetic:** the observed 96,000-us `sceKernelDelayThread` call now
+suspends its caller on the existing guest timeline and returns zero at the modeled
+deadline. Other durations stop pending separate evidence. Interrupt-context or
+interrupt-disabled calls reject without scheduling a wait.
+
+**DOCUMENTED reference policy:** PPSSPP revision
+`cf17b0ac7966ba4b172a32340333d209a2d747e7`,
+[`Core/HLE/sceKernelThread.cpp`](https://github.com/hrydgard/ppsspp/blob/cf17b0ac7966ba4b172a32340333d209a2d747e7/Core/HLE/sceKernelThread.cpp),
+adds 10 us for delays above its short-delay threshold and uses a non-callback
+wait. The narrow profile models a 96,010-us deadline accordingly. It does not
+model the reference's CPU cycle cost, short-delay behavior or full scheduler,
+and makes no hardware timing claim. Synthetic tests verify context restoration,
+five intervening LCD edges plus the final deadline event, and invalid-context
+rejection. The modeled delay cannot make a medium READY.
 
 **BLOCKED media progression:** this worker requires a nonnegative drive-state
 result to leave its retry loop, and one subsequent path performs file/device

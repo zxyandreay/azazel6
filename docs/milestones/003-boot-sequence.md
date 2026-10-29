@@ -81,3 +81,9 @@ Callback-owning UMD callers, media access and runnable guest time remain unsuppo
 helper with file/device operations. Empty-drive timeouts cannot carry this worker
 past the media gate. See [bounded analysis](../research/umd-wait-continuation.md);
 this does not establish the next execution order of other threads.
+
+The observed retry delay now has a restricted HLE contract and synthetic tests.
+It returns zero only after a 96,010-us modeled deadline (96,000-us request plus
+the documented reference overhead), preserving VBLANK ordering and caller context.
+This makes the retry dependency testable without claiming media readiness or
+native execution beyond the previously recorded checkpoint.

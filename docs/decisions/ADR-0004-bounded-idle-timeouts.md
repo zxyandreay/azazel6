@@ -50,3 +50,9 @@ Additional synthetic regressions cover simultaneous display/timeout waiters at
 lower, equal and higher priorities; subframe budget exhaustion without advancing
 an LCD frame; empty clock advances; and rejection of copied CPU contexts.
 The probe reports idle events separately from idle frames.
+
+The statically observed UMD retry's non-callback thread delay also uses this
+queue. Its 96,000-us request uses the documented PPSSPP policy of 10-us extra
+delay; see [provenance and limits](../research/umd-wait-continuation.md).
+This models the wait deadline only, not runnable CPU execution cost. Other
+delay durations remain rejecting pending separate evidence.

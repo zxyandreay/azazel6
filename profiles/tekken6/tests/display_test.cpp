@@ -160,6 +160,39 @@ void clock_context_boundaries() {
         }
     }
 }
+void startup_delay_contracts() {
+    using namespace azazel6;
+    for (unsigned scenario = 0; scenario < 5; ++scenario) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+        auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+            0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+        auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+        auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+        auto display = register_display_hle(*rt, threads, delivery, 8);
+        auto& c = rt->cpu();
+        c.pc = 0x08001000u; c.gpr[31] = 0x08001004u; c.gpr[16] = 99; c.vfpu[127] = 42;
+        c.gpr[4] = scenario == 1 ? 0 : scenario == 2 ? 1 : 96000;
+        if (scenario == 3) threads->enter_interrupt();
+        if (scenario == 4) rt->invoke_import("Kernel_Library", 0x092968F4u, c);
+        rt->invoke_import("ThreadManForUser", 0xCEADEB47u, c);
+        if (scenario) {
+            check(rt->stopped() && !threads->next_timeout() && display->clock.ticks() == 0 &&
+                  threads->current_uid() == kBootstrapUid, "Rejected delay mutated scheduler");
+            continue;
+        }
+        check(!rt->stopped() && threads->current_uid() == 0 && display->clock.ticks() == 0,
+              "Delay returned immediately");
+        rt->register_function(0x08001004u, [](auto& runtime, auto&) {
+            runtime.stop("synthetic delay complete");
+        }, "synthetic_delay_return");
+        rt->run(c.pc, 16);
+        check(rt->stop_reason() == "synthetic delay complete" && display->clock.microseconds() == 96010 &&
+              c.gpr[2] == 0 && c.gpr[16] == 99 && c.vfpu[127] == 42 && !threads->next_timeout() &&
+              display->idle_frames() == 5 && display->idle_events() == 6,
+              "Delay deadline, context or LCD ordering");
+    }
+}
 void event_contracts(bool idle, bool timed = false) {
     using namespace azazel6;
     auto rt = std::make_unique<psprecomp::Runtime>();
@@ -379,6 +412,7 @@ int main() {
         mixed_wait_contracts();
         short_timeout_budget();
         clock_context_boundaries();
+        startup_delay_contracts();
         event_contracts(false);
         event_contracts(true);
         event_contracts(true, true);

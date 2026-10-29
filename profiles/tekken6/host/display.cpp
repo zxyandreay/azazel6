@@ -91,6 +91,16 @@ std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
     auto state = std::make_shared<DisplayState>();
     state->runtime_ = &rt; state->threads_ = std::move(threads); state->interrupts_ = std::move(interrupts);
     state->idle_limit_ = idle_frame_budget;
+    rt.register_hle("ThreadManForUser", 0xCEADEB47u, [state](auto& runtime, auto& c) {
+        // Exact duration observed statically in the UMD retry worker. Other
+        // durations need separate minimum-delay/rounding evidence.
+        if (c.gpr[4] != 96000u) {
+            runtime.stop("Unsupported startup thread delay duration"); return;
+        }
+        // DOCUMENTED PPSSPP delay policy adds 10 us above the short-delay
+        // threshold. This is a bounded research model, not measured CPU time.
+        state->wait_timeout(runtime, c, c.gpr[4] + 10u, 0);
+    });
     rt.register_hle("ThreadManForUser", 0x369ED59Du, [state](auto&, auto& c) {
         // Global time is readable during GE/VBLANK interrupts. It comes only
         // from the explicit guest event producer, never host time or read count.

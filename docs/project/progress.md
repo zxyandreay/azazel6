@@ -18,6 +18,7 @@ Azazel6 is not playable. See
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; source-only lightweight-mutex creation initializes the guest workarea; waits/timeouts and later lightweight-mutex operations remain rejecting |
 | Semaphore lifecycle | VERIFIED bounded creation, immediate count consumption and FIFO blocking handoff to the scheduler; signaling, deletion, priority waits and timeouts remain unimplemented |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
+| Startup thread delay | VERIFIED synthetic observed 96,000-us non-callback delay, with documented reference 10-us overhead on the shared idle timeline; other durations and runnable CPU accounting remain unsupported |
 | Clock conversion | VERIFIED unsigned immediate and pointer-form microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
 | System-time query | VERIFIED low and wide microseconds plus current Hcount from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
 | Power services | VERIFIED immutable nominal startup PLL/CPU/bus reads at 222/222/111 MHz plus owned callback-slot registration and queued initial `0x10E4` notification; delivery, host clocks, clock transitions and timing rescale remain unimplemented |
