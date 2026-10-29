@@ -8,8 +8,8 @@
 | Executable/code boundaries | RWX segment mixes code/data; heuristic false positives | Feed verified import stubs and code ranges to generation |
 | Dynamic code | Two PRX resources and module imports | Trace module loads and writes followed by execution |
 | Complete HLE service set | 268 statically enumerated imports | Trace order and behavior; dynamic modules may add services |
-| Vulkan/GE compatibility | VERIFIED EDRAM size query and owned finish callback; startup reaches VBLANK registration; no renderer | Begin [Milestone 004](../milestones/004-graphics-input.md): display events, bounded GE lists and stock rendering |
+| Vulkan/GE compatibility | VERIFIED bounded GE initialization, callbacks and VRAM clears; general drawing/presentation remains open | Continue [Milestone 004](../milestones/004-graphics-input.md): observed drawing subset and guest input |
 | Gameplay memory/host stack | VERIFIED shared ownership of image-excluding arenas, stacks, partition blocks and one-block fixed pools | Measure stack high-water marks and validate broader pool/overlay lifetimes |
 | Jin8 freezes | DOCUMENTED multiple failing moves, unproven cause | Multi-move paused CPU/state comparison, no speculative patch |
 | PPSSPP performance advantage | Unmeasured | Matched-device A/B after stock combat works |
-| Android application | Native compile succeeds, no APK/device run | Build lifecycle-aware host once boot dependencies are implemented |
+| Android application | VERIFIED synthetic SDL/Vulkan APK and prior AVD input/lifecycle runs; no game scene or physical-device result | Connect guest rendering/input and verify on physical ARM64 hardware |

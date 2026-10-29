@@ -65,6 +65,11 @@ caller until its deadline on the shared LCD timeline. Context restoration,
 VBLANK ordering and rejecting unsupported configurations are tested. See
 [ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md).
 
+Mixed timeout/display waiters now wake in one batch, preserving scheduler priority
+selection even when deadlines coincide without an installed interrupt handler.
+Short timeouts consume the bounded idle-event budget independently of LCD frames.
+These are synthetic kernel/display integration results shared with Milestone 004.
+
 **BLOCKED native continuation:** the standing source-only environment instruction
 blocks real-input analysis/execution. This change was tested with synthetic
 fixtures only; no later native checkpoint or title progress is claimed. Establishing

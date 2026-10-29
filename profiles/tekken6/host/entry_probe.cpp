@@ -158,6 +158,7 @@ int main(int argc, char** argv) {
         std::cout << "display_buffer_requests=" << display->buffer_requests
                   << " display_frames=" << display->clock.frames()
                   << " display_idle_frames=" << display->idle_frames()
+                  << " display_idle_events=" << display->idle_events()
                   << " display_mode_set=" << display->mode_set
                   << " display_latch_pending=" << display->buffers.pending() << std::endl;
         std::cout << "language=" << language->language << " confirm_button=" << language->confirm_button

@@ -46,16 +46,28 @@ bool ThreadRegistry::wait_timeout(psprecomp::Runtime& rt, psprecomp::AllegrexCon
     return true;
 }
 void ThreadRegistry::wake_timeouts(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint64_t ticks) {
-    auto wake = [ticks](GuestThread& thread) {
+    wake_clock(rt, c, ticks, std::nullopt);
+}
+void ThreadRegistry::wake_clock(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c,
+                                std::uint64_t ticks, std::optional<std::uint64_t> display_edge) {
+    bool changed = false;
+    auto wake = [ticks, display_edge, &changed](GuestThread& thread) {
         if (thread.status == ThreadStatus::Waiting && thread.timeout_deadline && *thread.timeout_deadline <= ticks) {
             thread.timeout_deadline.reset();
             thread.context.set_gpr(2, thread.timeout_result);
             thread.status = ThreadStatus::Ready;
+            changed = true;
+        } else if (thread.status == ThreadStatus::Waiting && display_edge && thread.display_deadline &&
+                   *thread.display_deadline <= *display_edge) {
+            thread.display_deadline.reset();
+            thread.context.set_gpr(2, 0);
+            thread.status = ThreadStatus::Ready;
+            changed = true;
         }
     };
     wake(bootstrap_);
     for (auto& thread : threads_) wake(thread);
-    reschedule(rt, c);
+    if (changed) reschedule(rt, c);
 }
 bool ThreadRegistry::wait_display(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint64_t edge) {
     auto* thread = find(current_uid_);

@@ -38,6 +38,95 @@ void wait_contracts() {
     rt->invoke_import("Kernel_Library", 0x092968F4u, c);
     check(!threads->wait_display(*rt, c, 4) && rt->stopped(), "Wait while interrupts suspended");
 }
+void mixed_wait_contracts() {
+    using namespace azazel6;
+    for (const auto priority : {16u, 32u, 48u}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+        auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+            0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+        auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+        auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+        auto display = register_display_hle(*rt, threads, delivery, 3);
+        rt->register_function(0x08001000u, [](auto&, auto&) {}, "synthetic_worker");
+        auto& c = rt->cpu();
+        c.gpr[4] = 0x08004000u; c.gpr[5] = 0x08001000u; c.gpr[6] = priority;
+        c.gpr[7] = 1024; c.gpr[8] = 0; c.gpr[9] = 0;
+        rt->invoke_import("ThreadManForUser", kCreateThreadNid, c);
+        const auto child = c.gpr[2];
+        c.gpr[4] = child; c.gpr[5] = 0; c.gpr[6] = 0;
+        rt->invoke_import("ThreadManForUser", kStartThreadNid, c);
+        // A higher-priority child runs first; block each on its respective event.
+        for (int i = 0; i < 2; ++i) {
+            if (threads->current_uid() == kBootstrapUid) {
+                c.gpr[31] = 0x08001004u; c.gpr[16] = 11;
+                check(threads->wait_display(*rt, c, 3), "Bootstrap display wait");
+            } else {
+                check(threads->current_uid() == child, "Child not scheduled");
+                c.gpr[31] = 0x08001008u; c.gpr[16] = 22;
+                check(display->wait_timeout(*rt, c, 50050, 0x800201A8u), "Child timed wait");
+            }
+        }
+        check(!rt->stopped() && threads->can_idle_display(), "Mixed wait did not idle");
+        display->buffers.set(rt->memory(), {0x04000000u, 512, 3}, 1);
+        display->advance_idle(*rt);
+        display->advance_idle(*rt);
+        check(threads->current_uid() == 0 && display->idle_frames() == 2, "Mixed wait woke early");
+        display->advance_idle(*rt);
+        const bool child_first = priority < 32;
+        check(!rt->stopped() && threads->current_uid() == (child_first ? child : kBootstrapUid) &&
+              c.pc == (child_first ? 0x08001008u : 0x08001004u) &&
+              c.gpr[16] == (child_first ? 22u : 11u) &&
+              c.gpr[2] == (child_first ? 0x800201A8u : 0u),
+              "Clock event scheduled before all waiters were ready");
+        check(!threads->next_timeout() && display->buffers.current().address == 0x04000000u &&
+              display->idle_events() == 3, "Clock event left stale timeout or framebuffer");
+    }
+}
+void short_timeout_budget() {
+    using namespace azazel6;
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+    auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+        0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+    auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+    auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+    auto display = register_display_hle(*rt, threads, delivery, 2);
+    auto& c = rt->cpu();
+    for (int i = 0; i < 2; ++i) {
+        c.gpr[31] = 0x08001004u;
+        check(display->wait_timeout(*rt, c, 1, 0), "Short timeout setup");
+        display->advance_idle(*rt);
+    }
+    check(display->idle_events() == 2 && display->idle_frames() == 0 && display->clock.ticks() == 36,
+          "Subframe timeouts not charged to event budget");
+    check(display->wait_timeout(*rt, c, 1, 0), "Final short timeout setup");
+    rejects([&] { display->advance_idle(*rt); }, "Subframe events escaped idle budget");
+    check(display->clock.ticks() == 36 && threads->current_uid() == 0 &&
+          threads->next_timeout() == 54, "Budget rejection mutated wait state");
+}
+void clock_context_boundaries() {
+    using namespace azazel6;
+    for (bool bootstrap : {false, true}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+        auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+            0x08001000u, 0x08002000u, 0x08003000u, bootstrap ? 32u : 0u, bootstrap ? 4096u : 0u}, allocator);
+        auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+        auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+        auto display = register_display_hle(*rt, threads, delivery);
+        // An event that wakes nobody must not invoke the scheduler or stop an empty host.
+        display->advance(*rt, 0);
+        display->advance(*rt, 1);
+        check(!rt->stopped() && display->clock.ticks() == 1, "Empty clock advance scheduled guest work");
+        if (bootstrap) {
+            auto foreign = rt->cpu();
+            check(!display->wait_timeout(*rt, foreign, 1, 0) && rt->stopped() &&
+                  threads->current_uid() == kBootstrapUid && !threads->next_timeout() &&
+                  display->clock.ticks() == 1, "Foreign CPU context entered timed wait");
+        }
+    }
+}
 void event_contracts(bool idle, bool timed = false) {
     using namespace azazel6;
     auto rt = std::make_unique<psprecomp::Runtime>();
@@ -253,6 +342,9 @@ void callback_wait_contracts() {
 int main() {
     try {
         wait_contracts();
+        mixed_wait_contracts();
+        short_timeout_budget();
+        clock_context_boundaries();
         event_contracts(false);
         event_contracts(true);
         event_contracts(true, true);

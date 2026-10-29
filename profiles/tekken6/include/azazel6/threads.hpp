@@ -77,6 +77,8 @@ public:
     [[nodiscard]] std::optional<std::uint64_t> next_timeout() const;
     bool wait_timeout(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t deadline, std::uint32_t result);
     void wake_timeouts(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t ticks);
+    void wake_clock(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t ticks,
+                    std::optional<std::uint64_t> display_edge);
     bool enter_interrupt();
     void leave_interrupt();
     bool wait_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t edge);

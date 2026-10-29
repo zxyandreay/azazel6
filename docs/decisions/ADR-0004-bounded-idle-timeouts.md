@@ -15,7 +15,11 @@ tick deadline and completion result. The explicit idle producer advances only
 when all threads are blocked, to the earlier of the next LCD edge and earliest
 thread deadline. External advances also reject skipping a deadline. At a shared
 edge, interrupt dispatch precedes timeout/display wakeups; the scheduler defers
-thread dispatch until interrupt return. Each idle advance consumes the existing
+thread dispatch until interrupt return. Timeout and display waiters at one edge
+become ready in one batch before the scheduler selects a thread. The framebuffer
+latch is published before that selection. Equal priorities use the existing
+scheduler traversal order, rather than timeout-versus-display wake order.
+Each idle advance consumes the existing
 configured event budget, including advances that do not cross an LCD edge.
 The reported idle-frame count continues to count LCD edges only.
 
@@ -41,3 +45,8 @@ tests cover a timeout exactly coincident with VBLANK and handler restoration.
 Rejection tests cover missing activation/clock, unsupported state, zero duration,
 owned callbacks and disabled/interrupt context. Real-input execution was not run
 for this change; the prior native checkpoint remains historical evidence.
+
+Additional synthetic regressions cover simultaneous display/timeout waiters at
+lower, equal and higher priorities; subframe budget exhaustion without advancing
+an LCD frame; empty clock advances; and rejection of copied CPU contexts.
+The probe reports idle events separately from idle frames.

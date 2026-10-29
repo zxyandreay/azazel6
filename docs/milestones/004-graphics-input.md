@@ -1,6 +1,6 @@
 # Milestone 004: graphics and input
 
-**IN PROGRESS, 2026-10-22.** The bounded native startup completes registration and
+**IN PROGRESS, reviewed 2026-10-29.** The bounded native startup completes registration and
 enable of its VBLANK handler. The [display foundation](../research/display-foundation.md)
 adds synthetic clock, interrupt delivery, wait/cancellation and framebuffer contracts.
 No visual gate is complete. At the initial handoff, startup reached registration of
@@ -45,6 +45,13 @@ integration gap; see [reuse evidence](../research/portablekit.md).
 
 ## Implementation checkpoint
 
+- **VERIFIED synthetic (2026-10-29):** simultaneous display and timeout waits
+  become ready together before priority selection. The framebuffer latch is
+  published before thread selection, and existing VBLANK handler restoration
+  contracts pass. Subframe timeout events are bounded independently of LCD
+  frames; copied CPU contexts cannot enter timed waits. This advances the shared
+  Milestone 003/004 scheduler foundation, not game drawing or title boot.
+
 - **VERIFIED:** observed VBLANK registration/enable, handler AOT coverage and
   synthetic full-context delivery on an owned stack.
 - **VERIFIED:** exact rational LCD event clock, VBLANK phases, waiting/cancellation
@@ -80,6 +87,10 @@ integration gap; see [reuse evidence](../research/portablekit.md).
   attached hardware. Game drawing and menu input remain unimplemented; the
   milestone is not ready to advance to stock combat.
 
+The following detailed startup sequence is historical; see the
+[current startup checkpoint](003-boot-sequence.md) for the latest 501-root
+native evidence and the separately verified synthetic timeout work.
+
 The event scheduler now queues both observed worker waits, with checked FIFO
 wakeup, cancellation and output ownership. The explicit research idle producer resumes the graphics thread after one
 VBLANK and completes the first GE initialization list and the stock display-mode wait
@@ -99,9 +110,12 @@ The cleanup callback remains terminal and has not executed. See the
 [guarded diagnostic](../research/startup-indirect-2026-10-22.md).
 See [continued coverage](../research/ge-lists.md).
 
-Validation: 70 Python tests, 18 integrated CTest suites, Android ARM64
+Historical validation at that checkpoint: 70 Python tests, 18 integrated CTest suites, Android ARM64
 cross-compilation and synthetic APK build/signature/alignment checks pass.
 Raw traces, translations, APKs and debug keys remain local.
+
+Current Linux source validation: 83 Python tests and 24 CTest suites. Android
+build/AVD results above are prior evidence, not reruns in this cloud workspace.
 
 ## Exit evidence
 

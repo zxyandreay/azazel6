@@ -115,7 +115,7 @@ std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
 bool DisplayState::wait_timeout(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c,
                                 std::uint32_t microseconds, std::uint32_t result) {
     const auto delta = static_cast<std::uint64_t>(microseconds) * (DisplayClock::ticks_per_second / 1000000);
-    if (&rt != runtime_ || !delta || delta > std::numeric_limits<std::uint64_t>::max() - clock.ticks()) {
+    if (&rt != runtime_ || &c != &rt.cpu() || !delta || delta > std::numeric_limits<std::uint64_t>::max() - clock.ticks()) {
         rt.stop("Invalid timed-wait clock ownership, duration or overflow"); return false;
     }
     return threads_->wait_timeout(rt, c, clock.ticks() + delta, result);
@@ -148,8 +148,8 @@ void DisplayState::advance(psprecomp::Runtime& rt, std::uint64_t ticks) {
     interrupts_->raise_vblank();
     interrupts_->dispatch(rt, rt.cpu());
     if (rt.stopped()) return;
-    threads_->wake_timeouts(rt, rt.cpu(), clock.ticks());
-    threads_->wake_display(rt, rt.cpu(), clock.frames());
     buffers.vblank();
+    // Publish all state for this event before selecting a runnable thread.
+    threads_->wake_clock(rt, rt.cpu(), clock.ticks(), clock.frames());
 }
 }

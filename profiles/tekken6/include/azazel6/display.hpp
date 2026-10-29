@@ -58,6 +58,7 @@ public:
     void advance_idle(psprecomp::Runtime&);
     bool wait_timeout(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint32_t microseconds, std::uint32_t result);
     [[nodiscard]] std::uint64_t idle_frames() const noexcept { return idle_frames_; }
+    [[nodiscard]] std::uint64_t idle_events() const noexcept { return idle_events_; }
 private:
     friend std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
         std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>, std::uint64_t);
