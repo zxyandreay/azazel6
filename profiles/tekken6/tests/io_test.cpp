@@ -75,8 +75,37 @@ void wlan_address_contract() {
     }
 }
 
+void umd_activation_contract() {
+    Fixture f; auto& c = f.rt->cpu();
+    constexpr std::uint32_t drive = 0x08004040u;
+    const char name[] = "disc0:";
+    for (unsigned i = 0; i < sizeof(name); ++i) f.rt->memory().store8(drive + i, name[i]);
+    c.gpr[4] = 1; c.gpr[5] = drive;
+    f.rt->invoke_import("sceUmdUser", kUmdActivateNid, c);
+    require(!f.rt->stopped() && c.gpr[2] == 0 && f.io->umd_activated &&
+            f.io->umd_activation_count == 1, "UMD activation return");
+
+    for (const auto [mode, pointer] : {std::pair{0u, drive}, {3u, drive},
+                                      {1u, 0u}, {1u, 0x09FFFFFFu}}) {
+        Fixture rejected; auto& rc = rejected.rt->cpu(); rc.gpr[4] = mode; rc.gpr[5] = pointer;
+        rejected.rt->invoke_import("sceUmdUser", kUmdActivateNid, rc);
+        require(!rejected.rt->stopped() && rc.gpr[2] == 0x80010016u &&
+                !rejected.io->umd_activated && rejected.io->umd_activation_count == 0,
+                "Invalid UMD activation mutated state");
+    }
+    Fixture mode_two; mode_two.rt->cpu().gpr[4] = 2; mode_two.rt->cpu().gpr[5] = drive;
+    mode_two.rt->invoke_import("sceUmdUser", kUmdActivateNid, mode_two.rt->cpu());
+    require(mode_two.rt->stopped() && !mode_two.io->umd_activated,
+            "Unsupported UMD activation mode mutated state");
+    Fixture wrong; wrong.rt->memory().store8(drive, 'x');
+    wrong.rt->cpu().gpr[4] = 1; wrong.rt->cpu().gpr[5] = drive;
+    wrong.rt->invoke_import("sceUmdUser", kUmdActivateNid, wrong.rt->cpu());
+    require(wrong.rt->cpu().gpr[2] == 0x80010016u && !wrong.io->umd_activated,
+            "Unsupported UMD drive accepted");
+}
+
 int main() {
-    try { registration_contract(); rejection_contracts(); wlan_address_contract();
+    try { registration_contract(); rejection_contracts(); wlan_address_contract(); umd_activation_contract();
           std::cout << "Source-only startup I/O contracts passed\n"; }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

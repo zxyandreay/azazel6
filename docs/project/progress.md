@@ -24,6 +24,7 @@ Azazel6 is not playable. See
 | Controller settings | VERIFIED runtime-local idle-cancel thresholds, including signed `-1` and checked 0..128 values; guest pad sampling remains unimplemented |
 | Startup device control | VERIFIED source-only `fatms0:` callback ownership registration with checked live-stack input; no host path, media state, capacity, file or callback delivery |
 | Startup WLAN identity | VERIFIED one fixed locally administered unicast address copied only to a checked live caller stack; no host networking or connectivity |
+| UMD activation | VERIFIED checked mode-1 `disc0:` activation state only; no medium, host path, filesystem or readable state; timed drive-state waits remain unimplemented |
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
@@ -39,7 +40,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 501-root slice covers 32,210 words, executes two clears (261,120 pixel positions), reaches eight display frames and seven Complete GE lists, reads the fixed WLAN address once, creates one lightweight mutex and starts a VFPU worker, then stops at the intentionally unsupported `sceUmdActivate` media boundary; no scene is presented |
+| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 501-root slice covers 32,210 words, executes two clears (261,120 pixel positions), reaches eight display frames and seven Complete GE lists, reads the fixed WLAN address once, creates one lightweight mutex and starts a VFPU worker; the worker records an empty-drive activation and stops at callback-aware timed `sceUmdWaitDriveStatCB`; no scene is presented |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

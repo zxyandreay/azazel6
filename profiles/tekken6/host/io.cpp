@@ -58,6 +58,32 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
             ++state->wlan_address_reads;
             c.set_gpr(2, 0);
         });
+    rt.nids().add("sceUmdUser", kUmdActivateNid, "sceUmdActivate");
+    rt.register_hle("sceUmdUser", kUmdActivateNid,
+        [state, threads](auto& runtime, auto& c) {
+            const auto current = threads->current_thread();
+            if (!current || current->status != ThreadStatus::Running || !threads->interrupts_enabled()) {
+                runtime.stop("UMD activation requires a running thread with interrupts enabled"); return;
+            }
+            if (c.gpr[4] < 1 || c.gpr[4] > 2) { c.set_gpr(2, 0x80010016u); return; }
+            if (c.gpr[4] != 1) { runtime.stop("Unsupported UMD activation mode"); return; }
+            constexpr std::array<std::uint8_t, 7> drive{'d', 'i', 's', 'c', '0', ':', 0};
+            const auto end = static_cast<std::uint64_t>(c.gpr[5]) + drive.size();
+            const auto ram_end = psprecomp::GuestMemory::kPhysicalBase +
+                static_cast<std::uint64_t>(runtime.memory().size());
+            if (c.gpr[5] < psprecomp::GuestMemory::kPhysicalBase || end > ram_end) {
+                c.set_gpr(2, 0x80010016u); return;
+            }
+            for (std::size_t i = 0; i < drive.size(); ++i)
+                if (runtime.memory().load8(c.gpr[5] + static_cast<std::uint32_t>(i)) != drive[i]) {
+                    c.set_gpr(2, 0x80010016u); return;
+                }
+            state->umd_activated = true;
+            ++state->umd_activation_count;
+            c.set_gpr(2, 0);
+            // Activation records the empty drive mount only. No medium, host path,
+            // filesystem or readable state is supplied by this source-only host.
+        });
     return state;
 }
 } // namespace azazel6

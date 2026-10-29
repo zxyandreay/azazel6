@@ -166,6 +166,8 @@ int main(int argc, char** argv) {
                   << " exit_callback=" << hex32(threads->exit_callback()) << std::endl;
         std::cout << "fatms_callback_count=" << io->fatms_callbacks.size() << std::endl;
         std::cout << "wlan_address_reads=" << io->wlan_address_reads << std::endl;
+        std::cout << "umd_activated=" << io->umd_activated
+                  << " umd_activation_count=" << io->umd_activation_count << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {
             const auto arg0 = rt->cpu().gpr[4];
             std::cout << "indirect_arg0=" << hex32(arg0) << " v0=" << hex32(rt->cpu().gpr[2])

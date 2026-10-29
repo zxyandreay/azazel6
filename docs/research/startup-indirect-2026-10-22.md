@@ -545,7 +545,7 @@ from `0x0889B5F8`; static inspection stops at its indirect transfer
 startup evidence, not title boot, scene presentation, controller input or
 gameplay.
 
-## Callback dispatch, source-only identity and media boundary (2026-10-28)
+## Callback dispatch, source-only identity and media boundary (2026-10-28–29)
 
 **VERIFIED:** the exact input still hashes to
 `e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f`.
@@ -563,11 +563,18 @@ socket, or establishes connectivity. The exact bounded path reads it once.
 
 The continued callback chain initializes one lightweight mutex workarea and
 creates a priority-32 worker with the observed VFPU thread attribute. Both
-contracts retain runtime-local ownership and checked guest-memory writes. The
-worker reaches `sceUmdActivate` at stub `0x08B89420`, return address
-`0x08AA2A5C`. That import remains intentionally unsupported: reporting success
-would fabricate media availability, while real media access is outside this
-source-only run.
+contracts retain runtime-local ownership and checked guest-memory writes. A
+source-only `sceUmdActivate` contract validates mode 1 and the complete
+`disc0:` name, then records activation without supplying a medium, host path,
+filesystem or readable state. Invalid modes, names and ranges fail atomically;
+the valid call never inspects external media.
+
+The worker advances through that call to `sceUmdWaitDriveStatCB` at stub
+`0x08B89410`, return address `0x08AA2A78`, requesting READY (`0x20`) with a
+96,000-microsecond timeout. This remains the research boundary because the
+current scheduler has no callback-aware timed-wait queue. Returning READY would
+fabricate media, while returning an immediate timeout would fabricate elapsed
+guest time.
 
 The bounded counters reach eight display frames, seven Complete GE lists, 239
 retained GE state writes, 24 system-time reads and 133,466 guest microseconds.
