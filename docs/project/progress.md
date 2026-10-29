@@ -26,6 +26,7 @@ Azazel6 is not playable. See
 | Startup WLAN identity | VERIFIED one fixed locally administered unicast address copied only to a checked live caller stack; no host networking or connectivity |
 | UMD activation | VERIFIED checked mode-1 `disc0:` activation state only; no medium, host path, filesystem or readable state; finite READY waits for callback-free callers now have synthetic timeout coverage |
 | Idle timeouts | VERIFIED synthetic deadlines ordered with LCD edges, batched timeout/display wakeups, priority selection, subframe event budgets and preserved thread context; no runnable CPU time or callback delivery; see [ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md) |
+| UMD continuation | VERIFIED bounded static analysis: negative wait results take a 96,000-us delay/retry path; one success path requires file/device operations. No execution after the timeout implementation; see [analysis](../research/umd-wait-continuation.md) |
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |

@@ -34,6 +34,7 @@ Reviewed 2026-10-28. Evidence labels apply to individual claims:
 - [Source inventory and revisions](research/sources.md)
 - [Executable and PSP imports](research/executable.md)
 - [Startup imports and thread boundary](research/startup-imports.md)
+- [UMD wait continuation and media prerequisite](research/umd-wait-continuation.md)
 - [Dormant threads and StartThread boundary](research/dormant-threads.md)
 - [Thread startup and bootstrap handoff](research/thread-startup.md)
 - [Shared partition memory](research/partition-memory.md)

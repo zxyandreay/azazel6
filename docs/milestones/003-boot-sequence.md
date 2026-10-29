@@ -70,8 +70,14 @@ selection even when deadlines coincide without an installed interrupt handler.
 Short timeouts consume the bounded idle-event budget independently of LCD frames.
 These are synthetic kernel/display integration results shared with Milestone 004.
 
-**BLOCKED native continuation:** the standing source-only environment instruction
-blocks real-input analysis/execution. This change was tested with synthetic
+**BLOCKED native execution:** bounded static analysis of the existing local EBOOT
+is now authorized; execution remains outside that authorization. The timeout change was tested with synthetic
 fixtures only; no later native checkpoint or title progress is claimed. Establishing
 the next observed startup dependency requires an authorized bounded native run.
 Callback-owning UMD callers, media access and runnable guest time remain unsupported.
+
+**VERIFIED static follow-up:** the negative UMD wait result enters a 96,000-us
+`sceKernelDelayThread` retry loop. A nonnegative result can lead to an unregistered
+helper with file/device operations. Empty-drive timeouts cannot carry this worker
+past the media gate. See [bounded analysis](../research/umd-wait-continuation.md);
+this does not establish the next execution order of other threads.
