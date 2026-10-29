@@ -15,7 +15,7 @@ reaches eight display frames and completes seven GE lists. Two GE clears write
 profile, registers checked source-only `fatms0:` callback ownership and a fixed
 local WLAN identity, creates one lightweight mutex and starts a priority-32 VFPU
 worker. That worker records a valid `disc0:` activation request without supplying
-media or a host filesystem. The new boundary is the callback-aware
+media or a host filesystem. The last native checkpoint boundary is the callback-aware
 96,000-microsecond `sceUmdWaitDriveStatCB` wait for READY; title boot remains
 open. See
 [current startup evidence](../research/startup-indirect-2026-10-22.md),
@@ -57,3 +57,16 @@ transfers and size limits require explicit review. It has been executed on the
 exact local input during the [graphics startup continuation](../research/startup-indirect-2026-10-22.md),
 alongside synthetic regressions. Those verified coverage increments preserve
 this milestone's open title-screen gate.
+
+## Source-only timeout checkpoint (2026-10-29)
+
+**VERIFIED synthetic:** finite empty-drive READY waits now suspend a callback-free
+caller until its deadline on the shared LCD timeline. Context restoration,
+VBLANK ordering and rejecting unsupported configurations are tested. See
+[ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md).
+
+**BLOCKED native continuation:** the standing source-only environment instruction
+blocks real-input analysis/execution. This change was tested with synthetic
+fixtures only; no later native checkpoint or title progress is claimed. Establishing
+the next observed startup dependency requires an authorized bounded native run.
+Callback-owning UMD callers, media access and runnable guest time remain unsupported.

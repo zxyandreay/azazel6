@@ -1,6 +1,7 @@
 #include "azazel6/display.hpp"
 #include "psprecomp/common.hpp"
 #include <limits>
+#include <algorithm>
 
 namespace azazel6 {
 std::vector<std::uint64_t> DisplayClock::advance(std::uint64_t delta) {
@@ -111,12 +112,27 @@ std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime& rt,
     });
     return state;
 }
+bool DisplayState::wait_timeout(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c,
+                                std::uint32_t microseconds, std::uint32_t result) {
+    const auto delta = static_cast<std::uint64_t>(microseconds) * (DisplayClock::ticks_per_second / 1000000);
+    if (&rt != runtime_ || !delta || delta > std::numeric_limits<std::uint64_t>::max() - clock.ticks()) {
+        rt.stop("Invalid timed-wait clock ownership, duration or overflow"); return false;
+    }
+    return threads_->wait_timeout(rt, c, clock.ticks() + delta, result);
+}
 void DisplayState::advance_idle(psprecomp::Runtime& rt) {
-    if (!idle_limit_ || idle_frames_ >= idle_limit_) throw psprecomp::Error("Idle display frame budget exhausted");
+    if (!idle_limit_ || idle_events_ >= idle_limit_) throw psprecomp::Error("Idle display frame budget exhausted");
     if (!threads_->can_idle_display() || rt.cpu().pc != kDisplayIdleGate)
-        throw psprecomp::Error("Idle display advance requires all threads blocked and a display waiter");
-    advance(rt, DisplayClock::ticks_per_frame - clock.ticks() % DisplayClock::ticks_per_frame);
-    ++idle_frames_;
+        throw psprecomp::Error("Idle display advance requires all threads blocked and a display or timed waiter");
+    auto delta = DisplayClock::ticks_per_frame - clock.ticks() % DisplayClock::ticks_per_frame;
+    if (const auto deadline = threads_->next_timeout()) {
+        if (*deadline <= clock.ticks()) throw psprecomp::Error("Stale timed wait deadline");
+        delta = std::min(delta, *deadline - clock.ticks());
+    }
+    const auto before = clock.frames();
+    advance(rt, delta);
+    idle_frames_ += clock.frames() - before;
+    ++idle_events_;
 }
 void DisplayState::advance(psprecomp::Runtime& rt, std::uint64_t ticks) {
     if (&rt != runtime_) throw psprecomp::Error("Display runtime ownership mismatch");
@@ -124,11 +140,15 @@ void DisplayState::advance(psprecomp::Runtime& rt, std::uint64_t ticks) {
         throw psprecomp::Error("Display advance requires a completed interrupt boundary");
     const auto next = DisplayClock::ticks_per_frame - clock.ticks() % DisplayClock::ticks_per_frame;
     if (ticks > next) throw psprecomp::Error("Display advance must yield at the next VBLANK edge");
+    if (const auto deadline = threads_->next_timeout(); deadline &&
+        (*deadline < clock.ticks() || ticks > *deadline - clock.ticks()))
+        throw psprecomp::Error("Clock advance must yield at the next timeout");
     const auto edges = clock.advance(ticks);
-    if (edges.empty()) return;
+    if (edges.empty()) { threads_->wake_timeouts(rt, rt.cpu(), clock.ticks()); return; }
     interrupts_->raise_vblank();
     interrupts_->dispatch(rt, rt.cpu());
     if (rt.stopped()) return;
+    threads_->wake_timeouts(rt, rt.cpu(), clock.ticks());
     threads_->wake_display(rt, rt.cpu(), clock.frames());
     buffers.vblank();
 }

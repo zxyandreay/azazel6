@@ -104,8 +104,73 @@ void umd_activation_contract() {
             "Unsupported UMD drive accepted");
 }
 
+void umd_timed_wait_contracts() {
+    for (const auto duration : {1u, 16683u, 16684u, 50050u, 96000u}) {
+        auto rt = std::make_unique<Runtime>();
+        auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
+        auto threads = register_thread_hle(*rt, {0x08010000u, 0x08020000u, 0x08001000u, 0x08010000u,
+            0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
+        auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
+        auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
+        auto display = register_display_hle(*rt, threads, delivery, 8);
+        auto io = register_io_startup_hle(*rt, threads, display);
+        const char name[] = "disc0:";
+        for (unsigned i = 0; i < sizeof(name); ++i) rt->memory().store8(0x08004000u + i, name[i]);
+        auto& c = rt->cpu(); c.gpr[4] = 1; c.gpr[5] = 0x08004000u;
+        rt->invoke_import("sceUmdUser", kUmdActivateNid, c);
+        c.pc = 0x08001000u; c.gpr[31] = 0x08001004u;
+        c.gpr[4] = 0x20; c.gpr[5] = duration; c.gpr[16] = 42; c.vfpu[127] = 123;
+        rt->register_function(0x08001004u, [](auto& runtime, auto&) {
+            runtime.stop("synthetic UMD timeout complete");
+        }, "synthetic_timeout_return");
+        rt->invoke_import("sceUmdUser", kUmdWaitDriveStatCBNid, c);
+        require(!rt->stopped() && threads->current_uid() == 0 && display->clock.ticks() == 0,
+                "UMD timeout returned immediately");
+        const auto deadline = static_cast<std::uint64_t>(duration) * 18;
+        if (deadline < DisplayClock::ticks_per_frame) {
+            bool rejected = false;
+            try { display->advance(*rt, deadline + 1); }
+            catch (const std::exception&) { rejected = true; }
+            require(rejected && display->clock.ticks() == 0 && threads->current_uid() == 0,
+                    "Clock skipped a timeout or mutated on rejection");
+        }
+        display->advance(*rt, 1);
+        require(threads->current_uid() == 0, "UMD timeout woke early");
+        rt->run(c.pc, 32);
+        require(rt->stop_reason() == "synthetic UMD timeout complete" &&
+                display->clock.ticks() == deadline && c.gpr[2] == 0x800201A8u &&
+                c.gpr[16] == 42 && c.vfpu[127] == 123 &&
+                threads->current_uid() == kBootstrapUid && !threads->next_timeout(),
+                "UMD timeout deadline, result or context restoration");
+    }
+    for (unsigned scenario = 0; scenario < 6; ++scenario) {
+        Fixture f; auto& c = f.rt->cpu();
+        auto interrupts = register_interrupt_hle(*f.rt, 0x08804000u, 0x08C00000u, 0x08805000u);
+        auto delivery = register_interrupt_delivery(*f.rt, interrupts, f.threads,
+            std::make_shared<GuestAllocator>(0x09020000u, 0x09030000u));
+        auto display = register_display_hle(*f.rt, f.threads, delivery, 1);
+        auto io = register_io_startup_hle(*f.rt, f.threads, display);
+        io->umd_activated = scenario != 1;
+        c.gpr[4] = scenario == 2 ? 0x10 : 0x20;
+        c.gpr[5] = scenario == 3 ? 0 : 96000;
+        if (scenario == 4) f.threads->enter_interrupt();
+        if (scenario == 5) f.rt->invoke_import("Kernel_Library", 0x092968F4u, c);
+        f.rt->invoke_import("sceUmdUser", kUmdWaitDriveStatCBNid, c);
+        require(f.rt->stopped() && f.threads->current_uid() == kBootstrapUid &&
+                !f.threads->next_timeout() && display->clock.ticks() == 0,
+                "Rejected UMD wait changed scheduler or clock");
+        if (scenario == 0) require(f.rt->stop_reason() == "UMD wait callback delivery is unimplemented",
+                                   "Owned callback was silently ignored");
+    }
+    // No implicit clock is supplied by the legacy registration path.
+    Fixture f; auto& c = f.rt->cpu(); c.gpr[4] = 0x20; c.gpr[5] = 96000;
+    f.rt->invoke_import("sceUmdUser", kUmdWaitDriveStatCBNid, c);
+    require(f.rt->stopped() && f.threads->current_uid() == kBootstrapUid &&
+            !f.threads->next_timeout(), "Unsupported UMD wait mutated scheduler");
+}
+
 int main() {
-    try { registration_contract(); rejection_contracts(); wlan_address_contract(); umd_activation_contract();
+    try { umd_timed_wait_contracts(); registration_contract(); rejection_contracts(); wlan_address_contract(); umd_activation_contract();
           std::cout << "Source-only startup I/O contracts passed\n"; }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

@@ -56,6 +56,7 @@ public:
     void advance(psprecomp::Runtime&, std::uint64_t ticks);
     // Research-only idle jump. Never converts runnable execution into elapsed time.
     void advance_idle(psprecomp::Runtime&);
+    bool wait_timeout(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint32_t microseconds, std::uint32_t result);
     [[nodiscard]] std::uint64_t idle_frames() const noexcept { return idle_frames_; }
 private:
     friend std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
@@ -63,7 +64,7 @@ private:
     psprecomp::Runtime* runtime_ = nullptr;
     std::shared_ptr<ThreadRegistry> threads_;
     std::shared_ptr<InterruptDelivery> interrupts_;
-    std::uint64_t idle_limit_ = 0, idle_frames_ = 0;
+    std::uint64_t idle_limit_ = 0, idle_frames_ = 0, idle_events_ = 0;
 };
 std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
     std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>, std::uint64_t idle_frame_budget = 0);

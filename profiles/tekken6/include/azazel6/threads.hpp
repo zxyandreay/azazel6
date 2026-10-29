@@ -30,6 +30,9 @@ struct GuestThread {
     std::uint32_t exit_status = 0;
     std::uint64_t stack_ticket = 0;
     std::optional<std::uint64_t> display_deadline;
+    // Absolute half-ticks on the shared LCD timeline; independent of display frames.
+    std::optional<std::uint64_t> timeout_deadline;
+    std::uint32_t timeout_result = 0;
     std::optional<std::uint32_t> event_wait;
     std::optional<std::uint32_t> semaphore_wait;
 };
@@ -71,6 +74,9 @@ public:
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
     [[nodiscard]] bool in_interrupt() const { return in_interrupt_; }
     [[nodiscard]] bool can_idle_display() const;
+    [[nodiscard]] std::optional<std::uint64_t> next_timeout() const;
+    bool wait_timeout(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t deadline, std::uint32_t result);
+    void wake_timeouts(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t ticks);
     bool enter_interrupt();
     void leave_interrupt();
     bool wait_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint64_t edge);

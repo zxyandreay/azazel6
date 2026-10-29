@@ -38,7 +38,7 @@ void wait_contracts() {
     rt->invoke_import("Kernel_Library", 0x092968F4u, c);
     check(!threads->wait_display(*rt, c, 4) && rt->stopped(), "Wait while interrupts suspended");
 }
-void event_contracts(bool idle) {
+void event_contracts(bool idle, bool timed = false) {
     using namespace azazel6;
     auto rt = std::make_unique<psprecomp::Runtime>();
     auto allocator = std::make_shared<GuestAllocator>(0x08010000u, 0x08020000u);
@@ -46,7 +46,7 @@ void event_contracts(bool idle) {
         0x08001000u, 0x08002000u, 0x08003000u, 32, 4096}, allocator);
     auto interrupts = register_interrupt_hle(*rt, 0x08001000u, 0x08002000u, 0x08003000u);
     auto delivery = register_interrupt_delivery(*rt, interrupts, threads, allocator);
-    auto display = register_display_hle(*rt, threads, delivery, idle ? 1 : 0);
+    auto display = register_display_hle(*rt, threads, delivery, idle ? (timed ? 3 : 1) : 0);
     rejects([&] { display->advance_idle(*rt); }, "Idle advance while guest runnable");
     rt->register_function(0x08001000u, [](auto& runtime, auto& c) {
         runtime.memory().store32(c.gpr[5], 1);
@@ -63,7 +63,8 @@ void event_contracts(bool idle) {
     rt->invoke_import("sceDisplay", 0x289D82FEu, c);
     check(c.gpr[2] == 0 && display->buffer_requests == 1 && display->buffers.pending(), "Framebuffer HLE");
     c.pc = 0x08001008u; c.gpr[31] = 0x08001004u; c.gpr[16] = 99; c.fcr31 = 23; c.vfpu[127] = 123;
-    rt->invoke_import("sceDisplay", 0x36CDFADEu, c);
+    if (timed) display->wait_timeout(*rt, c, 50050, 0);
+    else rt->invoke_import("sceDisplay", 0x36CDFADEu, c);
     rejects([&] { display->advance(*rt, DisplayClock::ticks_per_frame + 1); }, "Multiple unscheduled edges accepted");
     check(display->clock.ticks() == 0, "Rejected advance changed time");
     if (!idle) {
@@ -72,11 +73,11 @@ void event_contracts(bool idle) {
               display->buffers.current().address == 0x04000000u, "Interrupt-before-wakeup and latch order");
         rejects([&] { display->advance(*rt, 1); }, "Clock advanced through an unfinished handler");
     }
-    rt->run(c.pc, 8);
+    rt->run(c.pc, 32);
     check(rt->stop_reason() == "synthetic frame complete" && rt->memory().load32(0x08004000u) == 1 &&
           threads->current_uid() == kBootstrapUid && c.gpr[2] == 0 && c.gpr[16] == 99 &&
           c.fcr31 == 23 && c.vfpu[127] == 123 && !delivery->active() &&
-          display->clock.frames() == 1 && display->idle_frames() == (idle ? 1 : 0),
+          display->clock.frames() == (timed ? 3 : 1) && display->idle_frames() == (idle ? (timed ? 3 : 1) : 0),
           "Integrated callback return and waiting context");
 }
 void idle_boundaries() {
@@ -254,6 +255,7 @@ int main() {
         wait_contracts();
         event_contracts(false);
         event_contracts(true);
+        event_contracts(true, true);
         idle_boundaries();
         mode_contracts();
         callback_wait_contracts();

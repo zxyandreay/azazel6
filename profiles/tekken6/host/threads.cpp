@@ -16,10 +16,46 @@ bool ThreadRegistry::can_idle_display() const {
     bool display_wait = false;
     auto blocked = [&display_wait](const GuestThread& t) {
         if (t.status == ThreadStatus::Running || t.status == ThreadStatus::Ready) return false;
-        display_wait |= t.status == ThreadStatus::Waiting && t.display_deadline.has_value();
+        display_wait |= t.status == ThreadStatus::Waiting && (t.display_deadline.has_value() || t.timeout_deadline.has_value());
         return true;
     };
     return blocked(bootstrap_) && std::all_of(threads_.begin(), threads_.end(), blocked) && display_wait;
+}
+std::optional<std::uint64_t> ThreadRegistry::next_timeout() const {
+    std::optional<std::uint64_t> next;
+    auto consider = [&](const GuestThread& t) {
+        if (t.status == ThreadStatus::Waiting && t.timeout_deadline &&
+            (!next || *t.timeout_deadline < *next)) next = t.timeout_deadline;
+    };
+    consider(bootstrap_);
+    for (const auto& t : threads_) consider(t);
+    return next;
+}
+bool ThreadRegistry::wait_timeout(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c,
+                                  std::uint64_t deadline, std::uint32_t result) {
+    auto* thread = find(current_uid_);
+    if (!thread || thread->status != ThreadStatus::Running || !interrupts_enabled_ || in_interrupt_ || !deadline) {
+        rt.stop("Timed wait requires a running interruptible thread and a deadline"); return false;
+    }
+    thread->context = c;
+    thread->context.pc = c.gpr[31];
+    thread->timeout_deadline = deadline;
+    thread->timeout_result = result;
+    thread->status = ThreadStatus::Waiting;
+    schedule(rt, c);
+    return true;
+}
+void ThreadRegistry::wake_timeouts(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint64_t ticks) {
+    auto wake = [ticks](GuestThread& thread) {
+        if (thread.status == ThreadStatus::Waiting && thread.timeout_deadline && *thread.timeout_deadline <= ticks) {
+            thread.timeout_deadline.reset();
+            thread.context.set_gpr(2, thread.timeout_result);
+            thread.status = ThreadStatus::Ready;
+        }
+    };
+    wake(bootstrap_);
+    for (auto& thread : threads_) wake(thread);
+    reschedule(rt, c);
 }
 bool ThreadRegistry::wait_display(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c, std::uint64_t edge) {
     auto* thread = find(current_uid_);
@@ -426,7 +462,7 @@ void ThreadRegistry::schedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext
     for (auto& thread : threads_) consider(thread);
     if (best == current && best) return;
     if (!best) {
-        const auto waiting = [](const GuestThread& thread) { return thread.display_deadline || thread.event_wait; };
+        const auto waiting = [](const GuestThread& thread) { return thread.display_deadline || thread.event_wait || thread.timeout_deadline; };
         current_uid_ = 0;
         if (waiting(bootstrap_) || std::any_of(threads_.begin(), threads_.end(), waiting)) {
             ctx = {}; ctx.pc = kDisplayIdleGate;

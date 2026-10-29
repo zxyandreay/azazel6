@@ -4,7 +4,7 @@
 
 namespace azazel6 {
 std::shared_ptr<IoStartupState> register_io_startup_hle(
-        psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads) {
+        psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<DisplayState> display) {
     if (!threads) throw psprecomp::Error("I/O startup HLE requires thread ownership");
     auto state = std::make_shared<IoStartupState>();
     rt.nids().add("IoFileMgrForUser", kIoDevctlNid, "sceIoDevctl");
@@ -83,6 +83,25 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
             c.set_gpr(2, 0);
             // Activation records the empty drive mount only. No medium, host path,
             // filesystem or readable state is supplied by this source-only host.
+        });
+    rt.nids().add("sceUmdUser", kUmdWaitDriveStatCBNid, "sceUmdWaitDriveStatCB");
+    rt.register_hle("sceUmdUser", kUmdWaitDriveStatCBNid,
+        [state, threads, display](auto& runtime, auto& c) {
+            const auto current = threads->current_thread();
+            if (!current || current->status != ThreadStatus::Running || threads->in_interrupt() ||
+                !threads->interrupts_enabled()) {
+                runtime.stop("UMD wait requires an interruptible running thread"); return;
+            }
+            // Only the observed finite READY wait on an activated empty drive.
+            if (!display || !state->umd_activated || c.gpr[4] != 0x20 || !c.gpr[5]) {
+                runtime.stop("Unsupported UMD drive-state wait configuration"); return;
+            }
+            for (const auto& [uid, callback] : threads->callbacks()) {
+                if (callback.owner == current->uid) {
+                    runtime.stop("UMD wait callback delivery is unimplemented"); return;
+                }
+            }
+            display->wait_timeout(runtime, c, c.gpr[5], 0x800201A8u);
         });
     return state;
 }

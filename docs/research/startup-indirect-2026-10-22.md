@@ -571,8 +571,10 @@ the valid call never inspects external media.
 
 The worker advances through that call to `sceUmdWaitDriveStatCB` at stub
 `0x08B89410`, return address `0x08AA2A78`, requesting READY (`0x20`) with a
-96,000-microsecond timeout. This remains the research boundary because the
-current scheduler has no callback-aware timed-wait queue. Returning READY would
+96,000-microsecond timeout. This was the native research boundary before the source-only timed-wait change.
+The callback-free subset now has synthetic coverage under
+[ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md), but no new native run
+was performed. General callback-aware waiting remains unsupported. Returning READY would
 fabricate media, while returning an immediate timeout would fabricate elapsed
 guest time.
 

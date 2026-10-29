@@ -90,14 +90,14 @@ int main(int argc, char** argv) {
             image_segment->vaddr + image_segment->file_size, module.gp,
             AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size}, allocator);
         azazel6::register_power_callback_hle(*rt, power, threads);
-        const auto io = azazel6::register_io_startup_hle(*rt, threads);
         const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
         const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
+        const auto io = azazel6::register_io_startup_hle(*rt, threads, display);
         const auto ge_queue = azazel6::register_ge_list_hle(*rt, ge_callbacks, threads, AZAZEL6_GE_LIST_SPANS,
             {partition, data_cache, interrupt_delivery, module.gp});
-        std::cout << "guest_clock_mode=bounded_idle_events frame_budget=64" << std::endl;
+        std::cout << "guest_clock_mode=bounded_idle_events idle_event_budget=64" << std::endl;
         std::cout << "entry=" << hex32(elf.runtime_entry()) << " gp=" << hex32(module.gp)
                   << " ram=" << mem.size() << " imports=" << imports.size()
                   << " initial_sp=" << hex32(rt->cpu().gpr[29]) << std::endl;
