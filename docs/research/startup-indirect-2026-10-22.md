@@ -544,3 +544,33 @@ from `0x0889B5F8`; static inspection stops at its indirect transfer
 `0x08B608C0`, which has no reviewed target map yet. This is bounded native
 startup evidence, not title boot, scene presentation, controller input or
 gameplay.
+
+## Callback dispatch, source-only identity and media boundary (2026-10-28)
+
+**VERIFIED:** the exact input still hashes to
+`e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f`.
+The reviewed profile now contains 501 roots and generates 32,210 instruction
+words. The `0x08B608C0` target is proven by file-backed vtable slot
+`0x08BD6B1C`; later event callbacks are admitted through reviewed immediate
+constructions or file-backed callback slots. The event dispatcher at
+`0x088995A4` retains terminal traps for dynamic paths without a verified source.
+
+NID `0x0C622081` is handled as a narrow source-only
+`sceWlanGetEtherAddr` contract. It writes the fixed locally administered
+unicast address `02:00:00:00:00:01` only to a complete six-byte range in the
+running caller's live stack. It never examines a host interface, opens a
+socket, or establishes connectivity. The exact bounded path reads it once.
+
+The continued callback chain initializes one lightweight mutex workarea and
+creates a priority-32 worker with the observed VFPU thread attribute. Both
+contracts retain runtime-local ownership and checked guest-memory writes. The
+worker reaches `sceUmdActivate` at stub `0x08B89420`, return address
+`0x08AA2A5C`. That import remains intentionally unsupported: reporting success
+would fabricate media availability, while real media access is outside this
+source-only run.
+
+The bounded counters reach eight display frames, seven Complete GE lists, 239
+retained GE state writes, 24 system-time reads and 133,466 guest microseconds.
+The two verified clears still cover 261,120 pixel positions. These observations
+are bounded native startup execution; they do not establish title boot, scene
+presentation, media access, networking or gameplay.

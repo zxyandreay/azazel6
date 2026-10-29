@@ -53,7 +53,30 @@ void rejection_contracts() {
     }
 }
 
+void wlan_address_contract() {
+    Fixture f; auto& c = f.rt->cpu();
+    const auto output = c.gpr[29] + 8;
+    for (unsigned i = 0; i < 6; ++i) f.rt->memory().store8(output + i, 0xCC);
+    c.gpr[4] = output; c.pc = 0x08804000u; c.gpr[31] = 0x08805000u;
+    invoke_returning_import(*f.rt, c, "sceWlanDrv", kWlanGetEtherAddrNid);
+    require(!f.rt->stopped() && c.gpr[2] == 0 && c.pc == 0x08805000u &&
+            f.io->wlan_address_reads == 1, "WLAN address return");
+    for (unsigned i = 0; i < 6; ++i)
+        require(f.rt->memory().load8(output + i) == f.io->wlan_address[i], "WLAN address bytes");
+
+    const auto current = f.threads->current_thread();
+    require(current.has_value(), "WLAN current-thread fixture");
+    for (const auto bad : {0u, current->stack_base - 1,
+                           current->stack_base + current->stack_size - 5, 0xFFFFFFFFu}) {
+        Fixture rejected; auto& rc = rejected.rt->cpu(); rc.gpr[4] = bad;
+        rejected.rt->invoke_import("sceWlanDrv", kWlanGetEtherAddrNid, rc);
+        require(rejected.rt->stopped() && rejected.io->wlan_address_reads == 0,
+                "Invalid WLAN output mutated state");
+    }
+}
+
 int main() {
-    try { registration_contract(); rejection_contracts(); std::cout << "Source-only startup I/O contracts passed\n"; }
+    try { registration_contract(); rejection_contracts(); wlan_address_contract();
+          std::cout << "Source-only startup I/O contracts passed\n"; }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

@@ -165,6 +165,7 @@ int main(int argc, char** argv) {
         std::cout << "callback_count=" << threads->callbacks().size()
                   << " exit_callback=" << hex32(threads->exit_callback()) << std::endl;
         std::cout << "fatms_callback_count=" << io->fatms_callbacks.size() << std::endl;
+        std::cout << "wlan_address_reads=" << io->wlan_address_reads << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {
             const auto arg0 = rt->cpu().gpr[4];
             std::cout << "indirect_arg0=" << hex32(arg0) << " v0=" << hex32(rt->cpu().gpr[2])
@@ -205,6 +206,7 @@ int main(int argc, char** argv) {
             std::cout << "partition_block=" << uid << " base=" << hex32(block.base)
                       << " size=" << hex32(block.size) << std::endl;
         std::cout << "mutex_count=" << threads->mutexes().size() << std::endl;
+        std::cout << "lw_mutex_count=" << threads->lw_mutexes().size() << std::endl;
         std::cout << "semaphore_count=" << threads->semaphores().size() << std::endl;
         std::cout << "inactive_timer_count=" << threads->timers().size() << std::endl;
         std::cout << "fixed_pool_count=" << threads->fixed_pools().size() << std::endl;

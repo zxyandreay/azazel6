@@ -62,6 +62,9 @@ void ownership() {
     auto last = f.threads->snapshot().back();
     check(last.stack_base == record.stack_base && f.rt->memory().load32(last.stack_base) == 0,
           "Freed hole not reused/no-fill violated");
+    f.args(512, 0x4000u); const auto vfpu = f.create();
+    check(vfpu > third && f.threads->snapshot().back().attributes == 0x800040FFu,
+          "VFPU thread attribute rejected");
     f.guards();
     Fixture other; other.args();
     check(other.create() == 1 && other.threads->snapshot().size() == 1, "Cross-runtime state leak");
@@ -101,7 +104,7 @@ void names_and_stops() {
     Fixture null_entry; null_entry.args(); null_entry.rt->cpu().gpr[5] = 0;
     check(null_entry.create() == 1 && null_entry.threads->snapshot()[0].entry == 0, "Dormant null entry");
     for (const auto [reg, value] : {std::pair{4u, 0xFFFFFFFFu}, {4u, 0x09FFFFFFu},
-         {5u, 0x08010000u}, {5u, 0x08001001u}, {8u, 0x4000u}, {9u, 0x08004000u}}) {
+         {5u, 0x08010000u}, {5u, 0x08001001u}, {8u, 0x8000u}, {9u, 0x08004000u}}) {
         Fixture f; f.args(); f.rt->memory().store8(0x09FFFFFFu, 'x'); f.rt->cpu().gpr[reg] = value;
         check(f.create() == 0xDEADBEEFu && f.rt->stopped() && f.rt->cpu().pc == 0x08001900u,
               "Unsupported configuration returned success");
@@ -251,6 +254,29 @@ void mutex_ownership() {
     for (unsigned i = 0; i < 40; ++i) f.rt->memory().store8(0x08004000u + i, 'X');
     const auto named = mutex_call(f, 0xB7D098C6u, 0x08004000u);
     check(f.threads->mutexes().at(named).name.size() == 31, "Unbounded name");
+}
+void lightweight_mutex_creation() {
+    Scheduled f;
+    auto& c = f.rt->cpu();
+    c.gpr[4] = 0x08004100u; c.gpr[5] = 0x08004000u;
+    c.gpr[6] = 0x200u; c.gpr[7] = 1; c.gpr[8] = 0;
+    f.rt->invoke_import("ThreadManForUser", 0x19CFF145u, c);
+    check(c.gpr[2] == 0 && f.threads->lw_mutexes().size() == 1, "Lightweight mutex creation");
+    const auto& item = f.threads->lw_mutexes().begin()->second;
+    check(item.workarea == 0x08004100u && item.owner == kBootstrapUid && item.count == 1,
+          "Lightweight mutex ownership");
+    check(f.rt->memory().load32(item.workarea) == 1 &&
+          f.rt->memory().load32(item.workarea + 4) == kBootstrapUid &&
+          f.rt->memory().load32(item.workarea + 8) == 0x200u &&
+          f.rt->memory().load32(item.workarea + 12) == 0 &&
+          f.rt->memory().load32(item.workarea + 16) == f.threads->lw_mutexes().begin()->first,
+          "Lightweight mutex workarea ABI");
+    Scheduled bad;
+    bad.rt->cpu().gpr[4] = 0x09FFFFF0u; bad.rt->cpu().gpr[5] = 0x08004000u;
+    bad.rt->cpu().gpr[6] = 0; bad.rt->cpu().gpr[7] = 0; bad.rt->cpu().gpr[8] = 0;
+    bad.rt->invoke_import("ThreadManForUser", 0x19CFF145u, bad.rt->cpu());
+    check(bad.rt->cpu().gpr[2] == 0x800200D3u && bad.threads->lw_mutexes().empty(),
+          "Invalid lightweight mutex workarea");
 }
 void current_priority() {
     Scheduled f;
@@ -563,7 +589,7 @@ void current_thread_id() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); mutex_boundaries(); semaphore_creation(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
+          mutex_ownership(); lightweight_mutex_creation(); mutex_boundaries(); semaphore_creation(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

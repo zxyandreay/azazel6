@@ -38,6 +38,10 @@ struct GuestMutex {
     std::string name;
     std::uint32_t attributes, initial_count, count, owner;
 };
+struct GuestLwMutex {
+    std::string name;
+    std::uint32_t workarea, attributes, initial_count, count, owner;
+};
 struct GuestSemaphore {
     std::string name;
     std::uint32_t attributes, initial_count, count, maximum;
@@ -74,6 +78,7 @@ public:
     bool cancel_display(psprecomp::Runtime&, psprecomp::AllegrexContext&, std::uint32_t uid);
     void reschedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) { if (!in_interrupt_) schedule(rt, c); }
     [[nodiscard]] const std::map<std::uint32_t, GuestMutex>& mutexes() const { return mutexes_; }
+    [[nodiscard]] const std::map<std::uint32_t, GuestLwMutex>& lw_mutexes() const { return lw_mutexes_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestSemaphore>& semaphores() const { return semaphores_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestVTimer>& timers() const { return timers_; }
     [[nodiscard]] const std::map<std::uint32_t, GuestCallback>& callbacks() const { return callbacks_; }
@@ -93,6 +98,7 @@ private:
     void prepare(psprecomp::Runtime&, GuestThread&, const std::vector<std::uint8_t>&);
     bool mutex_context(psprecomp::Runtime&);
     void create_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void create_lw_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void delete_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void lock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&, bool try_only);
     void unlock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
@@ -125,6 +131,8 @@ private:
     bool in_interrupt_ = false;
     std::map<std::uint32_t, GuestMutex> mutexes_;
     std::uint32_t next_mutex_uid_ = 0x30000000u;
+    std::map<std::uint32_t, GuestLwMutex> lw_mutexes_;
+    std::uint32_t next_lw_mutex_uid_ = 0x72000000u;
     std::map<std::uint32_t, GuestSemaphore> semaphores_;
     std::uint32_t next_semaphore_uid_ = 0x71000000u;
     std::map<std::uint32_t, GuestVTimer> timers_;

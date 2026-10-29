@@ -471,7 +471,36 @@
     "0x08AAB820",
     "0x08A067D8",
     "0x0889E2FC",
-    "0x0889B5C4"
+    "0x0889B5C4",
+    "0x08B60854",
+    "0x08B60B8C",
+    "0x089BC078",
+    "0x089B996C",
+    "0x089C5A70",
+    "0x089BB5E4",
+    "0x089BB4AC",
+    "0x089C607C",
+    "0x089FD658",
+    "0x089FD600",
+    "0x08897A64",
+    "0x08899C9C",
+    "0x089BB634",
+    "0x089C61B0",
+    "0x089BB4B8",
+    "0x089FD4A0",
+    "0x088995A4",
+    "0x08897638",
+    "0x08896DD8",
+    "0x088976B4",
+    "0x08896E1C",
+    "0x08AA16FC",
+    "0x08AA1000",
+    "0x08A9BED4",
+    "0x08AAB3C4",
+    "0x08B1031C",
+    "0x08B11F44",
+    "0x08B12050",
+    "0x08AA2A34"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup, direct-call and validated pointer-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -604,9 +633,40 @@
     {
       "site": "0x08AE12EC",
       "register": 2
+    },
+    {
+      "site": "0x08B60CC8",
+      "register": 2
+    },
+    {
+      "site": "0x08B609A4",
+      "register": 2
+    },
+    {
+      "site": "0x089C61D8",
+      "register": 2
+    },
+    {
+      "site": "0x08899774",
+      "register": 6
+    },
+    {
+      "site": "0x08899610",
+      "register": 6
+    },
+    {
+      "site": "0x088996CC",
+      "register": 6
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x08B608C0",
+      "register": 2,
+      "pointers": [
+        "0x08BD6B1C"
+      ]
+    },
     {
       "site": "0x08860FBC",
       "register": 5,
@@ -793,7 +853,8 @@
       "site": "0x0885FCF4",
       "register": 2,
       "pointers": [
-        "0x08B8FE94"
+        "0x08B8FE94",
+        "0x08BB802C"
       ]
     },
     {
@@ -805,7 +866,8 @@
         "0x08B90A20",
         "0x08B904F8",
         "0x08B90A68",
-        "0x08B901E8"
+        "0x08B901E8",
+        "0x08BB8030"
       ]
     },
     {
@@ -1122,6 +1184,34 @@
       "pointers": [
         "0x08BB8C10"
       ]
+    },
+    {
+      "site": "0x08897ADC",
+      "register": 5,
+      "pointers": [
+        "0x08B94DF0"
+      ]
+    },
+    {
+      "site": "0x08899684",
+      "register": 6,
+      "pointers": [
+        "0x08B94DA8"
+      ]
+    },
+    {
+      "site": "0x0889764C",
+      "register": 2,
+      "pointers": [
+        "0x08B94BC4"
+      ]
+    },
+    {
+      "site": "0x088976C8",
+      "register": 2,
+      "pointers": [
+        "0x08B94BC8"
+      ]
     }
   ],
   "pointer_tails": [
@@ -1132,7 +1222,8 @@
         "0x08BBB500",
         "0x08BCB1B8",
         "0x08B95510",
-        "0x08B94EE8"
+        "0x08B94EE8",
+        "0x08B94BF8"
       ]
     },
     {
@@ -1331,6 +1422,20 @@
   },
   "immediate_calls": [
     {
+      "site": "0x08897ADC",
+      "register": 5,
+      "sources": [
+        {
+          "upper": "0x08898290",
+          "lower": "0x08898294"
+        },
+        {
+          "upper": "0x08898900",
+          "lower": "0x08898904"
+        }
+      ]
+    },
+    {
       "site": "0x0889E254",
       "register": 5,
       "sources": [
@@ -1369,6 +1474,16 @@
       "register": 5,
       "sources": [
         "0x08864A98"
+      ]
+    },
+    {
+      "site": "0x08899684",
+      "register": 6,
+      "sources": [
+        {
+          "upper": "0x08897654",
+          "lower": "0x08897658"
+        }
       ]
     }
   ],

@@ -150,6 +150,9 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     rt.register_hle("Kernel_Library", 0x3B84732Du, resume);
     rt.register_hle("ThreadManForUser", 0xB7D098C6u,
         [state](auto& runtime, auto& ctx) { state->create_mutex(runtime, ctx); });
+    rt.nids().add("ThreadManForUser", 0x19CFF145u, "sceKernelCreateLwMutex");
+    rt.register_hle("ThreadManForUser", 0x19CFF145u,
+        [state](auto& runtime, auto& ctx) { state->create_lw_mutex(runtime, ctx); });
     rt.register_hle("ThreadManForUser", 0xF8170FBEu,
         [state](auto& runtime, auto& ctx) { state->delete_mutex(runtime, ctx); });
     rt.register_hle("ThreadManForUser", 0xB011B11Fu,
@@ -267,7 +270,7 @@ void ThreadRegistry::create(psprecomp::Runtime& rt, psprecomp::AllegrexContext& 
     if (!interrupts_enabled_) { rt.stop("Thread mutation with interrupts suspended is unsupported"); return; }
     auto& mem = rt.memory();
     // Unsupported valid PSP configurations are research stops, never fabricated guest errors.
-    if (ctx.gpr[9] != 0 || (ctx.gpr[8] & ~(0x80000000u | no_fill | clear_stack)) != 0) {
+    if (ctx.gpr[9] != 0 || (ctx.gpr[8] & ~(0x80000000u | 0x00004000u | no_fill | clear_stack)) != 0) {
         rt.stop("Unsupported thread options/attributes");
         return;
     }
@@ -490,6 +493,43 @@ void ThreadRegistry::create_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexCon
     if (mutexes_.size() >= 4096 || next_mutex_uid_ >= 0x40000000u) { c.set_gpr(2, no_memory); return; }
     mutexes_.emplace(next_mutex_uid_, GuestMutex{std::move(name), attr, count, count, count ? current_uid_ : 0});
     c.set_gpr(2, next_mutex_uid_++);
+}
+void ThreadRegistry::create_lw_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!mutex_context(rt)) return;
+    const auto workarea = c.gpr[4], attr = c.gpr[6], count = c.gpr[7];
+    const auto ram_end = psprecomp::GuestMemory::kPhysicalBase + static_cast<std::uint64_t>(rt.memory().size());
+    if ((workarea & 3u) || workarea < psprecomp::GuestMemory::kPhysicalBase ||
+        static_cast<std::uint64_t>(workarea) + 32 > ram_end) {
+        c.set_gpr(2, 0x800200D3u); return;
+    }
+    if (attr >= 0x400u) { c.set_gpr(2, 0x80020191u); return; }
+    if ((attr & ~0x300u) || c.gpr[8]) { rt.stop("Unsupported lightweight mutex attributes/options"); return; }
+    if (count > 0x7FFFFFFFu || (!(attr & 0x200u) && count > 1)) {
+        c.set_gpr(2, 0x800201BDu); return;
+    }
+    if (!c.gpr[5]) { c.set_gpr(2, 0x80020001u); return; }
+    std::string name;
+    for (std::uint32_t i = 0; i < 31; ++i) {
+        const auto address = static_cast<std::uint64_t>(c.gpr[5]) + i;
+        if (address < psprecomp::GuestMemory::kPhysicalBase || address >= ram_end) {
+            rt.stop("Unsupported lightweight mutex name address"); return;
+        }
+        const auto byte = rt.memory().load8(static_cast<std::uint32_t>(address));
+        if (!byte) break;
+        name.push_back(static_cast<char>(byte));
+    }
+    if (lw_mutexes_.size() >= 4096 || next_lw_mutex_uid_ >= 0x73000000u) {
+        c.set_gpr(2, no_memory); return;
+    }
+    const auto uid = next_lw_mutex_uid_++;
+    lw_mutexes_.emplace(uid, GuestLwMutex{std::move(name), workarea, attr, count, count,
+                                          count ? current_uid_ : 0});
+    for (std::uint32_t offset = 0; offset < 32; offset += 4) rt.memory().store32(workarea + offset, 0);
+    rt.memory().store32(workarea, count);
+    rt.memory().store32(workarea + 4, count ? current_uid_ : 0);
+    rt.memory().store32(workarea + 8, attr);
+    rt.memory().store32(workarea + 16, uid);
+    c.set_gpr(2, 0);
 }
 void ThreadRegistry::delete_mutex(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
     if (!mutex_context(rt)) return;

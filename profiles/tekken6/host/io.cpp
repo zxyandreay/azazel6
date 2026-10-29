@@ -43,6 +43,21 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
             state->fatms_callbacks.push_back(uid);
             c.set_gpr(2, 0);
         });
+    rt.nids().add("sceWlanDrv", kWlanGetEtherAddrNid, "sceWlanGetEtherAddr");
+    rt.register_hle("sceWlanDrv", kWlanGetEtherAddrNid,
+        [state, threads](auto& runtime, auto& c) {
+            const auto current = threads->current_thread();
+            const auto end = static_cast<std::uint64_t>(c.gpr[4]) + state->wlan_address.size();
+            if (!current || current->status != ThreadStatus::Running ||
+                    !threads->interrupts_enabled() || c.gpr[4] < current->stack_base ||
+                    end > static_cast<std::uint64_t>(current->stack_base) + current->stack_size) {
+                runtime.stop("WLAN address output requires the live caller stack"); return;
+            }
+            for (std::size_t i = 0; i < state->wlan_address.size(); ++i)
+                runtime.memory().store8(c.gpr[4] + static_cast<std::uint32_t>(i), state->wlan_address[i]);
+            ++state->wlan_address_reads;
+            c.set_gpr(2, 0);
+        });
     return state;
 }
 } // namespace azazel6
