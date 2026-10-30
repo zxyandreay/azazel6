@@ -112,6 +112,9 @@ private:
     void unlock_mutex(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void create_semaphore(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void wait_semaphore(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void signal_semaphore(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    void delete_semaphore(psprecomp::Runtime&, psprecomp::AllegrexContext&);
+    bool semaphore_waiters_valid(psprecomp::Runtime&, std::uint32_t, const GuestSemaphore&);
     void create_timer(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void create_callback(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     bool callback_context(psprecomp::Runtime&);

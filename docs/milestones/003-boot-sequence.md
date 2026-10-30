@@ -50,6 +50,13 @@ its provenance remains in [static investigation](../research/callback-08862338.m
 
 ## Candidate-root inspection
 
+**2026-10-30 source checkpoint:** semaphore signaling and deletion now complete
+the supported lifecycle, with synthetic tests for blocked-waiter wakeups,
+overflow atomicity, preserved thread context and priority handoff. See
+[semaphore contracts](../research/semaphores.md). Native title progression remains
+unverified; semaphore timeouts remain unsupported. FIFO and stable priority
+wait ordering are verified synthetically.
+
 **VERIFIED tooling:** `tools/inspect_root.py` provides strict-hash, bounded,
 local CFG inspection and distinguishes new candidates, existing roots and import
 stubs. It never expands authorized AOT roots automatically; unknown indirect

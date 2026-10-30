@@ -526,6 +526,92 @@ void semaphore_creation() {
     check(f.rt->stopped() && f.threads->semaphores().size() == 1,
           "Unsupported semaphore options fabricated an object");
 }
+struct SemaphoreFixture : Scheduled {
+    std::uint32_t uid;
+    SemaphoreFixture(std::uint32_t attributes = 0) {
+        auto& c = rt->cpu();
+        c.gpr[4] = 0x08004000u; c.gpr[5] = attributes; c.gpr[6] = 0; c.gpr[7] = 3; c.gpr[8] = 0;
+        rt->invoke_import("ThreadManForUser", 0xD6DA4BA1u, c); uid = c.gpr[2];
+    }
+    void call(std::uint32_t nid, std::uint32_t count = 0) {
+        auto& c = rt->cpu(); c.pc = 0x08001900u; c.gpr[31] = 0x08001800u;
+        c.gpr[4] = uid; c.gpr[5] = count; c.gpr[6] = 0;
+        invoke_returning_import(*rt, c, "ThreadManForUser", nid);
+    }
+    std::uint32_t waiter(std::uint32_t priority, std::uint32_t count) {
+        const auto child = create(priority); start(child);
+        rt->cpu().gpr[16] = child; rt->cpu().vfpu[83] = 9.5f;
+        call(0x4E3A1105u, count);
+        check(threads->current_uid() == kBootstrapUid, "Semaphore wait failed to yield");
+        return child;
+    }
+};
+void semaphore_signal_and_delete() {
+    for (const auto attributes : {0u, 0x100u}) for (bool equal : {false, true}) {
+        SemaphoreFixture f(attributes);
+        const auto first = f.waiter(16, 1), second = f.waiter(equal ? 16 : 8, 1);
+        f.call(0x3F53E640u, 1);
+        check(f.threads->current_uid() == (attributes && !equal ? second : first),
+              "Semaphore FIFO/priority ordering or equal-priority stability");
+        check(f.threads->semaphores().at(f.uid).waiters.size() == 1, "Signal woke too many waiters");
+    }
+    for (bool remove : {false, true}) {
+        SemaphoreFixture f;
+        const auto first = f.waiter(8, 2), second = f.waiter(16, 1);
+        f.call(0x3F53E640u, 6);
+        check(f.rt->cpu().gpr[2] == 0x800201AEu && f.threads->semaphores().at(f.uid).count == 0 &&
+              f.threads->semaphores().at(f.uid).waiters.size() == 2 &&
+              f.threads->current_uid() == kBootstrapUid, "Signal overflow was not atomic");
+        f.call(remove ? 0x28B6489Cu : 0x3F53E640u, 1);
+        const auto expected = remove ? first : second;
+        check(!f.rt->stopped() && f.threads->current_uid() == expected &&
+              f.rt->cpu().gpr[2] == (remove ? 0x800201B5u : 0u) &&
+              f.rt->cpu().pc == 0x08001800u && f.rt->cpu().gpr[16] == expected &&
+              f.rt->cpu().vfpu[83] == 9.5f, "Semaphore wake result/priority/context");
+        if (remove) {
+            check(f.threads->semaphores().empty(), "Deleted semaphore remains live");
+            f.exit();
+            check(f.threads->current_uid() == second && f.rt->cpu().gpr[2] == 0x800201B5u,
+                  "Deletion did not wake all waiters");
+        } else {
+            check(f.threads->semaphores().at(f.uid).waiters.size() == 1 &&
+                  f.threads->semaphores().at(f.uid).count == 0, "Signal did not retain unsatisfied waiter");
+            f.exit();
+            f.call(0x3F53E640u, 4); // max + one waiter is accepted; two units remain.
+            check(f.threads->current_uid() == first && f.threads->semaphores().at(f.uid).count == 2 &&
+                  f.threads->semaphores().at(f.uid).waiters.empty(), "Signal leftover count");
+        }
+        f.exit();
+        check(f.threads->current_uid() == kBootstrapUid && f.rt->cpu().gpr[2] == 0 &&
+              f.rt->cpu().pc == 0x08001800u, "Signaler continuation lost after preemption");
+        if (!remove) f.call(0x28B6489Cu);
+        f.call(0x28B6489Cu);
+        check(f.rt->cpu().gpr[2] == 0x80020199u, "Stale semaphore deletion accepted");
+        f.call(0x3F53E640u, 1);
+        check(f.rt->cpu().gpr[2] == 0x80020199u, "Stale semaphore signal accepted");
+    }
+    SemaphoreFixture queued;
+    queued.waiter(8, 2);
+    queued.call(0x3F53E640u, 1);
+    queued.waiter(16, 1);
+    check(queued.threads->semaphores().at(queued.uid).count == 1 &&
+          queued.threads->semaphores().at(queued.uid).waiters.size() == 2,
+          "New waiter bypassed an existing wait queue");
+    queued.call(0x28B6489Cu);
+    for (auto count : {0u, 0xFFFFFFFFu, 0x7FFFFFFFu}) {
+        SemaphoreFixture f; f.call(0x3F53E640u, count);
+        check(f.threads->semaphores().at(f.uid).count == 0 &&
+              (count == 0x7FFFFFFFu ? f.rt->cpu().gpr[2] == 0x800201AEu : f.rt->stopped()),
+              "Invalid signal count mutated semaphore");
+    }
+    for (const auto nid : {0x3F53E640u, 0x28B6489Cu}) {
+        SemaphoreFixture f;
+        f.rt->invoke_import("Kernel_Library", 0x092968F4u, f.rt->cpu());
+        f.call(nid, 1);
+        check(f.rt->stopped() && f.threads->semaphores().size() == 1 &&
+              f.threads->semaphores().at(f.uid).count == 0, "Masked semaphore mutation accepted");
+    }
+}
 void clock_conversion() {
     constexpr auto first = arena.end, last = arena.end + 508;
     for (const auto ticks : {0ull, 999999ull, 1000000ull, 1000001ull, 0x100000000ull, 0xFFFFFFFFFFFFFFFFull}) {
@@ -589,7 +675,7 @@ void current_thread_id() {
 }
 int main() {
     try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); lightweight_mutex_creation(); mutex_boundaries(); semaphore_creation(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
+          mutex_ownership(); lightweight_mutex_creation(); mutex_boundaries(); semaphore_creation(); semaphore_signal_and_delete(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

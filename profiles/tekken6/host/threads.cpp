@@ -215,6 +215,10 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
     rt.nids().add("ThreadManForUser", 0x4E3A1105u, "sceKernelWaitSema");
     rt.register_hle("ThreadManForUser", 0x4E3A1105u,
         [state](auto& runtime, auto& ctx) { state->wait_semaphore(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0x3F53E640u,
+        [state](auto& runtime, auto& ctx) { state->signal_semaphore(runtime, ctx); });
+    rt.register_hle("ThreadManForUser", 0x28B6489Cu,
+        [state](auto& runtime, auto& ctx) { state->delete_semaphore(runtime, ctx); });
     rt.register_hle("ThreadManForUser", 0x94AA61EEu, [state](auto& runtime, auto& ctx) {
         const auto* current = state->find(state->current_uid_);
         if (!current || current->status != ThreadStatus::Running) {
@@ -648,11 +652,8 @@ void ThreadRegistry::wait_semaphore(psprecomp::Runtime& rt, psprecomp::AllegrexC
     const auto count = c.gpr[5];
     if (!count || count > found->second.maximum) { c.set_gpr(2, 0x800201ADu); return; }
     if (c.gpr[6]) { rt.stop("Semaphore timeouts are unimplemented"); return; }
-    if (found->second.count >= count) {
+    if (found->second.count >= count && found->second.waiters.empty()) {
         found->second.count -= count; c.set_gpr(2, 0); return;
-    }
-    if (found->second.attributes & 0x100u) {
-        rt.stop("Priority semaphore wait ordering is unimplemented"); return;
     }
     if (found->second.waiters.size() >= 4096) { rt.stop("Semaphore waiter budget exhausted"); return; }
     auto* thread = find(current_uid_);
@@ -660,6 +661,61 @@ void ThreadRegistry::wait_semaphore(psprecomp::Runtime& rt, psprecomp::AllegrexC
     thread->semaphore_wait = found->first; thread->status = ThreadStatus::Waiting;
     found->second.waiters.push_back({current_uid_, count});
     schedule(rt, c);
+}
+bool ThreadRegistry::semaphore_waiters_valid(psprecomp::Runtime& rt, std::uint32_t uid,
+                                            const GuestSemaphore& semaphore) {
+    for (const auto& wait : semaphore.waiters) {
+        const auto* thread = find(wait.thread);
+        if (!thread || thread->status != ThreadStatus::Waiting || thread->semaphore_wait != uid ||
+            !wait.count || wait.count > semaphore.maximum) {
+            rt.stop("Semaphore waiter ownership changed"); return false;
+        }
+    }
+    return true;
+}
+void ThreadRegistry::signal_semaphore(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!mutex_context(rt)) return;
+    const auto found = semaphores_.find(c.gpr[4]);
+    if (found == semaphores_.end()) { c.set_gpr(2, 0x80020199u); return; }
+    auto& sema = found->second;
+    if (!c.gpr[5] || c.gpr[5] > 0x7FFFFFFFu) {
+        rt.stop("Nonpositive semaphore signaling requires separate evidence"); return;
+    }
+    if (!semaphore_waiters_valid(rt, found->first, sema)) return;
+    const auto available = static_cast<std::uint64_t>(sema.count) + c.gpr[5];
+    // DOCUMENTED pinned reference policy counts waiting threads for overflow,
+    // rather than summing their requested units. Check before any mutation.
+    if (available > static_cast<std::uint64_t>(sema.maximum) + sema.waiters.size()) {
+        c.set_gpr(2, 0x800201AEu); return;
+    }
+    if (sema.attributes & 0x100u) {
+        std::stable_sort(sema.waiters.begin(), sema.waiters.end(), [this](const auto& a, const auto& b) {
+            return find(a.thread)->priority < find(b.thread)->priority;
+        });
+    }
+    sema.count = static_cast<std::uint32_t>(available);
+    for (auto it = sema.waiters.begin(); it != sema.waiters.end();) {
+        if (it->count > sema.count) { ++it; continue; }
+        sema.count -= it->count;
+        auto* thread = find(it->thread);
+        thread->semaphore_wait.reset(); thread->context.set_gpr(2, 0);
+        thread->status = ThreadStatus::Ready;
+        it = sema.waiters.erase(it);
+    }
+    c.set_gpr(2, 0); c.pc = c.gpr[31]; reschedule(rt, c);
+}
+void ThreadRegistry::delete_semaphore(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
+    if (!mutex_context(rt)) return;
+    const auto found = semaphores_.find(c.gpr[4]);
+    if (found == semaphores_.end()) { c.set_gpr(2, 0x80020199u); return; }
+    if (!semaphore_waiters_valid(rt, found->first, found->second)) return;
+    for (const auto& wait : found->second.waiters) {
+        auto* thread = find(wait.thread);
+        thread->semaphore_wait.reset(); thread->context.set_gpr(2, 0x800201B5u);
+        thread->status = ThreadStatus::Ready;
+    }
+    semaphores_.erase(found);
+    c.set_gpr(2, 0); c.pc = c.gpr[31]; reschedule(rt, c);
 }
 void ThreadRegistry::create_timer(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c) {
     if (!current_uid_ || !interrupts_enabled_) {

@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-10-29: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-10-30: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -16,7 +16,7 @@ Azazel6 is not playable. See
 | Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-four integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attributes are supported at creation and by later addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; source-only lightweight-mutex creation initializes the guest workarea; waits/timeouts and later lightweight-mutex operations remain rejecting |
-| Semaphore lifecycle | VERIFIED bounded creation, immediate count consumption and FIFO blocking handoff to the scheduler; signaling, deletion, priority waits and timeouts remain unimplemented |
+| Semaphore lifecycle | VERIFIED synthetic creation, FIFO/priority waits, positive-count signaling, overflow checks, deletion wakeups and priority handoff; nonpositive signaling and timeouts remain unsupported; see [contracts](../research/semaphores.md) |
 | Virtual timers | VERIFIED inactive object creation/deletion; active clocks and callbacks remain unimplemented |
 | Startup thread delay | VERIFIED synthetic observed 96,000-us non-callback delay, with documented reference 10-us overhead on the shared idle timeline; other durations and runnable CPU accounting remain unsupported |
 | Clock conversion | VERIFIED unsigned immediate and pointer-form microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
