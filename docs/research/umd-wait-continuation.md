@@ -108,3 +108,57 @@ python tools/run_probe.py local/game/EBOOT.BIN --binary local/build/cloud/probe/
 
 Raw traces and generated translations remain ignored local artifacts. No disc,
 asset, host filesystem bridge or fabricated READY result was introduced.
+
+## Main-thread dependency and actual scanout (2026-11-01)
+
+**VERIFIED static:** a fresh bounded review of the existing callback
+`0x08896EA4` and helper `0x08AA2008` explains the main-thread dependency. The
+helper reads the worker UID at `0x08C2B9C8`. A negative exit-status result branches
+at `0x08AA2034` without deleting or clearing that UID; the helper returns one
+only when the UID is zero. At `0x08896EC4`, a zero result skips the callback's
+state-transition writes, including replacement of the callback at object offset
+4. The later object-state branch has not been admitted or executed by this work.
+This review does not claim that every possible startup state requires media.
+
+**VERIFIED native:** every one of the 43 exit-status queries in the repeated
+bounded run has argument UID 5, the waiting media worker. The main display loop
+continues, but this callback cannot transition through worker completion while
+that worker remains in its empty-drive retry loop. More display frames alone do
+not resolve this dependency.
+
+The probe now supports an optional diagnostic capture of current scanout after
+the bounded run. The checked display readback preserves guest state, omits stride
+padding and produces tightly packed RGBA; the runner retains it only under
+ignored `local/`, writes an RGB PPM preview and records dimensions, checksum and
+nonblack-pixel count separately from execution status. Old captures are removed
+before a requested run. Timeout, missing output and malformed output cannot be
+reported as a fresh successful capture. Capture does not establish title boot.
+
+```sh
+python tools/run_probe.py local/game/EBOOT.BIN --binary local/build/cloud/probe/profiles/tekken6/azazel6_entry_probe --capture-framebuffer --output local/build/cloud/run-2026-11-01-capture
+```
+
+The exact native run again stops at the same 32,768-dispatch budget after 51
+display frames and 50 Complete lists. Current scanout is `0x04044000`, stride
+512, format 1 (5551). Its 522,240-byte 480x272 RGBA capture has **zero nonblack
+pixels**, SHA-256 `e6b5e274ce500e2a412af9e9277cc71db8586dbe4f167260a53b0efb898aa56e`.
+This verifies black current scanout; it does not establish visible menu graphics
+or the content of every earlier frame. Raw images remain local.
+
+**BLOCKED title/gameplay continuation:** the available local game-input directory
+contains only the exact EBOOT. It supplies no disc filesystem, textures or other
+assets, and the current I/O host has no readable-media implementation. The
+executable cannot substitute for the disc contents. Fabricating READY or worker
+completion would bypass the observed dependency without providing those files.
+The concrete next work is an explicitly selected, checked read-only local media
+source, validated against the expected title/region, followed by the observed
+file/device requests and their AOT dependencies. No input acquisition, media
+mount or arbitrary host-directory exposure was performed. Broader renderer and
+input implementation remains possible with synthetic contracts, but cannot
+verify this game's title/gameplay gate without the missing game data. Physical
+Android validation independently requires attached hardware.
+
+Validation: 91 Python cases, 24 CTest suites and the repository audit pass. The
+new eight runner cases are synthetic only, covering capture on failed runs,
+black pixels, stale files, timeouts, malformed size, escaping symlinks, default
+behavior and validation before side effects.

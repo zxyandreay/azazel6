@@ -1,6 +1,6 @@
 # Milestone 004: graphics and input
 
-**IN PROGRESS, reviewed 2026-10-29.** The bounded native startup completes registration and
+**IN PROGRESS, reviewed 2026-11-01.** The bounded native startup completes registration and
 enable of its VBLANK handler. The [display foundation](../research/display-foundation.md)
 adds synthetic clock, interrupt delivery, wait/cancellation and framebuffer contracts.
 No visual gate is complete. At the initial handoff, startup reached registration of
@@ -44,6 +44,14 @@ integration gap; see [reuse evidence](../research/portablekit.md).
    modifications remain later milestones.
 
 ## Implementation checkpoint
+
+- **VERIFIED native (2026-11-01):** optional checked scanout capture now bridges
+  the real entry probe to local RGBA/PPM evidence. At the 51-frame/50-completed-list
+  checkpoint, the current 480x272 scanout is uniformly black (zero nonblack
+  pixels). This does not satisfy the visible-menu gate. The main callback polls
+  the waiting media worker, preserving its startup state until completion; the
+  workspace has only EBOOT and no readable disc/assets. See
+  [dependency and capture evidence](../research/umd-wait-continuation.md#main-thread-dependency-and-actual-scanout-2026-11-01).
 
 - **VERIFIED synthetic (2026-10-29):** CPU readback converts the current
   480x272 framebuffer to tightly packed RGBA bytes for 5650, 5551, 4444 and
@@ -96,7 +104,7 @@ integration gap; see [reuse evidence](../research/portablekit.md).
   milestone is not ready to advance to stock combat.
 
 The following detailed startup sequence is historical; see the
-[current startup checkpoint](003-boot-sequence.md) for the latest 501-root
+[current startup checkpoint](003-boot-sequence.md) for the latest 504-root
 native evidence and the separately verified synthetic timeout work.
 
 The event scheduler now queues both observed worker waits, with checked FIFO
@@ -122,7 +130,7 @@ Historical validation at that checkpoint: 70 Python tests, 18 integrated CTest s
 cross-compilation and synthetic APK build/signature/alignment checks pass.
 Raw traces, translations, APKs and debug keys remain local.
 
-Current Linux source validation: 83 Python tests and 24 CTest suites. Android
+Current Linux source validation: 91 Python tests and 24 CTest suites. Android
 build/AVD results above are prior evidence, not reruns in this cloud workspace.
 
 ## Exit evidence

@@ -11,7 +11,7 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 83 cases passed locally; bounded host registration stack |
+| Python/profile tools | VERIFIED, 91 cases passed locally; bounded host registration stack and optional local scanout capture |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-four integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete and exit-status queries, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attributes are supported at creation and by later addition/removal |
@@ -35,7 +35,7 @@ Azazel6 is not playable. See
 | Language settings | VERIFIED explicit English/Cross defaults and checked runtime-local get/set; no host locale dependency |
 | Event flags | VERIFIED create/delete, set/clear, polling, queued waits, FIFO wakeups and cancellation; timeouts remain rejecting |
 | Graphics memory | VERIFIED immutable EDRAM size/base queries backed by allocated guest VRAM; first native VRAM clear verified; general GE rendering remains unimplemented |
-| Framebuffer readback | VERIFIED synthetic CPU RGBA snapshot of current 480x272 RAM/VRAM scanout in all four framebuffer formats, checked strides/latches and GE-clear integration; no scene presentation |
+| Framebuffer readback | VERIFIED synthetic CPU RGBA snapshot in all four framebuffer formats, checked strides/latches and GE-clear integration; native probe now captures current scanout locally as RGBA/PPM. The 51-frame checkpoint is uniformly black; no scene presentation |
 | GE callbacks/control lists | VERIFIED synthetic bounded FIFO/stalls/control flow and guarded SIGNAL/FINISH delivery; real initialization EnQueue/ListSync and completed-work DrawSync return; written live-partition submissions/FINISH bridge and bounded RGB565 clear sprites tested; general draws and asynchronous producers remain unimplemented |
 | VBLANK | VERIFIED real-input registration/enable and four-word handler AOT coverage; synthetic owned delivery and full context restoration |
 | Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes four VBLANK handlers, SetMode and next-edge WaitVblankStartCB with inactive callbacks under bounded idle events; runnable guest-time accounting remains unimplemented |

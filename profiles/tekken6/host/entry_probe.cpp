@@ -19,6 +19,8 @@
 #include <iostream>
 #include <memory>
 #include <cstdlib>
+#include <fstream>
+#include <string_view>
 
 namespace psprecomp { void register_generated_functions(Runtime&); }
 
@@ -26,7 +28,10 @@ namespace azazel6 { void register_profile_imports(psprecomp::Runtime&); }
 
 int main(int argc, char** argv) {
     using namespace psprecomp;
-    if (argc != 2) { std::cerr << "Usage: azazel6_entry_probe <validated EBOOT>\n"; return 2; }
+    if (argc != 2 && !(argc == 4 && std::string_view(argv[2]) == "--framebuffer-rgba")) {
+        std::cerr << "Usage: azazel6_entry_probe <validated EBOOT> [--framebuffer-rgba <local output>]\n";
+        return 2;
+    }
     try {
 #ifdef _WIN32
         if (_putenv_s("PSPRECOMP_NO_INTERPRETER", "1") != 0) throw Error("Cannot disable interpreter");
@@ -217,6 +222,22 @@ int main(int argc, char** argv) {
         for (const auto& [uid, pool] : threads->fixed_pools())
             std::cout << "fixed_pool=" << hex32(uid) << " base=" << hex32(pool.allocation.base)
                       << " block_size=" << pool.block_size << " allocated=" << pool.allocated << std::endl;
+        if (argc == 4) {
+            // Diagnostic scanout after the bounded run, including failure stops.
+            // No display event, latch or guest state is changed by readback.
+            const auto pixels = display->buffers.readback_rgba(mem);
+            const auto& buffer = display->buffers.current();
+            std::cout << "framebuffer_address=" << hex32(buffer.address)
+                      << " framebuffer_stride=" << buffer.stride
+                      << " framebuffer_format=" << buffer.format
+                      << " framebuffer_rgba_bytes=" << pixels.size() << std::endl;
+            if (!pixels.empty()) {
+                std::ofstream output(argv[3], std::ios::binary | std::ios::trunc);
+                output.write(reinterpret_cast<const char*>(pixels.data()), pixels.size());
+                output.close();
+                if (!output) throw Error("Cannot write framebuffer capture");
+            }
+        }
         return rt->stop_reason().starts_with("Missing HLE import ") ? 3 : 1;
     } catch (const std::exception& error) {
         std::cerr << "entry_probe: " << error.what() << '\n';

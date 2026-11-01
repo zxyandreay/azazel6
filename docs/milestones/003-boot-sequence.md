@@ -97,3 +97,13 @@ The native trace now records four READY-wait calls and four delay calls, without
 media readiness. Three reviewed roots and a state-preserving
 `sceKernelGetThreadExitStatus` query advance execution beyond the former import
 boundary. See the [native follow-up](../research/umd-wait-continuation.md#native-follow-up-2026-11-01).
+
+**BLOCKED verified title progression (2026-11-01):** the repeated native run
+confirms that the main callback polls media worker 5; static review shows it
+preserves its startup state until worker completion. The worker retries empty
+READY waits. Only EBOOT is locally available, with no disc/assets or readable
+media backend. Optional current-frame capture verifies black scanout, rather
+than visible title graphics. See [root cause and next implementation](../research/umd-wait-continuation.md#main-thread-dependency-and-actual-scanout-2026-11-01).
+Supplying real local media and implementing its checked I/O path are required
+before this dependency can be tested further; increasing display/dispatch budgets
+or returning fake READY cannot provide missing files.

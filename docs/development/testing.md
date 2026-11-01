@@ -51,6 +51,15 @@ installation, Vulkan pixels, input, lifecycle and runtime evidence.
 
 ## Debugging procedure
 
+To retain current scanout from a locally generated native probe, add
+`--capture-framebuffer` to `tools/run_probe.py`. The runner confines captures to
+its ignored local output directory and writes `framebuffer.rgba`, an RGB
+`framebuffer.ppm` preview, and pixel/checksum evidence in `execution.json`.
+Capture is optional and does not change the 15-second timeout or execution
+status. A failed run can yield a valid diagnostic image; black or nonblack
+pixels alone do not establish title boot. Display-off/missing output and timeout
+report unavailable; malformed size reports invalid. Do not commit captures.
+
 Inspect source and the smallest failed log first. For local analysis look at
 `report.json` and then `analyzer.log`/`generation.log`. For entry bring-up capture
 guest PC, RA, SP, arguments and import identity; compare with the generated slice
