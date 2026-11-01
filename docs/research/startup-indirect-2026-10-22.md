@@ -573,8 +573,8 @@ The worker advances through that call to `sceUmdWaitDriveStatCB` at stub
 `0x08B89410`, return address `0x08AA2A78`, requesting READY (`0x20`) with a
 96,000-microsecond timeout. This was the native research boundary before the source-only timed-wait change.
 The callback-free subset now has synthetic coverage under
-[ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md), but no new native run
-was performed. General callback-aware waiting remains unsupported. Returning READY would
+[ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md); no new native run
+was performed in that checkpoint. General callback-aware waiting remains unsupported. Returning READY would
 fabricate media, while returning an immediate timeout would fabricate elapsed
 guest time.
 
@@ -583,3 +583,46 @@ retained GE state writes, 24 system-time reads and 133,466 guest microseconds.
 The two verified clears still cover 261,120 pixel positions. These observations
 are bounded native startup execution; they do not establish title boot, scene
 presentation, media access, networking or gameplay.
+
+## Worker status polling and native timeouts (2026-11-01)
+
+**VERIFIED:** after renewed exact-hash validation and expanded user authorization,
+the 501-root probe runs beyond the former timed-wait boundary to nine display
+frames/eight completed lists. It stops at unverified target `0x08896EA4` from
+call site `0x08899684`, with argument object `0x090B0430` and vtable `0x08B94BB8`.
+
+Bounded static review proves the target's immediate construction at
+`0x088976D0`/`0x088976D8` and store to object offset 4 at `0x088976F8`. Its nested
+virtual call at `0x08896EB8` uses register 2 and file-backed slot `0x08B94BD4`
+(vtable + `0x1c`), which holds `0x08896E70`. That wrapper directly calls the
+24-word helper `0x08AA2008`. The helper queries thread exit status and deletes
+the thread only after a nonnegative result. These three reviewed roots expand
+the generated slice to **504 roots / 32,269 instruction words**. All other
+unproven indirect targets retain terminal guards.
+
+The next native run stops at `ThreadManForUser::0x3B183E26`, stub `0x08B88EC8`,
+return address `0x08AA2034`. The profile now implements
+`sceKernelGetThreadExitStatus` as a query of owned thread state: absent IDs return
+`0x80020198`, active/waiting threads return `0x800201A4`, and dormant threads
+return their stored exit code. Never-started threads initialize that code to
+`0x800201A2`. The query does not schedule, advance time or complete a worker.
+
+**DOCUMENTED reference:** PPSSPP revision
+`cf17b0ac7966ba4b172a32340333d209a2d747e7`,
+[`__KernelGetThreadExitStatus` in sceKernelThread.cpp](https://github.com/hrydgard/ppsspp/blob/cf17b0ac7966ba4b172a32340333d209a2d747e7/Core/HLE/sceKernelThread.cpp#L1324),
+defines these state/error semantics. Synthetic tests cover invalid/zero/deleted
+IDs, never-started/running/waiting threads, negative and positive exits, restart,
+preserved integer/VFPU registers and unchanged current-thread ownership.
+
+**VERIFIED native outcome:** 51 display frames, 50 Complete GE lists, 368 retained
+GE state writes, 239 system-time reads, 47 Hcount reads and 850,850 modeled guest
+microseconds. The main thread remains running while four workers wait. The two
+earlier clears still cover 261,120 pixel positions; there is no new scene drawing.
+The unchanged 32,768-dispatch budget stops at `0x08867528` (return address
+`0x0885FBAC`), reported as `failed` / exit 1. This is not successful title boot.
+The [UMD follow-up](umd-wait-continuation.md#native-follow-up-2026-11-01) records
+the retry observations and remaining media prerequisite.
+
+Validation: 83 Python cases, all 24 CTest suites and the repository audit pass.
+The Debug framework build and local native probe build use `--parallel 2`.
+No Android execution or hardware timing claim follows from this Linux run.

@@ -219,6 +219,12 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         [state](auto& runtime, auto& ctx) { state->signal_semaphore(runtime, ctx); });
     rt.register_hle("ThreadManForUser", 0x28B6489Cu,
         [state](auto& runtime, auto& ctx) { state->delete_semaphore(runtime, ctx); });
+    rt.nids().add("ThreadManForUser", 0x3B183E26u, "sceKernelGetThreadExitStatus");
+    rt.register_hle("ThreadManForUser", 0x3B183E26u, [state](auto&, auto& c) {
+        const auto* thread = state->find(c.gpr[4]);
+        c.set_gpr(2, !thread ? 0x80020198u : thread->status == ThreadStatus::Dormant
+            ? thread->exit_status : 0x800201A4u);
+    });
     rt.register_hle("ThreadManForUser", 0x94AA61EEu, [state](auto& runtime, auto& ctx) {
         const auto* current = state->find(state->current_uid_);
         if (!current || current->status != ThreadStatus::Running) {

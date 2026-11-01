@@ -1,6 +1,6 @@
 # Milestone 003: boot sequence
 
-**IN PROGRESS, 2026-10-29.** Native bring-up is implemented; title-screen boot is
+**IN PROGRESS, 2026-11-01.** Native bring-up is implemented; title-screen boot is
 not. The current bounded experiment completes the full 59-entry constructor loop, creates
 four mutexes and eight inactive timers, registers its exit callback and completes
 the post-constructor object's 2048-record initialization loop. It allocates a
@@ -8,16 +8,18 @@ single-block fixed pool, completes language get/set and creates an event flag.
 Both workers now wait on their shared event flag. The main thread completes
 VBLANK registration, the first GE initialization list and display-mode setup
 under bounded idle events, then advances through guarded graphics methods,
-resource layout/allocation and checked clock conversion. The latest 501-root
+resource layout/allocation and checked clock conversion. The latest 504-root
 native slice follows the post-clear object graph and later state callbacks,
-reaches eight display frames and completes seven GE lists. Two GE clears write
+reaches 51 display frames and completes 50 GE lists. Two GE clears write
 261,120 guest-VRAM pixel positions. It reads the nominal 222/222/111 MHz clock
 profile, registers checked source-only `fatms0:` callback ownership and a fixed
 local WLAN identity, creates one lightweight mutex and starts a priority-32 VFPU
 worker. That worker records a valid `disc0:` activation request without supplying
-media or a host filesystem. The last native checkpoint boundary is the callback-aware
-96,000-microsecond `sceUmdWaitDriveStatCB` wait for READY; title boot remains
-open. See
+media or a host filesystem. Its finite READY waits now time out and enter the
+reviewed delay/retry loop while the main thread polls its exit status and advances
+the display. The last native run stops at the 32,768-dispatch budget, at
+`0x08867528`, after 850,850 modeled guest microseconds; the runner reports
+`failed` / exit 1. Title boot remains open. See
 [current startup evidence](../research/startup-indirect-2026-10-22.md),
 [constructor-completion evidence](../research/constructor-coverage.md) and
 [object/exception-boundary evidence](../research/startup-objects.md) and
@@ -77,10 +79,9 @@ selection even when deadlines coincide without an installed interrupt handler.
 Short timeouts consume the bounded idle-event budget independently of LCD frames.
 These are synthetic kernel/display integration results shared with Milestone 004.
 
-**BLOCKED native execution:** bounded static analysis of the existing local EBOOT
-is now authorized; execution remains outside that authorization. The timeout change was tested with synthetic
-fixtures only; no later native checkpoint or title progress is claimed. Establishing
-the next observed startup dependency requires an authorized bounded native run.
+**VERIFIED native follow-up, 2026-11-01:** the user's expanded authorization
+supersedes the earlier analysis-only restriction. Bounded regeneration, build and
+native execution now verify the timeout/retry path and concurrent display work.
 Callback-owning UMD callers, media access and runnable guest time remain unsupported.
 
 **VERIFIED static follow-up:** the negative UMD wait result enters a 96,000-us
@@ -92,5 +93,7 @@ this does not establish the next execution order of other threads.
 The observed retry delay now has a restricted HLE contract and synthetic tests.
 It returns zero only after a 96,010-us modeled deadline (96,000-us request plus
 the documented reference overhead), preserving VBLANK ordering and caller context.
-This makes the retry dependency testable without claiming media readiness or
-native execution beyond the previously recorded checkpoint.
+The native trace now records four READY-wait calls and four delay calls, without
+media readiness. Three reviewed roots and a state-preserving
+`sceKernelGetThreadExitStatus` query advance execution beyond the former import
+boundary. See the [native follow-up](../research/umd-wait-continuation.md#native-follow-up-2026-11-01).

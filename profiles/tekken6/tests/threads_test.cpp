@@ -195,6 +195,31 @@ void start_arguments() {
     Scheduled large; const auto l = large.create(40); large.start(l, 900, 0x08004000u);
     check(large.rt->stopped() && large.threads->snapshot()[0].status == ThreadStatus::Dormant, "Oversized argument mutation");
 }
+void exit_status_query() {
+    Scheduled f;
+    const auto child = f.create(8);
+    auto query = [&](std::uint32_t uid, std::uint32_t expected) {
+        auto& c = f.rt->cpu(); c.gpr[4] = uid; c.pc = 0x08001900u; c.gpr[31] = 0x08001800u;
+        c.gpr[16] = 77; c.vfpu[83] = 9.5f;
+        const auto owner = f.threads->current_uid();
+        invoke_returning_import(*f.rt, c, "ThreadManForUser", 0x3B183E26u);
+        check(!f.rt->stopped() && c.gpr[2] == expected && c.pc == 0x08001800u &&
+              c.gpr[16] == 77 && c.vfpu[83] == 9.5f && f.threads->current_uid() == owner,
+              "Thread exit status result/context");
+    };
+    query(0, 0x80020198u); query(0xFFFFFFFFu, 0x80020198u);
+    query(child, 0x800201A2u); query(kBootstrapUid, 0x800201A4u);
+    f.start(child); query(child, 0x800201A4u);
+    f.threads->wait_display(*f.rt, f.rt->cpu(), 1);
+    query(child, 0x800201A4u);
+    f.threads->wake_display(*f.rt, f.rt->cpu(), 1);
+    f.rt->cpu().gpr[4] = 0x87654321u; f.exit(); query(child, 0x87654321u);
+    f.start(child); query(child, 0x800201A4u);
+    f.rt->cpu().gpr[4] = 123; f.exit(); query(child, 123);
+    f.rt->cpu().gpr[4] = child;
+    f.rt->invoke_import("ThreadManForUser", kDeleteThreadNid, f.rt->cpu());
+    query(child, 0x80020198u);
+}
 void interrupt_state() {
     Scheduled f;
     auto& c = f.rt->cpu();
@@ -674,7 +699,7 @@ void current_thread_id() {
 }
 }
 int main() {
-    try { ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
+    try { exit_status_query(); ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
           mutex_ownership(); lightweight_mutex_creation(); mutex_boundaries(); semaphore_creation(); semaphore_signal_and_delete(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

@@ -3,7 +3,7 @@
 **VERIFIED static, 2026-10-29.** Following authorization for bounded analysis of
 the existing local EBOOT, the exact ULUS10466 input was revalidated against SHA-256
 `e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f`.
-No native execution, interpreter execution, translation generation, media import
+During that static checkpoint, no native execution, interpreter execution, translation generation, media import
 or AOT authorization was performed. Raw reports and bounded instruction listings
 remain in ignored `local/root-inspection/umd-continuation/`.
 
@@ -76,7 +76,35 @@ operations. The empty-drive host supplies neither media nor readable files.
 This establishes a media prerequisite for this worker, not proof that all game
 threads are blocked or that no independent startup work remains.
 
-Native execution remains outside the current analysis-only authorization.
-Milestones 003 and 004 remain open; no new title, scene or gameplay result is
-claimed. The next native observation, if separately authorized, must retain the
-existing execution/time bounds and explicit failure boundaries.
+## Native follow-up (2026-11-01)
+
+**VERIFIED native:** expanded user authorization superseded the analysis-only
+restriction. The same exact input was validated, regenerated and built under
+`local/build/cloud/`, using the unchanged pinned framework, Debug configuration
+and two build jobs. The existing 15-second runner timeout, 32,768-dispatch limit
+and 64-idle-event budget were retained.
+
+The first run reached a guarded callback at `0x08896EA4`. Reviewed immediate and
+vtable provenance admitted three roots; the next run stopped at missing
+`sceKernelGetThreadExitStatus`. Implementing that state query allowed the main
+thread to continue polling while the media worker remained waiting. See
+[callback and status-query evidence](startup-indirect-2026-10-22.md#worker-status-polling-and-native-timeouts-2026-11-01).
+
+The final trace contains four READY-wait calls, four 96,000-us delay calls and
+43 thread-exit-status calls. Call counts do not imply that the final delay has
+completed. It reaches 51 display frames, 50 Complete GE lists, 58 idle events and
+850,850 modeled guest microseconds. It stops at `0x08867528` on the dispatch
+limit, with runner status `failed` / exit 1. This is budget exhaustion, not a
+successful boot or a successful research-boundary exit. The two earlier VRAM
+clears remain the only verified drawing; title boot and Milestones 003/004 remain
+open. Readable media is still a prerequisite for this worker's progress beyond its
+retry loop; the observation does not establish that all independent work is blocked.
+
+Reproduce with the generated local probe:
+
+```sh
+python tools/run_probe.py local/game/EBOOT.BIN --binary local/build/cloud/probe/profiles/tekken6/azazel6_entry_probe --output local/build/cloud/run-2026-10-30-exit-status
+```
+
+Raw traces and generated translations remain ignored local artifacts. No disc,
+asset, host filesystem bridge or fabricated READY result was introduced.

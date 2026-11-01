@@ -1,6 +1,7 @@
 # ADR-0004: Order finite idle timeouts with LCD edges
 
-**Status:** Accepted for source-only synthetic research. **Date:** 2026-10-29.
+**Status:** Accepted for bounded startup research (scope extended 2026-11-01).
+**Date:** 2026-10-29.
 
 ## Context and decision
 
@@ -56,3 +57,12 @@ queue. Its 96,000-us request uses the documented PPSSPP policy of 10-us extra
 delay; see [provenance and limits](../research/umd-wait-continuation.md).
 This models the wait deadline only, not runnable CPU execution cost. Other
 delay durations remain rejecting pending separate evidence.
+
+## Native verification extension (2026-11-01)
+
+Expanded user authorization permits this same bounded model in the exact-input
+native startup probe. This explicitly extends the original synthetic-only
+verification scope; scheduling semantics, budgets and unsupported cases above
+remain unchanged. The [native follow-up](../research/umd-wait-continuation.md#native-follow-up-2026-11-01)
+verifies media wait/delay retries alongside main-thread display work, ending at
+the dispatch limit. It establishes neither media readiness nor title boot.

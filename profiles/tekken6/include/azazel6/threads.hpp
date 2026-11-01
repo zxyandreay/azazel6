@@ -27,7 +27,7 @@ struct GuestThread {
     std::string name;
     ThreadStatus status = ThreadStatus::Dormant;
     psprecomp::AllegrexContext context{};
-    std::uint32_t exit_status = 0;
+    std::uint32_t exit_status = 0x800201A2u; // Newly created, never started (DORMANT).
     std::uint64_t stack_ticket = 0;
     std::optional<std::uint64_t> display_deadline;
     // Absolute half-ticks on the shared LCD timeline; independent of display frames.
