@@ -115,6 +115,7 @@ def load_profile(path):
         profile = json.loads(Path(path).read_text(encoding="utf-8"))
         exe = profile["executable"]
         generation = profile["generation"]
+        media = profile["media"]
         if (profile["schema_version"] != 1 or profile["game_id"] != "ULUS10466"
                 or profile["region"] != "USA" or exe["format"] != "ELF32-LE-MIPS"
                 or type(exe["size"]) is not int or not 52 <= exe["size"] <= MAX_INPUT
@@ -123,6 +124,10 @@ def load_profile(path):
                 or type(generation["unit_span"]) is not int or not 256 <= generation["unit_span"] <= 65536
                 or generation["unit_span"] % 4 or generation["prefix"] != "tekken6"):
             raise ValidationError("Unsupported profile values")
+        if (media['format'] != 'ISO9660' or type(media['size']) is not int or
+                not 18 * 2048 <= media['size'] <= 2 * 1024**3 or media['size'] % 2048 or
+                re.fullmatch(r'[0-9a-f]{64}', media['sha256']) is None):
+            raise ValidationError('Unsupported media profile values')
         return profile
     except (KeyError, TypeError, json.JSONDecodeError) as error:
         raise ValidationError(f"Malformed profile: {error}") from error

@@ -3,10 +3,74 @@
 #include <algorithm>
 
 namespace azazel6 {
+namespace {
+constexpr std::uint32_t bad_fd = 0x80010009u, missing = 0x80010002u;
+bool io_caller(psprecomp::Runtime& runtime, psprecomp::AllegrexContext& c,
+               const IoStartupState& state, const ThreadRegistry& threads) {
+    const auto current = threads.current_thread();
+    if (state.owner != &runtime || &c != &runtime.cpu() || !current ||
+        current->status != ThreadStatus::Running || threads.in_interrupt() || !threads.interrupts_enabled()) {
+        runtime.stop("Disc I/O requires its live interruptible caller"); return false;
+    }
+    return true;
+}
+std::string disc_path(psprecomp::Runtime& runtime, std::uint32_t address) {
+    const auto end = psprecomp::GuestMemory::kPhysicalBase + std::uint64_t(runtime.memory().size());
+    std::string result;
+    for (unsigned i = 0; i < 1024; ++i) {
+        const auto at = std::uint64_t(address) + i;
+        if (at < psprecomp::GuestMemory::kPhysicalBase || at >= end)
+            throw psprecomp::Error("Disc path outside canonical RAM");
+        const auto ch = runtime.memory().load8(static_cast<std::uint32_t>(at));
+        if (!ch) return result;
+        result += static_cast<char>(ch);
+    }
+    throw psprecomp::Error("Unterminated disc path");
+}
+}
 std::shared_ptr<IoStartupState> register_io_startup_hle(
-        psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<DisplayState> display) {
+        psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<DisplayState> display,
+        std::shared_ptr<IsoMedia> media) {
     if (!threads) throw psprecomp::Error("I/O startup HLE requires thread ownership");
     auto state = std::make_shared<IoStartupState>();
+    state->owner = &rt; state->media = std::move(media);
+    rt.nids().add("IoFileMgrForUser", kIoOpenNid, "sceIoOpen");
+    rt.register_hle("IoFileMgrForUser", kIoOpenNid, [state, threads](auto& runtime, auto& c) {
+        if (!io_caller(runtime, c, *state, *threads)) return;
+        if (c.gpr[5] != 1 || c.gpr[6] != 0) { runtime.stop("Unsupported disc open flags or mode"); return; }
+        if (!state->media || !state->umd_activated) { c.set_gpr(2, 0x80010013u); return; }
+        try {
+            const auto file = state->media->find(disc_path(runtime, c.gpr[4]));
+            if (!file || file->directory) { c.set_gpr(2, missing); return; }
+            if (state->files.size() >= 64 || state->next_fd >= 0x75000000u) { c.set_gpr(2, 0x80010018u); return; }
+            const auto fd = state->next_fd++;
+            state->files.emplace(fd, DiscHandle{*file}); ++state->opens;
+            c.set_gpr(2, fd);
+        } catch (const std::exception& error) { runtime.stop(error.what()); }
+    });
+    rt.nids().add("IoFileMgrForUser", kIoCloseNid, "sceIoClose");
+    rt.register_hle("IoFileMgrForUser", kIoCloseNid, [state, threads](auto& runtime, auto& c) {
+        if (!io_caller(runtime, c, *state, *threads)) return;
+        c.set_gpr(2, state->files.erase(c.gpr[4]) ? 0 : bad_fd);
+    });
+    rt.nids().add("IoFileMgrForUser", kIoIoctlNid, "sceIoIoctl");
+    rt.register_hle("IoFileMgrForUser", kIoIoctlNid, [state, threads](auto& runtime, auto& c) {
+        if (!io_caller(runtime, c, *state, *threads)) return;
+        const auto file = state->files.find(c.gpr[4]);
+        if (file == state->files.end()) { c.set_gpr(2, bad_fd); return; }
+        // Pinned PortableKit ioctl_op: 0x01020006 returns the file's first LBA.
+        if (c.gpr[5] != 0x01020006u || c.gpr[6] || c.gpr[7] || c.gpr[9] != 4) {
+            runtime.stop("Unsupported disc ioctl command or ABI"); return;
+        }
+        const auto current = threads->current_thread();
+        const auto end = std::uint64_t(c.gpr[8]) + 4;
+        if ((c.gpr[8] & 3) || c.gpr[8] < current->stack_base ||
+            end > std::uint64_t(current->stack_base) + current->stack_size) {
+            runtime.stop("Disc sector output requires live caller stack"); return;
+        }
+        runtime.memory().store32(c.gpr[8], file->second.file.sector);
+        ++state->sector_queries; c.set_gpr(2, 0);
+    });
     rt.nids().add("IoFileMgrForUser", kIoDevctlNid, "sceIoDevctl");
     rt.register_hle("IoFileMgrForUser", kIoDevctlNid,
         [state, threads](auto& runtime, auto& c) {
@@ -81,8 +145,7 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
             state->umd_activated = true;
             ++state->umd_activation_count;
             c.set_gpr(2, 0);
-            // Activation records the empty drive mount only. No medium, host path,
-            // filesystem or readable state is supplied by this source-only host.
+            // A supplied medium was fully validated before guest execution.
         });
     rt.nids().add("sceUmdUser", kUmdWaitDriveStatCBNid, "sceUmdWaitDriveStatCB");
     rt.register_hle("sceUmdUser", kUmdWaitDriveStatCBNid,
@@ -92,7 +155,7 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
                 !threads->interrupts_enabled()) {
                 runtime.stop("UMD wait requires an interruptible running thread"); return;
             }
-            // Only the observed finite READY wait on an activated empty drive.
+            // Only the observed finite READY wait on an activated drive.
             if (!display || !state->umd_activated || c.gpr[4] != 0x20 || !c.gpr[5]) {
                 runtime.stop("Unsupported UMD drive-state wait configuration"); return;
             }
@@ -101,6 +164,7 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
                     runtime.stop("UMD wait callback delivery is unimplemented"); return;
                 }
             }
+            if (state->media) { c.set_gpr(2, 0); return; }
             display->wait_timeout(runtime, c, c.gpr[5], 0x800201A8u);
         });
     return state;

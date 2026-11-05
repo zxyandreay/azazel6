@@ -95,7 +95,11 @@ class ElfTests(unittest.TestCase):
         profile = load_profile(path)
         self.assertEqual(profile["game_id"], "ULUS10466")
         mutations = [("game_id", "ULES00000"), ("schema_version", 2), ("generation", {}),
-                     ("executable", {"size": 1})]
+                     ("executable", {"size": 1}), ("media", {}),
+                     ("media", {**profile['media'], 'size': True}),
+                     ("media", {**profile['media'], 'size': 2049}),
+                     ("media", {**profile['media'], 'format': 'CSO'}),
+                     ("media", {**profile['media'], 'sha256': '"unsafe'})]
         with tempfile.TemporaryDirectory(dir=ROOT / "local") as folder:
             for key, value in mutations:
                 changed = copy.deepcopy(profile)

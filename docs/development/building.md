@@ -111,6 +111,13 @@ report or game-derived code. Synthetic inspector regressions live in
 
 ## Android cross-compilation
 
+The native probe accepts optional `--iso <local image>` through `tools/run_probe.py`.
+The image must match the profile's separate media fingerprint; its decrypted
+EBOOT must still match the executable fingerprint. The native provider checks
+ISO/SFO structure before guest execution. No image is downloaded, extracted or
+modified. Omission retains the empty-drive timeout behavior. See
+[media admission and observed results](../research/local-media-continuation.md).
+
 For grouped disassembly, references and optional decompilation, use the
 [local Ghidra/Allegrex evidence workflow](../research/reverse-engineering.md).
 It supplements the strict CFG inspector without authorizing AOT roots.

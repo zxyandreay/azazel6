@@ -2,6 +2,11 @@
   "schema_version": 1,
   "game_id": "ULUS10466",
   "region": "USA",
+  "media": {
+    "format": "ISO9660",
+    "size": 855638016,
+    "sha256": "45e9eaa105afda7c44204909e7fa22321236c89158bd7d26b52aba2f2e0794c8"
+  },
   "executable": {
     "format": "ELF32-LE-MIPS",
     "size": 4158480,

@@ -132,6 +132,7 @@ def main():
     (output / "probe_config.hpp").write_text(
         '#pragma once\n#define AZAZEL6_EXPECTED_SHA "' + profile["executable"]["sha256"] + '"\n'
         f'#define AZAZEL6_MODULE_ADDRESS {module["address"]}u\n'
+        f'#define AZAZEL6_MEDIA_SHA "{profile["media"]["sha256"]}"\n'
         f'#define AZAZEL6_BOOTSTRAP_PRIORITY {start_thread["priority"]}u\n'
         f'#define AZAZEL6_BOOTSTRAP_STACK_SIZE {start_thread["stack_size"]}u\n'
         f'#define AZAZEL6_LANGUAGE {language}u\n#define AZAZEL6_CONFIRM_BUTTON {button}u\n'

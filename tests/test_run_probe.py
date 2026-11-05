@@ -1,5 +1,7 @@
 """Synthetic runner/capture contracts; these fixtures never execute the game."""
 import json
+import os
+import hashlib
 from pathlib import Path
 import subprocess
 import tempfile
@@ -73,10 +75,20 @@ class RunProbeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as outside:
             target = Path(outside) / 'private.rgba'
             target.write_bytes(b'preserve')
-            (self.output / 'framebuffer.rgba').symlink_to(target)
+            if os.name == 'nt':
+                # Directory junctions exercise real resolve() confinement without
+                # requiring Windows' optional symbolic-link privilege.
+                import _winapi
+                link = self.output / 'outside'
+                _winapi.CreateJunction(str(Path(outside)), str(link))
+                capture_output = link
+                self.addCleanup(link.rmdir)
+            else:
+                (self.output / 'framebuffer.rgba').symlink_to(target)
+                capture_output = self.output
             with patch('run_probe.validate'), patch('run_probe.subprocess.run') as execute:
                 with self.assertRaises(ValueError):
-                    main(['synthetic', '--binary', 'synthetic', '--output', str(self.output),
+                    main(['synthetic', '--binary', 'synthetic', '--output', str(capture_output),
                           '--capture-framebuffer'])
                 execute.assert_not_called()
             self.assertEqual(target.read_bytes(), b'preserve')
@@ -96,6 +108,32 @@ class RunProbeTests(unittest.TestCase):
                 main(['synthetic', '--binary', 'synthetic', '--output', str(output), '--capture-framebuffer'])
             execute.assert_not_called()
         self.assertFalse(output.exists())
+
+    def test_media_fingerprint_precedes_output_and_execution(self):
+        media = self.output / 'synthetic.iso'
+        media.write_bytes(b'synthetic media')
+        for size, digest in ((1, hashlib.sha256(b'synthetic media').hexdigest()),
+                             (media.stat().st_size, '0' * 64)):
+            with patch('run_probe.validate'), patch('run_probe.load_profile', return_value={
+                    'media': {'size': size, 'sha256': digest}}), patch('run_probe.subprocess.run') as execute:
+                with self.assertRaises(ValueError):
+                    main(['synthetic', '--binary', 'synthetic', '--iso', str(media),
+                          '--output', str(self.output / 'not-created')])
+                execute.assert_not_called()
+            self.assertFalse((self.output / 'not-created').exists())
+
+    def test_explicit_media_forwarded_and_fingerprint_reported(self):
+        media = self.output / 'synthetic.iso'
+        media.write_bytes(b'synthetic media')
+        digest = hashlib.sha256(media.read_bytes()).hexdigest()
+        with patch('run_probe.validate'), patch('run_probe.load_profile', return_value={
+                'media': {'size': media.stat().st_size, 'sha256': digest}}), \
+                patch('run_probe.subprocess.run', return_value=subprocess.CompletedProcess([], 3)) as execute, \
+                patch('builtins.print'):
+            self.assertEqual(main(['synthetic', '--binary', 'synthetic', '--iso', str(media),
+                                   '--output', str(self.output)]), 0)
+        self.assertEqual(execute.call_args.args[0][-2:], ['--iso', str(media.resolve())])
+        self.assertEqual(json.loads((self.output / 'execution.json').read_text())['media_sha256'], digest)
 
 
 if __name__ == '__main__':

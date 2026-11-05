@@ -1,12 +1,15 @@
 set(AZAZEL6_ENTRY_DIR "" CACHE PATH "Directory produced by tools/entry_probe.py")
 option(AZAZEL6_PROBE_FAST_BUILD "Disable entry-probe optimization for coverage research" OFF)
-add_library(azazel6_bootstrap STATIC host/bootstrap.cpp host/threads.cpp host/memory.cpp host/module.cpp
+add_library(azazel6_bootstrap STATIC host/bootstrap.cpp host/threads.cpp host/memory.cpp host/module.cpp host/media.cpp host/media_hash.cpp
     host/fixed_pools.cpp host/settings.cpp host/event_flags.cpp host/graphics_memory.cpp host/ge_callbacks.cpp
     host/interrupts.cpp host/display.cpp host/ge_lists.cpp host/ge_state.cpp host/ge_clear.cpp host/power.cpp
     host/io.cpp host/controller.cpp)
 target_include_directories(azazel6_bootstrap PUBLIC include)
 target_link_libraries(azazel6_bootstrap PUBLIC psprecomp_core)
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
+    add_executable(azazel6_media_tests tests/media_test.cpp)
+    target_link_libraries(azazel6_media_tests PRIVATE azazel6_bootstrap)
+    add_test(NAME azazel6_media COMMAND azazel6_media_tests)
     add_executable(azazel6_ge_clear_tests tests/ge_clear_test.cpp)
     target_link_libraries(azazel6_ge_clear_tests PRIVATE azazel6_bootstrap)
     add_test(NAME azazel6_ge_clear COMMAND azazel6_ge_clear_tests)

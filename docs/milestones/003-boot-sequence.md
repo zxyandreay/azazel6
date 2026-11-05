@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**2026-11-05 local continuation:** checked read-only ISO access removes the
+empty-drive dependency. The media worker completes its actual file-sector query
+and exits; the main thread advances to guarded callback `0x08898710` from
+`0x08897ADC`. The 505-root run reaches nine display frames with black scanout.
+Title boot remains open. See [media evidence](../research/local-media-continuation.md).
+
 **IN PROGRESS, 2026-11-01.** Native bring-up is implemented; title-screen boot is
 not. The current bounded experiment completes the full 59-entry constructor loop, creates
 four mutexes and eight inactive timers, registers its exit callback and completes

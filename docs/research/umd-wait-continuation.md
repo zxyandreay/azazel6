@@ -1,5 +1,11 @@
 # UMD wait continuation: bounded static checkpoint
 
+**Superseded dependency, 2026-11-05:** the local computer supplies a validated ISO
+and a checked read-only provider. The media worker completes its actual sector
+query and exits; startup reaches a later guarded callback. See
+[local media continuation](local-media-continuation.md). The empty-drive results
+below remain reproducible when no image is explicitly supplied.
+
 **VERIFIED static, 2026-10-29.** Following authorization for bounded analysis of
 the existing local EBOOT, the exact ULUS10466 input was revalidated against SHA-256
 `e0ed418952c51032796ebc54584592a9f6075495229f6d12d5065f3186bcb55f`.

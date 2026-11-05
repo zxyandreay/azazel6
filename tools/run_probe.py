@@ -32,14 +32,28 @@ def main(argv=None):
     parser.add_argument("input", type=Path)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=ROOT / "local/entry-probe")
+    parser.add_argument("--iso", type=Path, help="Explicit read-only ULUS10466 disc image")
     parser.add_argument("--capture-framebuffer", action="store_true",
                         help="Retain current 480x272 scanout as local RGBA/PPM, including failed runs")
     args = parser.parse_args(argv)
-    validate(args.input, load_profile(ROOT / "profiles/tekken6/config/profile.json"))
+    profile = load_profile(ROOT / "profiles/tekken6/config/profile.json")
+    validate(args.input, profile)
+    if args.iso:
+        if args.iso.stat().st_size != profile['media']['size']:
+            raise ValueError('Unsupported ISO size')
+        with args.iso.open('rb') as source:
+            digest = hashlib.sha256()
+            for block in iter(lambda: source.read(1024 * 1024), b''):
+                digest.update(block)
+        if digest.hexdigest() != profile['media']['sha256']:
+            raise ValueError('Unsupported ISO SHA-256')
     output = local_output(args.output)
     output.mkdir(parents=True, exist_ok=True)
     result = {"status": "failed", "timeout_seconds": 15}
     command = [str(args.binary.resolve()), str(args.input.resolve())]
+    if args.iso:
+        command.extend(['--iso', str(args.iso.resolve())])
+        result['media_sha256'] = digest.hexdigest()
     if args.capture_framebuffer:
         # Refuse escaping symlinks; remove old artifacts so timeout/off cannot
         # accidentally report a previous run's pixels as fresh evidence.

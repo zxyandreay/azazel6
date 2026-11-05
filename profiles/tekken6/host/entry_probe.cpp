@@ -28,11 +28,18 @@ namespace azazel6 { void register_profile_imports(psprecomp::Runtime&); }
 
 int main(int argc, char** argv) {
     using namespace psprecomp;
-    if (argc != 2 && !(argc == 4 && std::string_view(argv[2]) == "--framebuffer-rgba")) {
-        std::cerr << "Usage: azazel6_entry_probe <validated EBOOT> [--framebuffer-rgba <local output>]\n";
+    if (argc < 2 || argc % 2 != 0) {
+        std::cerr << "Usage: azazel6_entry_probe <validated EBOOT> [--iso <image>] [--framebuffer-rgba <local output>]\n";
         return 2;
     }
     try {
+        std::string iso_path, framebuffer_path;
+        for (int i = 2; i < argc; i += 2) {
+            const std::string_view option(argv[i]);
+            if (option == "--iso" && iso_path.empty()) iso_path = argv[i + 1];
+            else if (option == "--framebuffer-rgba" && framebuffer_path.empty()) framebuffer_path = argv[i + 1];
+            else throw Error("Unknown or duplicate probe option");
+        }
 #ifdef _WIN32
         if (_putenv_s("PSPRECOMP_NO_INTERPRETER", "1") != 0) throw Error("Cannot disable interpreter");
 #else
@@ -40,6 +47,12 @@ int main(int argc, char** argv) {
 #endif
         if (sha256_file(argv[1]) != AZAZEL6_EXPECTED_SHA) throw Error("Unsupported input SHA-256");
         std::cout << "input_sha256=" << AZAZEL6_EXPECTED_SHA << std::endl;
+        std::shared_ptr<azazel6::IsoMedia> media;
+        if (!iso_path.empty()) {
+            media = std::make_shared<azazel6::IsoMedia>(iso_path, AZAZEL6_MEDIA_SHA);
+            std::cout << "media_sha256=" << media->fingerprint() << " media_bytes=" << media->size()
+                      << " media_entries=" << media->file_count() << std::endl;
+        }
         const auto elf = Elf32Image::from_file(argv[1]);
         auto rt = std::make_unique<Runtime>(elf.required_ram_size());
         const auto relocations = elf.load_and_relocate(rt->memory());
@@ -99,7 +112,7 @@ int main(int argc, char** argv) {
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
         const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
-        const auto io = azazel6::register_io_startup_hle(*rt, threads, display);
+        const auto io = azazel6::register_io_startup_hle(*rt, threads, display, media);
         const auto ge_queue = azazel6::register_ge_list_hle(*rt, ge_callbacks, threads, AZAZEL6_GE_LIST_SPANS,
             {partition, data_cache, interrupt_delivery, module.gp});
         std::cout << "guest_clock_mode=bounded_idle_events idle_event_budget=64" << std::endl;
@@ -174,6 +187,8 @@ int main(int argc, char** argv) {
         std::cout << "wlan_address_reads=" << io->wlan_address_reads << std::endl;
         std::cout << "umd_activated=" << io->umd_activated
                   << " umd_activation_count=" << io->umd_activation_count << std::endl;
+        std::cout << "disc_opens=" << io->opens << " disc_sector_queries=" << io->sector_queries
+                  << " disc_open_handles=" << io->files.size() << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {
             const auto arg0 = rt->cpu().gpr[4];
             std::cout << "indirect_arg0=" << hex32(arg0) << " v0=" << hex32(rt->cpu().gpr[2])
@@ -222,7 +237,7 @@ int main(int argc, char** argv) {
         for (const auto& [uid, pool] : threads->fixed_pools())
             std::cout << "fixed_pool=" << hex32(uid) << " base=" << hex32(pool.allocation.base)
                       << " block_size=" << pool.block_size << " allocated=" << pool.allocated << std::endl;
-        if (argc == 4) {
+        if (!framebuffer_path.empty()) {
             // Diagnostic scanout after the bounded run, including failure stops.
             // No display event, latch or guest state is changed by readback.
             const auto pixels = display->buffers.readback_rgba(mem);
@@ -232,7 +247,7 @@ int main(int argc, char** argv) {
                       << " framebuffer_format=" << buffer.format
                       << " framebuffer_rgba_bytes=" << pixels.size() << std::endl;
             if (!pixels.empty()) {
-                std::ofstream output(argv[3], std::ios::binary | std::ios::trunc);
+                std::ofstream output(framebuffer_path, std::ios::binary | std::ios::trunc);
                 output.write(reinterpret_cast<const char*>(pixels.data()), pixels.size());
                 output.close();
                 if (!output) throw Error("Cannot write framebuffer capture");

@@ -1,5 +1,9 @@
 # Milestone 004: graphics and input
 
+**2026-11-05 local continuation:** validated ISO access allows the media worker to
+complete and startup to advance to a new guarded callback. Scanout remains black;
+neither visual gate is complete. See [media evidence](../research/local-media-continuation.md).
+
 **IN PROGRESS, reviewed 2026-11-01.** The bounded native startup completes registration and
 enable of its VBLANK handler. The [display foundation](../research/display-foundation.md)
 adds synthetic clock, interrupt delivery, wait/cancellation and framebuffer contracts.

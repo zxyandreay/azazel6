@@ -60,6 +60,7 @@ Reviewed 2026-10-28. Evidence labels apply to individual claims:
 - [Startup fixed memory pools](research/fixed-pools.md)
 - [Startup language and confirm-button settings](research/language-mode.md)
 - [Startup event flags](research/event-flags.md)
+- [Checked local media continuation](research/local-media-continuation.md)
 - [Worker entry and immediate address guards](research/worker-dispatch.md)
 - [Graphics memory startup boundary](research/graphics-memory.md)
 - [GE callback ownership and VBLANK handoff](research/ge-callbacks.md)

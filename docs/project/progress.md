@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-11-01: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-11-05: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -11,9 +11,9 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 91 cases passed locally; bounded host registration stack and optional local scanout capture |
+| Python/profile tools | VERIFIED, 93 cases passed locally; bounded host registration stack and optional local scanout capture |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-four integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-five integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete and exit-status queries, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attributes are supported at creation and by later addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; source-only lightweight-mutex creation initializes the guest workarea; waits/timeouts and later lightweight-mutex operations remain rejecting |
 | Semaphore lifecycle | VERIFIED synthetic creation, FIFO/priority waits, positive-count signaling, overflow checks, deletion wakeups and priority handoff; nonpositive signaling and timeouts remain unsupported; see [contracts](../research/semaphores.md) |
@@ -25,9 +25,9 @@ Azazel6 is not playable. See
 | Controller settings | VERIFIED runtime-local idle-cancel thresholds, including signed `-1` and checked 0..128 values; guest pad sampling remains unimplemented |
 | Startup device control | VERIFIED source-only `fatms0:` callback ownership registration with checked live-stack input; no host path, media state, capacity, file or callback delivery |
 | Startup WLAN identity | VERIFIED one fixed locally administered unicast address copied only to a checked live caller stack; no host networking or connectivity |
-| UMD activation | VERIFIED checked mode-1 `disc0:` activation state only; no medium, host path, filesystem or readable state; finite READY waits for callback-free callers now have synthetic timeout coverage |
+| UMD activation / media | VERIFIED exact-hash read-only ISO admission, checked title/region and file extents, real sector query and handle closure; omission preserves empty-drive timeouts |
 | Idle timeouts | VERIFIED synthetic deadlines ordered with LCD edges, batched timeout/display wakeups, priority selection, subframe event budgets and preserved thread context; no runnable CPU time or callback delivery; see [ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md) |
-| UMD continuation | VERIFIED bounded native timeout/delay retries while the main thread polls worker exit status and continues display work; static review shows one success path requires file/device operations. No medium is supplied; see [evidence](../research/umd-wait-continuation.md) |
+| UMD continuation | VERIFIED native media-worker completion and UID deletion with actual disc data; startup advances to a new guarded callback; see [local media evidence](../research/local-media-continuation.md) |
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
@@ -44,7 +44,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED initialization GE work, SetMode, guarded graphics/resource queries and graphics memory setup; the 504-root slice covers 32,269 words, executes two clears (261,120 pixel positions), reaches 51 display frames and 50 Complete GE lists. The media worker retries empty-drive waits while the main thread polls its exit status; the 32,768-dispatch budget stops at `0x08867528` after 850,850 modeled guest microseconds (`failed` / exit 1). No title or scene is presented |
+| Native entry execution | VERIFIED 505 roots / 32,309 words; actual disc open/sector-query/close completes, media worker exits, then callback target `0x08898710` at `0x08897ADC` rejects. Nine display frames and two VRAM clears; scanout remains black and no title is presented |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

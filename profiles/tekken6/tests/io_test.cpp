@@ -1,5 +1,6 @@
 #include "azazel6/bootstrap.hpp"
 #include "azazel6/io.hpp"
+#include "media_fixture.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -169,8 +170,74 @@ void umd_timed_wait_contracts() {
             !f.threads->next_timeout(), "Unsupported UMD wait mutated scheduler");
 }
 
+void mounted_disc_contracts() {
+    media_fixture::File image;
+    auto media = std::make_shared<IsoMedia>(image.path, image.sha);
+    Fixture f; auto& c = f.rt->cpu();
+    auto io = register_io_startup_hle(*f.rt, f.threads, {}, media);
+    const char path[] = "disc0:/PSP_GAME/USRDIR/DATA.BIN";
+    for (unsigned i = 0; i < sizeof(path); ++i) f.rt->memory().store8(0x08811000 + i, path[i]);
+    c.gpr[4] = 0x08811000; c.gpr[5] = 1; c.gpr[6] = 0;
+    f.rt->invoke_import("IoFileMgrForUser", kIoOpenNid, c);
+    require(c.gpr[2] == 0x80010013u && io->files.empty(), "Inactive disc opened");
+    io->umd_activated = true;
+    f.rt->invoke_import("IoFileMgrForUser", kIoOpenNid, c);
+    const auto fd = c.gpr[2];
+    require(fd == 0x74000000u && io->opens == 1 && io->files.size() == 1, "Mounted disc open");
+    c.gpr[4] = fd; c.gpr[5] = 0x01020006; c.gpr[6] = 0; c.gpr[7] = 0; c.gpr[8] = c.gpr[29]; c.gpr[9] = 4;
+    f.rt->invoke_import("IoFileMgrForUser", kIoIoctlNid, c);
+    require(!f.rt->stopped() && c.gpr[2] == 0 && f.rt->memory().load32(c.gpr[29]) == 26 &&
+            io->sector_queries == 1, "Disc first-sector ioctl");
+    f.rt->invoke_import("IoFileMgrForUser", kIoCloseNid, c);
+    require(c.gpr[2] == 0 && io->files.empty(), "Disc close");
+    f.rt->invoke_import("IoFileMgrForUser", kIoCloseNid, c);
+    require(c.gpr[2] == 0x80010009u, "Stale file handle accepted");
+    f.rt->invoke_import("IoFileMgrForUser", kIoIoctlNid, c);
+    require(c.gpr[2] == 0x80010009u && io->sector_queries == 1, "Stale ioctl wrote output");
+    for (unsigned scenario = 0; scenario < 7; ++scenario) {
+        Fixture bad;
+        auto rejected = register_io_startup_hle(*bad.rt, bad.threads, {}, media);
+        rejected->umd_activated = true;
+        auto& rc = bad.rt->cpu();
+        for (unsigned i = 0; i < sizeof(path); ++i) bad.rt->memory().store8(0x08811000 + i, path[i]);
+        rc.gpr[4] = 0x08811000; rc.gpr[5] = 1; rc.gpr[6] = 0;
+        if (scenario == 0) rc.gpr[5] = 3;
+        if (scenario == 1) rc.gpr[4] = 0xFFFFFFFFu;
+        if (scenario == 2) bad.rt->memory().store8(0x08811000, 'x');
+        bad.rt->invoke_import("IoFileMgrForUser", kIoOpenNid, rc);
+        if (scenario < 3) {
+            require(bad.rt->stopped() && rejected->files.empty(), "Invalid disc open mutated handles");
+            continue;
+        }
+        rc.gpr[4] = rc.gpr[2]; rc.gpr[5] = 0x01020006; rc.gpr[6] = 0; rc.gpr[7] = 0;
+        rc.gpr[8] = rc.gpr[29]; rc.gpr[9] = 4;
+        const auto output = rc.gpr[29]; bad.rt->memory().store32(output, 0xDEADBEEF);
+        if (scenario == 3) rc.gpr[8] = 0xFFFFFFFCu;
+        if (scenario == 4) rc.gpr[9] = 8;
+        if (scenario == 5) rc.gpr[5] = 0;
+        if (scenario == 6) rc.gpr[8] = bad.threads->current_thread()->stack_base - 4;
+        bad.rt->invoke_import("IoFileMgrForUser", kIoIoctlNid, rc);
+        require(bad.rt->stopped() && !rejected->sector_queries && bad.rt->memory().load32(output) == 0xDEADBEEF,
+                "Invalid ioctl mutated output");
+    }
+    auto rt = std::make_unique<Runtime>();
+    auto threads = register_thread_hle(*rt, {0x09000000u, 0x09010000u, 0x08804000u,
+        0x08C00000u, 0x08804000u, 0x08C00000u, 0x08805000u, 40u, 0x4000u});
+    auto interrupts = register_interrupt_hle(*rt, 0x08804000u, 0x08C00000u, 0x08805000u);
+    auto delivery = register_interrupt_delivery(*rt, interrupts, threads,
+        std::make_shared<GuestAllocator>(0x09020000u, 0x09030000u));
+    auto display = register_display_hle(*rt, threads, delivery, 1);
+    auto mounted = register_io_startup_hle(*rt, threads, display, media);
+    mounted->umd_activated = true;
+    auto& rc = rt->cpu(); rc.gpr[4] = 0x20; rc.gpr[5] = 96000;
+    rt->invoke_import("sceUmdUser", kUmdWaitDriveStatCBNid, rc);
+    require(!rt->stopped() && rc.gpr[2] == 0 && !threads->next_timeout() &&
+            threads->current_uid() == kBootstrapUid && display->clock.ticks() == 0,
+            "Mounted readable disc must not schedule an empty-drive timeout");
+}
+
 int main() {
-    try { umd_timed_wait_contracts(); registration_contract(); rejection_contracts(); wlan_address_contract(); umd_activation_contract();
-          std::cout << "Source-only startup I/O contracts passed\n"; }
+    try { mounted_disc_contracts(); umd_timed_wait_contracts(); registration_contract(); rejection_contracts(); wlan_address_contract(); umd_activation_contract();
+          std::cout << "Synthetic startup I/O and mounted disc contracts passed\n"; }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }
