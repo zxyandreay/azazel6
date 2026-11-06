@@ -184,3 +184,10 @@ its three-word predicate `0x08868224`. The second conditional helper
 (`0x0889CE24`) has static coverage only. The next stop was the tail call at
 `0x08808314`. Its receiver held table `0x08B90C40` and register 25 held
 `0x0886804C` after the load at table offset `0x18`.
+
+**VERIFIED virtual method dispatch.** The constructor installed table
+`0x08B90C40` at `0x08868370`. Allowing its slot at `0x08B90C58` for the
+tail call advanced the main thread into the method. Its inner call at
+`0x088680C4` received `0x08868124` in register 5 with a zero adjustment
+in register 16. The constructor builds that address at `0x08868324/28` and
+stores it at `0x0886832C`. The inner guard stopped before invoking it.
