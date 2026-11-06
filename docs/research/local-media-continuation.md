@@ -178,3 +178,9 @@ address pair at `0x088987F4/F8` and stores it at object offset `0x68` at
 list-unlink callback. The main thread then reached its direct call from
 `0x088627F4` to `0x08894734`. The native run recorded 15 frames and 14 GE
 lists. Scanout still contained zero nonblack pixels.
+
+**VERIFIED readiness check.** The main thread entered `0x08894734` and
+its three-word predicate `0x08868224`. The second conditional helper
+(`0x0889CE24`) has static coverage only. The next stop was the tail call at
+`0x08808314`. Its receiver held table `0x08B90C40` and register 25 held
+`0x0886804C` after the load at table offset `0x18`.
