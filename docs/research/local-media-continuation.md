@@ -191,3 +191,9 @@ tail call advanced the main thread into the method. Its inner call at
 `0x088680C4` received `0x08868124` in register 5 with a zero adjustment
 in register 16. The constructor builds that address at `0x08868324/28` and
 stores it at `0x0886832C`. The inner guard stopped before invoking it.
+
+**VERIFIED callback execution.** With that address pair admitted only at
+`0x088680C4`, the guest entered `0x08868124`, requested 128 bytes from
+`0x0885FA44`, and passed the result to its direct callee `0x088AB8D0`.
+The native probe stopped at the callee entry, before its first instruction.
+The later member call at `0x08868178` is guarded.
