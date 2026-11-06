@@ -34,12 +34,16 @@ int main(int argc, char** argv) {
     }
     try {
         std::string iso_path, framebuffer_path;
+        bool wait_for_runner = false;
         for (int i = 2; i < argc; i += 2) {
             const std::string_view option(argv[i]);
             if (option == "--iso" && iso_path.empty()) iso_path = argv[i + 1];
+            else if (option == "--media-gate" && std::string_view(argv[i + 1]) == "stdin" && !wait_for_runner)
+                wait_for_runner = true;
             else if (option == "--framebuffer-rgba" && framebuffer_path.empty()) framebuffer_path = argv[i + 1];
             else throw Error("Unknown or duplicate probe option");
         }
+        if (wait_for_runner && iso_path.empty()) throw Error("Media gate requires ISO");
 #ifdef _WIN32
         if (_putenv_s("PSPRECOMP_NO_INTERPRETER", "1") != 0) throw Error("Cannot disable interpreter");
 #else
@@ -52,6 +56,10 @@ int main(int argc, char** argv) {
             media = std::make_shared<azazel6::IsoMedia>(iso_path, AZAZEL6_MEDIA_SHA);
             std::cout << "media_sha256=" << media->fingerprint() << " media_bytes=" << media->size()
                       << " media_entries=" << media->file_count() << std::endl;
+            if (wait_for_runner) {
+                std::cout << "validated_media_waiting" << std::endl;
+                if (std::cin.get() != 'G') throw Error("Missing runner execution grant");
+            }
         }
         const auto elf = Elf32Image::from_file(argv[1]);
         auto rt = std::make_unique<Runtime>(elf.required_ram_size());

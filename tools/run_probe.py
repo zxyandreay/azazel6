@@ -5,8 +5,34 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import time
 from analyze import ROOT, local_output
 from elf import load_profile, validate
+
+
+def run_mounted(command, log, deadline, execution_seconds=15):
+    """The child flushes a marker and blocks on stdin before any guest execution."""
+    phase = "media_validation"
+    with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=log, stderr=subprocess.STDOUT) as child:
+        try:
+            with open(log.name, "rb") as reader:
+                while time.monotonic() < deadline:
+                    reader.seek(0)
+                    if b"validated_media_waiting" in reader.read(1024).splitlines():
+                        phase = "execution"
+                        child.stdin.write(b"G")
+                        child.stdin.flush()
+                        return child.wait(timeout=execution_seconds), None
+                    if child.poll() is not None:
+                        return 1, None
+                    time.sleep(0.02)
+            return None, phase
+        except subprocess.TimeoutExpired:
+            return None, phase
+        finally:
+            if child.poll() is None:
+                child.kill()
+            child.wait()
 
 
 def summarize_framebuffer(path):
@@ -39,11 +65,15 @@ def main(argv=None):
     profile = load_profile(ROOT / "profiles/tekken6/config/profile.json")
     validate(args.input, profile)
     if args.iso:
+        validation_seconds = 240
+        validation_deadline = time.monotonic() + validation_seconds
         if args.iso.stat().st_size != profile['media']['size']:
             raise ValueError('Unsupported ISO size')
         with args.iso.open('rb') as source:
             digest = hashlib.sha256()
             for block in iter(lambda: source.read(1024 * 1024), b''):
+                if time.monotonic() >= validation_deadline:
+                    raise ValueError("ISO preflight validation timed out")
                 digest.update(block)
         if digest.hexdigest() != profile['media']['sha256']:
             raise ValueError('Unsupported ISO SHA-256')
@@ -52,7 +82,8 @@ def main(argv=None):
     result = {"status": "failed", "timeout_seconds": 15}
     command = [str(args.binary.resolve()), str(args.input.resolve())]
     if args.iso:
-        command.extend(['--iso', str(args.iso.resolve())])
+        command.extend(['--media-gate', 'stdin', '--iso', str(args.iso.resolve())])
+        result['media_validation_timeout_seconds'] = validation_seconds
         result['media_sha256'] = digest.hexdigest()
     if args.capture_framebuffer:
         # Refuse escaping symlinks; remove old artifacts so timeout/off cannot
@@ -64,10 +95,16 @@ def main(argv=None):
         command.extend(["--framebuffer-rgba", str(capture)])
     with (output / "execution.log").open("w", encoding="utf-8") as log:
         try:
-            process = subprocess.run(command,
-                                     stdout=log, stderr=subprocess.STDOUT, timeout=15)
-            result["returncode"] = process.returncode
-            if process.returncode == 3:
+            if args.iso:
+                code, timeout_phase = run_mounted(command, log, validation_deadline)
+            else:
+                code = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=15).returncode
+                timeout_phase = None
+            if timeout_phase:
+                result.update(status="timeout", timeout_phase=timeout_phase)
+            else:
+                result["returncode"] = code
+            if code == 3:
                 result["status"] = "research_boundary"
         except subprocess.TimeoutExpired:
             result["status"] = "timeout"

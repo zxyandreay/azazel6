@@ -9,7 +9,9 @@ import unittest
 from unittest.mock import patch
 
 from test_elf import ROOT
-from run_probe import main, summarize_framebuffer
+from run_probe import main, run_mounted, summarize_framebuffer
+import sys
+import time
 
 
 class RunProbeTests(unittest.TestCase):
@@ -128,12 +130,24 @@ class RunProbeTests(unittest.TestCase):
         digest = hashlib.sha256(media.read_bytes()).hexdigest()
         with patch('run_probe.validate'), patch('run_probe.load_profile', return_value={
                 'media': {'size': media.stat().st_size, 'sha256': digest}}), \
-                patch('run_probe.subprocess.run', return_value=subprocess.CompletedProcess([], 3)) as execute, \
+                patch('run_probe.run_mounted', return_value=(3, None)) as execute, \
                 patch('builtins.print'):
             self.assertEqual(main(['synthetic', '--binary', 'synthetic', '--iso', str(media),
                                    '--output', str(self.output)]), 0)
         self.assertEqual(execute.call_args.args[0][-2:], ['--iso', str(media.resolve())])
         self.assertEqual(json.loads((self.output / 'execution.json').read_text())['media_sha256'], digest)
+
+    def test_mount_gate_bounds_and_grant(self):
+        ready = "print('validated_media_waiting', flush=True); assert sys.stdin.read(1) == 'G'; "
+        for body, setup, expected in [
+                ("time.sleep(20)", .2, (None, "media_validation")),
+                (ready + "time.sleep(20)", 5, (None, "execution")),
+                (ready + "sys.exit(3)", 5, (3, None)),
+                ("sys.exit(3)", 5, (1, None))]:
+            with self.subTest(body=body), (self.output / "gate.log").open("w") as log:
+                code = run_mounted([sys.executable, "-c", "import time, sys; " + body],
+                                   log, time.monotonic() + setup, .2)
+                self.assertEqual(code, expected)
 
 
 if __name__ == '__main__':
