@@ -164,3 +164,10 @@ thread allows the latter to advance to its next state. The address pair at
 That callback calls `0x08868270` directly with return PC `0x08894B4C`.
 The 557-root native run stops there with 14 frames, 13 GE lists and a black
 480×272 capture. The next object call at `0x08894B5C` has a terminal guard.
+
+**VERIFIED object initialization.** The direct helper `0x08868270` returned
+to the main thread. At `0x08894B5C`, the guest loaded `0x08895254` from
+table `0x08B94698` at offset 8. The callback cleared three object fields.
+The caller then constructed its second object through `0x0889D1D4` and
+loaded `0x08895264` from `0x08B94650 + 8` at `0x08894BB8`. Each
+dispatch checks its own file-backed pointer slot.

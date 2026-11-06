@@ -1,5 +1,9 @@
 # Milestone 003: boot sequence
 
+**VERIFIED object callbacks.** Both object initializers executed on the main
+thread. The next guard observed target `0x088977D4` at `0x08897ADC`. The
+capture still has zero nonblack pixels.
+
 **VERIFIED, 2026-11-06.** The game reads both index files and the first raw
 disc sector, then schedules the main thread when the streaming worker sleeps.
 The main thread reaches `0x08868270` through two observed callbacks.
