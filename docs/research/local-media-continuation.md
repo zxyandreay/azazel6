@@ -197,3 +197,9 @@ stores it at `0x0886832C`. The inner guard stopped before invoking it.
 `0x0885FA44`, and passed the result to its direct callee `0x088AB8D0`.
 The native probe stopped at the callee entry, before its first instruction.
 The later member call at `0x08868178` is guarded.
+
+**VERIFIED system parameter request.** The constructor entered `0x0889DF24`
+and called `sceUtilityGetSystemParamInt` (NID `0xA5DA2406`) at
+`0x0889DF5C`. The native trace shows ID 9 and a word output at the current
+SP. The pinned PSPSDK identifies this ID as the confirm-button assignment.
+The guest tests the service result before reading its stack word.
