@@ -101,3 +101,66 @@ from `0x0889A16C`. The probe reports uncovered code as failure. It records
 one successful metadata query, zero open handles, nine frames, eight GE lists
 and zero nonblack pixels. All 93 Python cases and 25 CTest suites pass. The
 same generated slice cross-compiles and links for Android ARM64.
+
+## First transfer into game memory (2026-11-06)
+
+**VERIFIED on the native host.** The requesting worker uses the same queue for
+open, read and close. At `0x08AE4578` the file object selects slot zero in
+the disc device table. Its open method resolves a six-entry mode switch and
+calls `sceIoOpen` with read-only flags and creation permissions 0644. The ISO
+provider permits these permissions on an existing file. The read method takes
+the resulting handle and requests 120 bytes at `0x090B02A0`, inside a live
+partition block. The probe transfers all 120 bytes from the ISO. The game
+closes the handle, worker 6 exits and the main callback advances to
+`0x08898554` on frame ten. Scanout remains black.
+
+**VERIFIED synthetic contracts.** Each positive read must fit within one live
+block of the calling runtime and the 8 MiB transfer cap. The provider stages
+the read before copying it into guest RAM and advancing the handle's offset.
+Tests exercise consecutive reads, short reads, EOF, zero length, closed
+handles, freed blocks, overflow and a request crossing a block boundary.
+
+**VERIFIED continuation.** The next main callback repeats the same checked
+queue path for `DATA401.IDX`. The file's 26,028 bytes are transferred into a
+second live partition buffer, bringing total ISO data read to 26,148 bytes.
+The game enters its index parser and probes flat optional module names under
+`ms0:/`, beginning with `MEMSTICK.IND` and `MSTK_PRO.IND`. Syntactically
+bounded flat names receive PSP error `0x80020146`, which prohibits user-mode
+module loading from that device. The game explicitly checks this result. No
+module image is admitted or acknowledged.
+The parser then creates an index worker at `0x08AA2ACC`; its two object calls
+remain guarded while their concrete targets are observed.
+
+The first index-worker run exhausted the former 32,768-dispatch cap while
+making 1,311 bounded calls to the existing overlap-safe copy routine. The
+worker remained runnable and was processing short record fields. This is
+evidence for a larger diagnostic slice. A 131,072-dispatch follow-up remained
+in the same worker after 13,226 copy calls and 6,614 record-list operations.
+A 524,288 slice then exposed a stable poll of an unset initialization object.
+The cause was the provisional file-not-found result for `sceKernelLoadModule`
+on `ms0:`. Exact PSP and guest branch evidence require prohibited-device
+instead. The native cap remains 524,288 for the corrected bounded rerun.
+
+**VERIFIED raw-disc continuation.** A write watch showed the earlier `openPac`
+worker store raw sector `0x38370` in the streaming object. The index worker
+formats `disc0:/sce_lbn0x38370_size0x16e42800`. The provider now parses this
+ISOFS pseudo-path with bounded hexadecimal fields and admits it only when the
+entire extent remains inside the fingerprinted image. Malformed, zero-length,
+overflowing and out-of-image extents reject. The game opens the range, seeks
+to zero and reads its first 2,048 bytes into the live worker stack. Checked
+seek contracts cover set/current/end origins, signed underflow, stale handles
+and 64-bit return values. The first raw block advances execution to parser
+helper `0x08B0FB08` with 28,196 total ISO bytes transferred.
+The independent 15-second wall limit remains active, and either limit still
+reports failure rather than partial success.
+
+**VERIFIED, 2026-11-06.** The parser queries the absent Memory Stick savedata
+directory. After receiving file-not-found it reaches the ordinary thread sleep
+import at `0x08B88F60`. Saving the worker continuation and scheduling the main
+thread allows the latter to advance to its next state. The address pair at
+`0x0886267C/80` supplies callback `0x0886272C`, stored at object offset
+`0x60` and observed at dispatch site `0x08860FBC`. The subsequent guard at
+`0x08894518` receives `0x08894B00` (file-backed slot `0x08B947FC`).
+That callback calls `0x08868270` directly with return PC `0x08894B4C`.
+The 557-root native run stops there with 14 frames, 13 GE lists and a black
+480×272 capture. The next object call at `0x08894B5C` has a terminal guard.

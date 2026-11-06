@@ -170,9 +170,80 @@ void umd_timed_wait_contracts() {
             !f.threads->next_timeout(), "Unsupported UMD wait mutated scheduler");
 }
 
+void disc_read_contract(const std::shared_ptr<IsoMedia>& media) {
+    for (unsigned scenario = 0; scenario < 4; ++scenario) {
+        Fixture f;
+        auto& rt = *f.rt;
+        auto& c = rt.cpu();
+        auto partition = register_memory_hle(rt, std::make_shared<GuestAllocator>(0x09020000u, 0x09030000u));
+        auto io = register_io_startup_hle(rt, f.threads, {}, media, partition);
+        io->umd_activated = true;
+        constexpr char path[] = "disc0:/PSP_GAME/USRDIR/DATA.BIN";
+        constexpr std::uint32_t name = 0x08811000u;
+        for (unsigned i = 0; i < sizeof(path); ++i) rt.memory().store8(name + i, path[i]);
+        c.gpr[4] = 2; c.gpr[5] = name; c.gpr[6] = 0; c.gpr[7] = 256; c.gpr[8] = 0;
+        rt.invoke_import("SysMemUserForUser", 0x237DBD4Fu, c);
+        const auto block = c.gpr[2];
+        const auto base = partition->blocks.at(block).base;
+        c.gpr[4] = name; c.gpr[5] = 1; c.gpr[6] = 0;
+        rt.invoke_import("IoFileMgrForUser", kIoOpenNid, c);
+        const auto fd = c.gpr[2];
+        auto read = [&](std::uint32_t address, std::uint32_t count) {
+            c.gpr[4] = fd; c.gpr[5] = address; c.gpr[6] = count;
+            rt.invoke_import("IoFileMgrForUser", kIoReadNid, c);
+            return c.gpr[2];
+        };
+        auto seek = [&](std::int64_t offset, std::uint32_t whence) {
+            const auto bits = static_cast<std::uint64_t>(offset);
+            c.gpr[4] = fd; c.gpr[6] = static_cast<std::uint32_t>(bits);
+            c.gpr[7] = static_cast<std::uint32_t>(bits >> 32); c.gpr[8] = whence;
+            rt.invoke_import("IoFileMgrForUser", kIoLseekNid, c);
+            return std::uint64_t(c.gpr[2]) | (std::uint64_t(c.gpr[3]) << 32);
+        };
+        rt.memory().store32(base, 0xCCCCCCCCu);
+        if (scenario == 0) {
+            require(read(0, 0) == 0 && read(base, 1) == 1 && read(base + 1, 8) == 3 &&
+                    rt.memory().load32(base) == 0x74736574u && !rt.memory().load8(base + 4) &&
+                    read(base, 1) == 0 && io->files.at(fd).position == 4 &&
+                    io->bytes_read == 4 && !rt.stopped(), "Sequential and EOF disc reads");
+            require(seek(-1, 2) == 3 && read(base, 1) == 1 && rt.memory().load8(base) == 't' &&
+                    seek(0, 0) == 0 && io->seeks == 2 && io->bytes_read == 5,
+                    "Disc seek origins and resumed read");
+            const auto stack = f.threads->current_thread()->stack_base;
+            require(read(stack, 4) == 4 && rt.memory().load32(stack) == 0x74736574u &&
+                    seek(0, 0) == 0 && io->seeks == 3 && io->bytes_read == 9,
+                    "Disc read into live caller stack");
+            require(seek(-1, 0) == 0xFFFFFFFF80010016ull && io->files.at(fd).position == 0 &&
+                    io->seeks == 3, "Negative disc seek changed position");
+            constexpr std::int64_t max_offset = INT64_MAX;
+            require(seek(max_offset, 0) == static_cast<std::uint64_t>(max_offset) &&
+                    seek(1, 1) == 0xFFFFFFFF80010016ull &&
+                    io->files.at(fd).position == static_cast<std::uint64_t>(max_offset),
+                    "Overflowing signed seek changed position");
+            c.gpr[4] = fd;
+            rt.invoke_import("IoFileMgrForUser", kIoCloseNid, c);
+            require(read(base, 4) == 0x80010009u && seek(0, 0) == 0xFFFFFFFF80010009ull &&
+                    io->bytes_read == 9, "Stale disc handle");
+            continue;
+        }
+        if (scenario == 1) {
+            c.gpr[4] = block;
+            rt.invoke_import("SysMemUserForUser", 0xB6D61D02u, c);
+            read(base, 4);
+        } else if (scenario == 2) {
+            read(base, 257);
+        } else {
+            read(0xFFFFFFFEu, 4);
+        }
+        require(rt.stopped() && rt.memory().load32(base) == 0xCCCCCCCCu &&
+                io->files.at(fd).position == 0 && !io->bytes_read, "Rejected read mutated state");
+    }
+}
+
 void mounted_disc_contracts() {
     media_fixture::File image;
     auto media = std::make_shared<IsoMedia>(image.path, image.sha);
+    disc_read_contract(media);
     Fixture f; auto& c = f.rt->cpu();
     auto io = register_io_startup_hle(*f.rt, f.threads, {}, media);
     const char path[] = "disc0:/PSP_GAME/USRDIR/DATA.BIN";
@@ -181,6 +252,7 @@ void mounted_disc_contracts() {
     f.rt->invoke_import("IoFileMgrForUser", kIoOpenNid, c);
     require(c.gpr[2] == 0x80010013u && io->files.empty(), "Inactive disc opened");
     io->umd_activated = true;
+    c.gpr[6] = 0644; // The file request worker supplies creation permissions even on read-only opens.
     f.rt->invoke_import("IoFileMgrForUser", kIoOpenNid, c);
     const auto fd = c.gpr[2];
     require(fd == 0x74000000u && io->opens == 1 && io->files.size() == 1, "Mounted disc open");
@@ -216,13 +288,19 @@ void mounted_disc_contracts() {
     f.rt->invoke_import("IoFileMgrForUser", kIoGetstatNid, c);
     require(c.gpr[2] == 0x80010002u && memory.load32(output) == 0xCCCCCCCCu &&
             io->stat_queries == 1, "Missing stat mutated output");
-    memory.store8(0x08811000 + sizeof(path) - 2, 'N');
+    constexpr char savedata[] = "ms0:/PSP/SAVEDATA/ULUS10466DATA";
+    for (unsigned i = 0; i < sizeof(savedata); ++i) memory.store8(0x08811000 + i, savedata[i]);
+    c.gpr[4] = 0x08811000; c.gpr[5] = output;
+    f.rt->invoke_import("IoFileMgrForUser", kIoGetstatNid, c);
+    require(c.gpr[2] == 0x80010002u && memory.load32(output) == 0xCCCCCCCCu &&
+            io->stat_queries == 1, "Absent Memory Stick stat mutated output");
+    for (unsigned i = 0; i < sizeof(path); ++i) memory.store8(0x08811000 + i, path[i]);
     c.gpr[5] = output + f.threads->current_thread()->stack_size - 84;
     memory.store32(c.gpr[5], 0xCCCCCCCCu);
     f.rt->invoke_import("IoFileMgrForUser", kIoGetstatNid, c);
     require(f.rt->stopped() && memory.load32(c.gpr[5]) == 0xCCCCCCCCu &&
             io->stat_queries == 1, "Cross-stack stat wrote partial output");
-    for (unsigned scenario = 0; scenario < 7; ++scenario) {
+    for (unsigned scenario = 0; scenario < 8; ++scenario) {
         Fixture bad;
         auto rejected = register_io_startup_hle(*bad.rt, bad.threads, {}, media);
         rejected->umd_activated = true;
@@ -232,8 +310,9 @@ void mounted_disc_contracts() {
         if (scenario == 0) rc.gpr[5] = 3;
         if (scenario == 1) rc.gpr[4] = 0xFFFFFFFFu;
         if (scenario == 2) bad.rt->memory().store8(0x08811000, 'x');
+        if (scenario == 7) rc.gpr[6] = 0777;
         bad.rt->invoke_import("IoFileMgrForUser", kIoOpenNid, rc);
-        if (scenario < 3) {
+        if (scenario < 3 || scenario == 7) {
             require(bad.rt->stopped() && rejected->files.empty(), "Invalid disc open mutated handles");
             continue;
         }

@@ -17,6 +17,8 @@ inline constexpr std::uint32_t kUmdActivateNid = 0xC6183D47u;
 inline constexpr std::uint32_t kIoOpenNid = 0x109F50BCu, kIoCloseNid = 0x810C4BC3u;
 inline constexpr std::uint32_t kIoIoctlNid = 0x63632449u;
 inline constexpr std::uint32_t kIoGetstatNid = 0xACE946E8u;
+inline constexpr std::uint32_t kIoReadNid = 0x6A638D83u;
+inline constexpr std::uint32_t kIoLseekNid = 0x27EB27B8u;
 
 struct DiscHandle { DiscFile file; std::uint64_t position = 0; };
 // Runtime-local, immutable mounted media; no host-directory mapping or writes.
@@ -26,6 +28,10 @@ struct IoStartupState {
     std::map<std::uint32_t, DiscHandle> files;
     std::uint32_t next_fd = 0x74000000u;
     std::uint64_t opens = 0, sector_queries = 0, stat_queries = 0;
+    std::uint64_t reads = 0, bytes_read = 0, seeks = 0;
+    std::uint64_t missing_opens = 0;
+    std::string last_missing_path;
+    std::string last_stat_path;
     std::vector<std::uint32_t> fatms_callbacks;
     std::array<std::uint8_t, 6> wlan_address{0x02, 0x00, 0x00, 0x00, 0x00, 0x01};
     std::uint32_t wlan_address_reads = 0;
@@ -35,5 +41,5 @@ struct IoStartupState {
 
 [[nodiscard]] std::shared_ptr<IoStartupState> register_io_startup_hle(
     psprecomp::Runtime&, std::shared_ptr<ThreadRegistry>, std::shared_ptr<DisplayState> = {},
-    std::shared_ptr<IsoMedia> = {});
+    std::shared_ptr<IsoMedia> = {}, std::shared_ptr<const PartitionMemory> = {});
 } // namespace azazel6

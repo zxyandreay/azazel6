@@ -697,10 +697,72 @@ void current_thread_id() {
     check(interrupt.rt->stopped() && interrupt.rt->cpu().gpr[2] == 0,
           "Interrupt thread ID fabricated a caller");
 }
+void sleep_and_wakeup() {
+    Scheduled blocked;
+    const auto child = blocked.create(8);
+    blocked.start(child);
+    auto& c = blocked.rt->cpu();
+    c.pc = arena.executable_begin; c.gpr[31] = arena.executable_begin + 4;
+    blocked.rt->invoke_import("ThreadManForUser", 0x9ACE131Eu, c);
+    check(!blocked.rt->stopped() && blocked.threads->current_uid() == kBootstrapUid &&
+          blocked.threads->snapshot().at(0).status == ThreadStatus::Waiting &&
+          blocked.threads->snapshot().at(0).sleeping, "Sleep did not block and reschedule");
+    c.gpr[4] = child; c.gpr[31] = 0x08001800u;
+    blocked.rt->invoke_import("ThreadManForUser", 0xD59EAD2Fu, c);
+    check(!blocked.rt->stopped() && blocked.threads->current_uid() == child && c.gpr[2] == 0 &&
+          !blocked.threads->snapshot().at(0).sleeping, "Wakeup did not resume sleeping thread");
+    c.gpr[4] = 0;
+    blocked.rt->invoke_import("ThreadManForUser", 0xFCCFAD26u, c);
+    check(c.gpr[2] == 0, "Current-thread wakeup cancellation");
+
+    Scheduled queued;
+    const auto low = queued.create(40);
+    queued.start(low);
+    auto& q = queued.rt->cpu(); q.gpr[4] = low;
+    queued.rt->invoke_import("ThreadManForUser", 0xD59EAD2Fu, q);
+    check(q.gpr[2] == 0 && queued.threads->snapshot().at(0).wakeup_count == 1,
+          "Wakeup token was not queued");
+    queued.exit();
+    q.gpr[2] = 0xDEADBEEFu; q.gpr[31] = 0x08001800u;
+    queued.rt->invoke_import("ThreadManForUser", 0x9ACE131Eu, q);
+    check(!queued.rt->stopped() && queued.threads->current_uid() == low && q.gpr[2] == 0 &&
+          queued.threads->snapshot().at(0).status == ThreadStatus::Running &&
+          queued.threads->snapshot().at(0).wakeup_count == 0, "Queued wakeup did not satisfy sleep");
+
+    Scheduled errors;
+    auto& e = errors.rt->cpu(); e.gpr[4] = 0;
+    errors.rt->invoke_import("ThreadManForUser", 0xD59EAD2Fu, e);
+    check(e.gpr[2] == 0x80020197u, "Null wakeup UID accepted");
+    e.gpr[4] = 0x12345678u;
+    errors.rt->invoke_import("ThreadManForUser", 0xD59EAD2Fu, e);
+    check(e.gpr[2] == 0x80020198u, "Unknown wakeup UID accepted");
+    const auto dormant = errors.create(40); e.gpr[4] = dormant;
+    errors.rt->invoke_import("ThreadManForUser", 0xD59EAD2Fu, e);
+    check(e.gpr[2] == 0x800201A2u, "Dormant thread wakeup accepted");
+    Scheduled restart;
+    const auto fast = restart.create(8);
+    restart.start(fast);
+    // Queue a token on the lower-priority bootstrap, then exercise cancellation.
+    auto& rc = restart.rt->cpu();
+    rc.gpr[4] = kBootstrapUid;
+    restart.rt->invoke_import("ThreadManForUser", 0xD59EAD2Fu, rc);
+    restart.rt->invoke_import("ThreadManForUser", 0xFCCFAD26u, rc);
+    check(rc.gpr[2] == 1, "Cancellation lost pending wakeup count");
+    restart.rt->invoke_import("ThreadManForUser", 0xFCCFAD26u, rc);
+    check(rc.gpr[2] == 0, "Cancellation left a pending wakeup");
+    restart.threads->wait_display(*restart.rt, rc, 1);
+    rc.gpr[4] = fast;
+    restart.rt->invoke_import("ThreadManForUser", 0xD59EAD2Fu, rc);
+    check(restart.threads->current_uid() == kBootstrapUid, "Wakeup released a display wait");
+    restart.threads->wake_display(*restart.rt, rc, 1);
+    restart.exit();
+    restart.start(fast);
+    check(restart.threads->snapshot()[0].wakeup_count == 0, "Restart inherited pending wakeup");
+}
 }
 int main() {
     try { exit_status_query(); ownership(); failures(); names_and_stops(); arena_validation(); scheduling(); start_arguments(); interrupt_state();
-          mutex_ownership(); lightweight_mutex_creation(); mutex_boundaries(); semaphore_creation(); semaphore_signal_and_delete(); current_priority(); current_thread_id(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
+          mutex_ownership(); lightweight_mutex_creation(); mutex_boundaries(); semaphore_creation(); semaphore_signal_and_delete(); current_priority(); current_thread_id(); sleep_and_wakeup(); priority_changes(); vfpu_attributes(); callback_lifecycle(); inactive_timers(); clock_conversion();
           std::cout << "Dormant thread ownership and failure contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

@@ -416,10 +416,12 @@
     "0x08AE03B4",
     "0x08894668",
     "0x08862578",
+    "0x0886272C",
     "0x0886887C",
     "0x088688AC",
     "0x088946AC",
     "0x08894794",
+    "0x08894B00",
     "0x0889E1A4",
     "0x0889744C",
     "0x0889480C",
@@ -521,7 +523,40 @@
     "0x08B7CA68",
     "0x08AE59B4",
     "0x08AE3DBC",
-    "0x08AE0550"
+    "0x08AE0550",
+    "0x08AE0670",
+    "0x08AE2098",
+    "0x08AE1608",
+    "0x08AE440C",
+    "0x08AE5204",
+    "0x08AE07F0",
+    "0x08AE2460",
+    "0x08AE1790",
+    "0x08AE4044",
+    "0x08AE532C",
+    "0x08AE0758",
+    "0x08AE2284",
+    "0x08AE16D8",
+    "0x08AE3FE0",
+    "0x08AE52EC",
+    "0x08898554",
+    "0x08AA3298",
+    "0x08AA2E58",
+    "0x08B7B600",
+    "0x0889938C",
+    "0x08898994",
+    "0x08898444",
+    "0x08AA2068",
+    "0x088983BC",
+    "0x08AA1908",
+    "0x08AA2ACC",
+    "0x08AA2AD4",
+    "0x08AA2100",
+    "0x08AA1204",
+    "0x08AA2E88",
+    "0x08B0FB08",
+    "0x08B0F844",
+    "0x08B120D0"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup, direct-call and validated pointer-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -564,6 +599,12 @@
       "register": 4,
       "table_start": "0x08B926A8",
       "count": 7
+    },
+    {
+      "site": "0x08AE5260",
+      "register": 4,
+      "table_start": "0x08BD0658",
+      "count": 6
     }
   ],
   "trapped_calls": [
@@ -686,6 +727,18 @@
     {
       "site": "0x0889A288",
       "register": 2
+    },
+    {
+      "site": "0x08AA2964",
+      "register": 2
+    },
+    {
+      "site": "0x08AA264C",
+      "register": 2
+    },
+    {
+      "site": "0x08894B5C",
+      "register": 2
     }
   ],
   "pointer_calls": [
@@ -761,6 +814,7 @@
       "pointers": [
         "0x08B947E8",
         "0x08B947F4",
+        "0x08B947FC",
         "0x08B9480C",
         "0x08B9481C"
       ]
@@ -1255,6 +1309,20 @@
       "pointers": [
         "0x08BEFBB4"
       ]
+    },
+    {
+      "site": "0x08AE4578",
+      "register": 2,
+      "pointers": [
+        "0x08BEFB90"
+      ]
+    },
+    {
+      "site": "0x08AE4018",
+      "register": 2,
+      "pointers": [
+        "0x08BEFB94"
+      ]
     }
   ],
   "pointer_tails": [
@@ -1457,6 +1525,13 @@
         "0x08B94EE4",
         "0x08B94BF4"
       ]
+    },
+    {
+      "site": "0x08AE408C",
+      "register": 25,
+      "pointers": [
+        "0x08BEFB98"
+      ]
     }
   ],
   "language_mode": {
@@ -1511,6 +1586,10 @@
         "0x08861444",
         "0x088622FC",
         {
+          "upper": "0x0886267C",
+          "lower": "0x08862680"
+        },
+        {
           "upper": "0x088610EC",
           "lower": "0x088610F4",
           "delay_slot_branch": "0x1860000A"
@@ -1543,14 +1622,30 @@
       "register": 6,
       "sources": [
         "0x08899814",
-        "0x088975F8"
+        "0x088975F8",
+        "0x08898B20",
+        "0x088985EC",
+        "0x088993EC",
+        "0x088989CC"
       ]
     },
     {
       "site": "0x08AE12EC",
       "register": 2,
       "sources": [
-        "0x08AE3554"
+        "0x08AE3554",
+        {
+          "upper": "0x08AE2134",
+          "lower": "0x08AE213C"
+        },
+        {
+          "upper": "0x08AE252C",
+          "lower": "0x08AE2534"
+        },
+        {
+          "upper": "0x08AE2338",
+          "lower": "0x08AE2340"
+        }
       ]
     },
     {
@@ -1560,6 +1655,36 @@
         {
           "upper": "0x08AE0E6C",
           "lower": "0x08AE0E78"
+        }
+      ]
+    },
+    {
+      "site": "0x08AE1680",
+      "register": 2,
+      "sources": [
+        {
+          "upper": "0x08AE06BC",
+          "lower": "0x08AE06D0"
+        }
+      ]
+    },
+    {
+      "site": "0x08AE17CC",
+      "register": 2,
+      "sources": [
+        {
+          "upper": "0x08AE082C",
+          "lower": "0x08AE083C"
+        }
+      ]
+    },
+    {
+      "site": "0x08AE1738",
+      "register": 2,
+      "sources": [
+        {
+          "upper": "0x08AE0784",
+          "lower": "0x08AE078C"
         }
       ]
     }

@@ -1,6 +1,7 @@
 #include "azazel6/media.hpp"
 #include "psprecomp/common.hpp"
 #include <algorithm>
+#include <charconv>
 #include <chrono>
 #include <set>
 #include <string_view>
@@ -48,6 +49,13 @@ std::string canonical(std::string path) {
         check(pos < path.size(), "Trailing disc path separator");
     }
     return path;
+}
+std::uint32_t raw_number(std::string_view value) {
+    check(!value.empty() && value.size() <= 8, "Invalid raw ISO number");
+    std::uint32_t result{};
+    const auto [end, error] = std::from_chars(value.data(), value.data() + value.size(), result, 16);
+    check(error == std::errc{} && end == value.data() + value.size(), "Invalid raw ISO number");
+    return result;
 }
 }
 
@@ -146,6 +154,18 @@ IsoMedia::IsoMedia(const std::filesystem::path& path, const std::string& expecte
 }
 
 std::optional<DiscFile> IsoMedia::find(const std::string& guest_path) const {
+    constexpr std::string_view prefix = "disc0:/sce_lbn0x", marker = "_size0x";
+    if (guest_path.starts_with("disc0:/sce_lbn")) {
+        check(guest_path.starts_with(prefix), "Malformed raw ISO path");
+        const auto split = guest_path.find(marker, prefix.size());
+        check(split != std::string::npos && guest_path.find(marker, split + 1) == std::string::npos,
+              "Malformed raw ISO path");
+        const auto sector = raw_number(std::string_view(guest_path).substr(prefix.size(), split - prefix.size()));
+        const auto length = raw_number(std::string_view(guest_path).substr(split + marker.size()));
+        const auto offset = std::uint64_t(sector) * 2048;
+        check(length && offset <= size_ && length <= size_ - offset, "Raw ISO extent outside image");
+        return DiscFile{sector, length, false};
+    }
     const auto found = files_.find(canonical(guest_path));
     return found == files_.end() ? std::nullopt : std::optional(found->second);
 }

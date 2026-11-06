@@ -35,6 +35,8 @@ struct GuestThread {
     std::uint32_t timeout_result = 0;
     std::optional<std::uint32_t> event_wait;
     std::optional<std::uint32_t> semaphore_wait;
+    bool sleeping = false;
+    std::uint32_t wakeup_count = 0;
 };
 struct SemaphoreWait { std::uint32_t thread, count; };
 struct GuestMutex {

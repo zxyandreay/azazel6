@@ -240,6 +240,59 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
         }
         ctx.set_gpr(2, state->current_uid_);
     });
+    rt.nids().add("ThreadManForUser", 0x9ACE131Eu, "sceKernelSleepThread");
+    rt.register_hle("ThreadManForUser", 0x9ACE131Eu, [state](auto& runtime, auto& ctx) {
+        auto* current = state->find(state->current_uid_);
+        if (!current || current->status != ThreadStatus::Running || !state->interrupts_enabled_ ||
+            state->in_interrupt_) {
+            runtime.stop("Sleep requires a running interruptible thread"); return;
+        }
+        if (current->wakeup_count) {
+            --current->wakeup_count;
+            ctx.set_gpr(2, 0);
+            return;
+        }
+        current->context = ctx;
+        current->context.pc = ctx.gpr[31];
+        current->sleeping = true;
+        current->status = ThreadStatus::Waiting;
+        state->schedule(runtime, ctx);
+    });
+    rt.nids().add("ThreadManForUser", 0xD59EAD2Fu, "sceKernelWakeupThread");
+    rt.register_hle("ThreadManForUser", 0xD59EAD2Fu, [state](auto& runtime, auto& ctx) {
+        if (!state->current_uid_ || !state->interrupts_enabled_ || state->in_interrupt_) {
+            runtime.stop("Wakeup requires a running interruptible thread"); return;
+        }
+        auto* target = state->find(ctx.gpr[4]);
+        if (!target) { ctx.set_gpr(2, ctx.gpr[4] ? 0x80020198u : 0x80020197u); return; }
+        if (target->status == ThreadStatus::Dormant) { ctx.set_gpr(2, 0x800201A2u); return; }
+        if (target->status == ThreadStatus::Waiting && target->sleeping) {
+            target->sleeping = false;
+            target->context.set_gpr(2, 0);
+            target->status = ThreadStatus::Ready;
+        } else {
+            if (target->wakeup_count == 0x7FFFFFFFu) {
+                runtime.stop("Wakeup count exceeded the supported range"); return;
+            }
+            ++target->wakeup_count;
+        }
+        ctx.set_gpr(2, 0);
+        ctx.pc = ctx.gpr[31];
+        state->schedule(runtime, ctx);
+    });
+    rt.nids().add("ThreadManForUser", 0xFCCFAD26u, "sceKernelCancelWakeupThread");
+    rt.register_hle("ThreadManForUser", 0xFCCFAD26u, [state](auto& runtime, auto& ctx) {
+        if (!state->current_uid_ || !state->interrupts_enabled_ || state->in_interrupt_) {
+            runtime.stop("Cancel wakeup requires a running interruptible thread"); return;
+        }
+        const auto uid = ctx.gpr[4] ? ctx.gpr[4] : state->current_uid_;
+        auto* target = state->find(uid);
+        if (!target) { ctx.set_gpr(2, 0x80020198u); return; }
+        if (target->status == ThreadStatus::Dormant) { ctx.set_gpr(2, 0x800201A2u); return; }
+        const auto pending = target->wakeup_count;
+        target->wakeup_count = 0;
+        ctx.set_gpr(2, pending);
+    });
     rt.register_hle("ThreadManForUser", 0x20FFF560u,
         [state](auto& runtime, auto& ctx) { state->create_timer(runtime, ctx); });
     rt.register_hle("ThreadManForUser", 0xE81CAF8Fu,
@@ -445,6 +498,7 @@ void ThreadRegistry::start(psprecomp::Runtime& rt, psprecomp::AllegrexContext& c
     std::vector<std::uint8_t> args(size);
     for (std::uint32_t i = 0; i < size; ++i) args[i] = rt.memory().load8(ctx.gpr[6] + i);
     prepare(rt, *thread, args);
+    thread->wakeup_count = 0;
     thread->status = ThreadStatus::Ready;
     ctx.set_gpr(2, 0);
     ctx.pc = ctx.gpr[31];
@@ -484,7 +538,9 @@ void ThreadRegistry::schedule(psprecomp::Runtime& rt, psprecomp::AllegrexContext
     for (auto& thread : threads_) consider(thread);
     if (best == current && best) return;
     if (!best) {
-        const auto waiting = [](const GuestThread& thread) { return thread.display_deadline || thread.event_wait || thread.timeout_deadline; };
+        const auto waiting = [](const GuestThread& thread) {
+            return thread.sleeping || thread.display_deadline || thread.event_wait || thread.timeout_deadline;
+        };
         current_uid_ = 0;
         if (waiting(bootstrap_) || std::any_of(threads_.begin(), threads_.end(), waiting)) {
             ctx = {}; ctx.pc = kDisplayIdleGate;

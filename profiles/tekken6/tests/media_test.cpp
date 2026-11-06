@@ -22,6 +22,14 @@ int main() {
         require(data && data->sector == 26 && data->size == 4, "ISO file metadata");
         require(media.read(*data, 0, 9) == std::vector<std::uint8_t>({'t','e','s','t'}), "Read clamps at EOF");
         require(media.read(*data, 3, 9) == std::vector<std::uint8_t>({'t'}) && media.read(*data, 4, 1).empty(), "Partial and EOF reads");
+        const auto raw = media.find("disc0:/sce_lbn0x1a_size0x4");
+        require(raw && raw->sector == 26 && raw->size == 4 && media.read(*raw, 0, 4) ==
+                std::vector<std::uint8_t>({'t','e','s','t'}), "Raw ISO extent");
+        for (const auto path : {"disc0:/sce_lbn", "disc0:/sce_lbn0x1a_size0x0",
+                "disc0:/sce_lbn0xffffffff_size0x4", "disc0:/sce_lbn0x1a_size0x100000000",
+                "disc0:/sce_lbn0x1g_size0x4"})
+            rejects([&] { (void)media.find(path); });
+        require(!media.find("disc0:/SCE_LBN0x1a_size0x4"), "Case-sensitive raw ISO prefix");
         require(!media.find("disc0:/MISSING.BIN"), "Missing file");
         for (const auto path : {"ms0:/x", "disc0:/../x", "disc0:/PSP_GAME//X", "disc0:/PSP_GAME\\X", "disc0:/", "disc0:/PSP_GAME/", "disc0:/X;2"})
             rejects([&] { (void)media.find(path); });

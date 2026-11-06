@@ -25,6 +25,14 @@ int main() {
             catch (const std::exception&) { rejected = true; }
             check(rejected, "Invalid image accepted");
         }
+        constexpr char optional[] = "ms0:/MEMSTICK.IND";
+        for (unsigned i = 0; i < sizeof(optional); ++i) rt->memory().store8(0x08807000u + i, optional[i]);
+        c.gpr[4] = 0x08807000u; c.gpr[5] = 0; c.gpr[6] = 0;
+        rt->invoke_import("ModuleMgrForUser", 0x977DE386u, c);
+        check(!rt->stopped() && c.gpr[2] == 0x80020146u, "Prohibited Memory Stick module result");
+        rt->memory().store8(0x08807005u, '/');
+        rt->invoke_import("ModuleMgrForUser", 0x977DE386u, c);
+        check(rt->stopped(), "Unknown module path accepted");
         std::cout << "Resident module identity contracts passed\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

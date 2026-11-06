@@ -1,9 +1,16 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-06.** The game reads both index files and the first raw
+disc sector, then schedules the main thread when the streaming worker sleeps.
+The main thread reaches `0x08868270` through two observed callbacks.
+The 14th captured display frame is black. Title-screen verification is open.
+
 **VERIFIED, 2026-11-06.** The native game requests file metadata, receives the
 checked ISO result and continues through its own semaphore completion path.
-The 522-root run next needs the file operation at `0x08AE0670`. Title boot
-remains open. See the [file request trace](../research/local-media-continuation.md#first-file-metadata-request-2026-11-06).
+The subsequent worker request opens `DINF_400.BIN`, reads its complete 120-byte
+payload into live game memory, closes the file and exits. The main thread then
+selects its payload-processing callback. Title boot remains open. See the
+[file request trace](../research/local-media-continuation.md#first-file-metadata-request-2026-11-06).
 
 **2026-11-05 local continuation:** checked read-only ISO access removes the
 empty-drive dependency. The media worker completes its actual file-sector query

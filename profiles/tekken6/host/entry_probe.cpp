@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
         const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
-        const auto io = azazel6::register_io_startup_hle(*rt, threads, display, media);
+        const auto io = azazel6::register_io_startup_hle(*rt, threads, display, media, partition);
         const auto ge_queue = azazel6::register_ge_list_hle(*rt, ge_callbacks, threads, AZAZEL6_GE_LIST_SPANS,
             {partition, data_cache, interrupt_delivery, module.gp});
         std::cout << "guest_clock_mode=bounded_idle_events idle_event_budget=64" << std::endl;
@@ -129,9 +129,10 @@ int main(int argc, char** argv) {
                       << " t1=" << hex32(context.gpr[9]) << std::endl;
             if (!runtime.has_function(pc)) runtime.stop("Uncovered guest address " + hex32(pc));
         });
-        // Startup initializes 2048 records through six dispatch boundaries each.
-        // Keep a finite diagnostic allowance; run_probe.py also enforces 15 seconds.
-        rt->run(elf.runtime_entry(), 32768);
+        // Startup initializes 2048 records and now parses the 26 KiB disc index
+        // through many short libc calls. Keep a finite diagnostic allowance;
+        // run_probe.py independently enforces 15 seconds.
+        rt->run(elf.runtime_entry(), 524288);
         std::cout << "after_pc=" << hex32(rt->cpu().pc) << " ra=" << hex32(rt->cpu().gpr[31])
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
         std::cout << "data_cache_ranges=" << data_cache->completed_ranges
@@ -189,6 +190,11 @@ int main(int argc, char** argv) {
                   << " umd_activation_count=" << io->umd_activation_count << std::endl;
         std::cout << "disc_opens=" << io->opens << " disc_sector_queries=" << io->sector_queries
                   << " disc_stat_queries=" << io->stat_queries
+                  << " disc_reads=" << io->reads << " disc_bytes_read=" << io->bytes_read
+                  << " disc_seeks=" << io->seeks
+                  << " disc_missing_opens=" << io->missing_opens
+                  << " disc_last_missing=" << io->last_missing_path
+                  << " disc_last_stat=" << io->last_stat_path
                   << " disc_open_handles=" << io->files.size() << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {
             const auto arg0 = rt->cpu().gpr[4];

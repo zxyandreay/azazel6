@@ -1,6 +1,7 @@
 #include "azazel6/io.hpp"
 #include "psprecomp/common.hpp"
 #include <algorithm>
+#include <limits>
 
 namespace azazel6 {
 namespace {
@@ -27,25 +28,79 @@ std::string disc_path(psprecomp::Runtime& runtime, std::uint32_t address) {
     }
     throw psprecomp::Error("Unterminated disc path");
 }
+bool absent_memory_stick_path(const std::string& path) {
+    if (!path.starts_with("ms0:/")) return false;
+    if (path.size() <= 5 || path.size() > 1024) throw psprecomp::Error("Invalid Memory Stick path length");
+    for (std::size_t begin = 5; begin < path.size();) {
+        const auto end = path.find('/', begin);
+        const auto component = path.substr(begin, end == std::string::npos ? end : end - begin);
+        if (component.empty() || component == "." || component == ".." ||
+                !std::all_of(component.begin(), component.end(), [](unsigned char ch) {
+                    return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') ||
+                        (ch >= '0' && ch <= '9') || ch == '_' || ch == '.' || ch == '-';
+                })) throw psprecomp::Error("Invalid Memory Stick path component");
+        if (end == std::string::npos) break;
+        begin = end + 1;
+    }
+    return true;
+}
 }
 std::shared_ptr<IoStartupState> register_io_startup_hle(
         psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads, std::shared_ptr<DisplayState> display,
-        std::shared_ptr<IsoMedia> media) {
+        std::shared_ptr<IsoMedia> media, std::shared_ptr<const PartitionMemory> partition) {
     if (!threads) throw psprecomp::Error("I/O startup HLE requires thread ownership");
+    if (partition && partition->owner != &rt) throw psprecomp::Error("Disc I/O partition belongs to another runtime");
     auto state = std::make_shared<IoStartupState>();
     state->owner = &rt; state->media = std::move(media);
     rt.nids().add("IoFileMgrForUser", kIoOpenNid, "sceIoOpen");
     rt.register_hle("IoFileMgrForUser", kIoOpenNid, [state, threads](auto& runtime, auto& c) {
         if (!io_caller(runtime, c, *state, *threads)) return;
-        if (c.gpr[5] != 1 || c.gpr[6] != 0) { runtime.stop("Unsupported disc open flags or mode"); return; }
+        // Startup uses mode 0 or 0644. Creation permissions have no effect on a read-only open.
+        if (c.gpr[5] != 1 || (c.gpr[6] != 0 && c.gpr[6] != 0644)) {
+            runtime.stop("Unsupported disc open flags or mode"); return;
+        }
         if (!state->media || !state->umd_activated) { c.set_gpr(2, 0x80010013u); return; }
         try {
-            const auto file = state->media->find(disc_path(runtime, c.gpr[4]));
-            if (!file || file->directory) { c.set_gpr(2, missing); return; }
+            const auto path = disc_path(runtime, c.gpr[4]);
+            const auto file = state->media->find(path);
+            if (!file || file->directory) {
+                state->last_missing_path = path; ++state->missing_opens;
+                c.set_gpr(2, missing); return;
+            }
             if (state->files.size() >= 64 || state->next_fd >= 0x75000000u) { c.set_gpr(2, 0x80010018u); return; }
             const auto fd = state->next_fd++;
             state->files.emplace(fd, DiscHandle{*file}); ++state->opens;
             c.set_gpr(2, fd);
+        } catch (const std::exception& error) { runtime.stop(error.what()); }
+    });
+    rt.nids().add("IoFileMgrForUser", kIoReadNid, "sceIoRead");
+    rt.register_hle("IoFileMgrForUser", kIoReadNid, [state, threads, partition](auto& runtime, auto& c) {
+        if (!io_caller(runtime, c, *state, *threads)) return;
+        auto handle = state->files.find(c.gpr[4]);
+        if (handle == state->files.end()) { c.set_gpr(2, bad_fd); return; }
+        const auto address = c.gpr[5], count = c.gpr[6];
+        if (!count) { c.set_gpr(2, 0); return; }
+        const auto end = std::uint64_t(address) + count;
+        const auto current = threads->current_thread();
+        const bool stack_owned = address >= current->stack_base &&
+            end <= std::uint64_t(current->stack_base) + current->stack_size;
+        const bool partition_owned = partition && std::any_of(partition->blocks.begin(), partition->blocks.end(),
+            [address, end](const auto& item) {
+                const auto& block = item.second;
+                return address >= block.base && end <= std::uint64_t(block.base) + block.size;
+            });
+        if ((!stack_owned && !partition_owned) || count > 8u * 1024 * 1024 ||
+                !runtime.memory().contains(address, count)) {
+            runtime.stop("Disc read requires one bounded live stack or partition buffer"); return;
+        }
+        try {
+            auto& file = handle->second;
+            const auto bytes = state->media->read(file.file, file.position, count);
+            if (!bytes.empty()) runtime.memory().copy_in(address, bytes);
+            file.position += bytes.size();
+            ++state->reads;
+            state->bytes_read += bytes.size();
+            c.set_gpr(2, static_cast<std::uint32_t>(bytes.size()));
         } catch (const std::exception& error) { runtime.stop(error.what()); }
     });
     rt.nids().add("IoFileMgrForUser", kIoGetstatNid, "sceIoGetstat");
@@ -59,7 +114,10 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
             runtime.stop("Disc stat output requires live caller stack"); return;
         }
         try {
-            const auto file = state->media->find(disc_path(runtime, c.gpr[4]));
+            const auto path = disc_path(runtime, c.gpr[4]);
+            state->last_stat_path = path;
+            if (absent_memory_stick_path(path)) { c.set_gpr(2, missing); return; }
+            const auto file = state->media->find(path);
             if (!file) { c.set_gpr(2, missing); return; }
             auto& memory = runtime.memory();
             memory.store32(out, (file->directory ? 0x1000u : 0x2000u) | 0555u);
@@ -75,6 +133,40 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
             ++state->stat_queries;
             c.set_gpr(2, 0);
         } catch (const std::exception& error) { runtime.stop(error.what()); }
+    });
+    rt.nids().add("IoFileMgrForUser", kIoLseekNid, "sceIoLseek");
+    rt.register_hle("IoFileMgrForUser", kIoLseekNid, [state, threads](auto& runtime, auto& c) {
+        if (!io_caller(runtime, c, *state, *threads)) return;
+        const auto found = state->files.find(c.gpr[4]);
+        if (found == state->files.end()) {
+            c.set_gpr(2, bad_fd); c.set_gpr(3, 0xFFFFFFFFu); return;
+        }
+        auto& handle = found->second;
+        std::uint64_t base{};
+        if (c.gpr[8] == 1) base = handle.position;
+        else if (c.gpr[8] == 2) base = handle.file.size;
+        else if (c.gpr[8] != 0) {
+            c.set_gpr(2, 0x80010016u); c.set_gpr(3, 0xFFFFFFFFu); return;
+        }
+        const auto bits = std::uint64_t(c.gpr[6]) | (std::uint64_t(c.gpr[7]) << 32);
+        const auto offset = static_cast<std::int64_t>(bits);
+        std::uint64_t target{};
+        if (offset < 0) {
+            const auto magnitude = std::uint64_t(-(offset + 1)) + 1;
+            if (magnitude > base) {
+                c.set_gpr(2, 0x80010016u); c.set_gpr(3, 0xFFFFFFFFu); return;
+            }
+            target = base - magnitude;
+        } else {
+            const auto positive = static_cast<std::uint64_t>(offset);
+            if (positive > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) - base) {
+                c.set_gpr(2, 0x80010016u); c.set_gpr(3, 0xFFFFFFFFu); return;
+            }
+            target = base + positive;
+        }
+        handle.position = target; ++state->seeks;
+        c.set_gpr(2, static_cast<std::uint32_t>(target));
+        c.set_gpr(3, static_cast<std::uint32_t>(target >> 32));
     });
     rt.nids().add("IoFileMgrForUser", kIoCloseNid, "sceIoClose");
     rt.register_hle("IoFileMgrForUser", kIoCloseNid, [state, threads](auto& runtime, auto& c) {
