@@ -65,3 +65,39 @@ The check still exercises actual filesystem resolution and refusal before output
 suites pass; the updated probe and media provider cross-compile and link for
 Android ARM64. These are host/synthetic and compilation checks, not Android game
 execution. No physical device is attached at this checkpoint.
+
+## First file metadata request (2026-11-06)
+
+**VERIFIED on the native host.** After worker 5 exits, the main dispatcher
+at `0x08897ADC` selects `0x08898710`. Its object callback starts at
+`0x088975F4`, installs `0x08898AB8` and launches priority-32 worker 6
+through `0x0889B254`. The worker queues a metadata request at `0x08AE34C8`.
+The priority-19 I/O thread wakes, takes the descriptor's handler
+`0x08AE1BF4` and selects the device method from slot `0x08BEFBB4`.
+The 521-root native run reaches the real `sceIoGetstat` import at
+`0x08B88CD0` with an 88-byte result on the I/O thread's stack.
+
+**DOCUMENTED ABI and profile policy.** The PSP SDK defines the 88-byte
+`SceIoStat`. The profile reports the ISO entry's type, size, read/execute
+permissions and first sector in private word zero. Like the reference, it
+preserves the caller's remaining five private words. All three dates derive
+from the directory entry's recording time. The research profile expresses
+them in UTC using the recorded signed offset, preserving an unspecified date
+as zero. The query advances no guest time. See
+[reference stat implementation](https://github.com/hrydgard/ppsspp/blob/cf17b0ac7966ba4b172a32340333d209a2d747e7/Core/HLE/sceIo.cpp)
+and [ISO metadata](https://github.com/hrydgard/ppsspp/blob/cf17b0ac7966ba4b172a32340333d209a2d747e7/Core/FileSystems/ISOFileSystem.cpp).
+
+**VERIFIED on the native host.** With that contract, the query succeeds once
+and the worker selects completion callback `0x08AE0550` at `0x08AE1C28`.
+The address is assembled at `0x08AE0E6C/78`, passed to the enqueue function
+and stored at descriptor offset 28. The two intervening instructions copy
+arguments without writing the address register. The callback stores the
+request result and signals its semaphore. Unknown worker callbacks retain
+terminal guards.
+
+**VERIFIED checkpoint.** With 522 roots and 33,292 words the completion callback
+returns, the requesting worker receives its result and reaches `0x08AE0670`
+from `0x0889A16C`. The probe reports uncovered code as failure. It records
+one successful metadata query, zero open handles, nine frames, eight GE lists
+and zero nonblack pixels. All 93 Python cases and 25 CTest suites pass. The
+same generated slice cross-compiles and links for Android ARM64.

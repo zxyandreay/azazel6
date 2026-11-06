@@ -80,7 +80,9 @@ def immediate_maps(elf, descriptors):
                         accepted_delay_branch = True
                         continue
                 # Other forms must not change the address register or control flow.
-                if not (word == 0 or (op in (9, 13) and rt != dest) or
+                # Canonical move (ADDU rd, rs, zero) only writes rd.
+                move = op == 0 and rt == 0 and (word & 0x7ff) == 0x21 and ((word >> 11) & 31) != dest
+                if not (word == 0 or move or (op in (9, 13) and rt != dest) or
                         (op == 15 and (word >> 21) & 31 == 0 and rt != dest) or op in (40, 41, 43)):
                     raise ValidationError('Intervening instruction invalidates immediate address proof')
             if (source, end) in delay_branches and not accepted_delay_branch:

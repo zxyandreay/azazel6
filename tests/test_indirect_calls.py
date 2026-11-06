@@ -75,11 +75,11 @@ class IndirectCallTests(unittest.TestCase):
     def test_nonadjacent_address_pair_requires_preserved_register_and_flow(self):
         desc = dict(site=hex(BASE), register=4,
                     sources=[dict(upper=hex(BASE + 16), lower=hex(BASE + 24))])
-        for middle in (0, 0x2485005C, 0x34A50004, 0x3C030886, 0xAC820004):
+        for middle in (0, 0x2485005C, 0x34A50004, 0x3C030886, 0xAC820004, 0x02002021):
             elf = program([0x0080F809, 0, 0x03E00008, 0, 0x3C020880, middle, 0x24424020, 0, 0x03E00008, 0])
             self.assertEqual(immediate_maps(elf, [desc])[BASE]['targets'], [BASE + 32])
         for middle in (0x24420001, 0x3C020881, 0x34424000, 0x8C820000, 0x0C000000,
-                       0x08000000, 0x10000000, 0x03E00008, 0x0000000D, 0x00001021):
+                       0x08000000, 0x10000000, 0x03E00008, 0x0000000D, 0x00001021, 0x02002061):
             elf = program([0x0080F809, 0, 0x03E00008, 0, 0x3C020880, middle, 0x24424020, 0, 0x03E00008, 0])
             with self.subTest(middle=middle), self.assertRaises(ValidationError):
                 immediate_maps(elf, [desc])

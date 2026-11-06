@@ -37,7 +37,9 @@ int main() {
             require(checked.file_count() == 6, "UMD file-structure version 2");
             require(checked.find("disc0:/PSP_GAME/USRDIR/DATA.BIN").has_value(), "Lowercase ISO identifiers");
         }
-        for (unsigned scenario = 0; scenario < 12; ++scenario) {
+        require(media.find("disc0:/PSP_GAME")->recorded_utc == std::array<std::uint16_t, 6>{},
+                "Unspecified directory date");
+        for (unsigned scenario = 0; scenario < 14; ++scenario) {
             auto bytes = media_fixture::image();
             switch (scenario) {
             case 0: bytes.resize(17 * 2048); break;
@@ -52,6 +54,8 @@ int main() {
             case 9: media_fixture::put(bytes, 24 * 2048 + 24, 0xFFFFFFFFu); break;
             case 10: bytes[20 * 2048 + 26] = 1; break;
             case 11: bytes[20 * 2048 + 33] = '/'; break;
+            case 12: bytes[23 * 2048 + 20] = 32; break;
+            case 13: bytes[23 * 2048 + 24] = 128; break;
             }
             media_fixture::File bad(bytes);
             rejects([&] { azazel6::IsoMedia invalid(bad.path, bad.sha); });

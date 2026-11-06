@@ -1,6 +1,7 @@
 #include "azazel6/media.hpp"
 #include "psprecomp/common.hpp"
 #include <algorithm>
+#include <chrono>
 #include <set>
 #include <string_view>
 
@@ -65,6 +66,22 @@ DiscFile IsoMedia::record(Bytes r) {
     check(!r[1] && !(r[25] & ~3u) && !r[26] && !r[27] && both(r, 28, 2) == 1,
           "Unsupported ISO record attributes, extent or interleave");
     DiscFile file{both(r, 2), both(r, 10), bool(r[25] & 2)};
+    const auto stamp = r.subspan(18, 7);
+    if (std::any_of(stamp.begin(), stamp.end(), [](auto byte) { return byte != 0; })) {
+        using namespace std::chrono;
+        const auto date = year(1900 + stamp[0]) / month(stamp[1]) / day(stamp[2]);
+        const int zone = stamp[6] < 128 ? int(stamp[6]) : int(stamp[6]) - 256;
+        check(date.ok() && stamp[3] < 24 && stamp[4] < 60 && stamp[5] < 60 &&
+              zone >= -48 && zone <= 52, "Invalid ISO recording date");
+        const auto utc = sys_days(date) + hours(stamp[3]) + minutes(stamp[4] - zone * 15) + seconds(stamp[5]);
+        const auto midnight = floor<days>(utc);
+        const year_month_day calendar(midnight);
+        const hh_mm_ss clock(utc - midnight);
+        file.recorded_utc = {static_cast<std::uint16_t>(int(calendar.year())),
+            static_cast<std::uint16_t>(unsigned(calendar.month())), static_cast<std::uint16_t>(unsigned(calendar.day())),
+            static_cast<std::uint16_t>(clock.hours().count()), static_cast<std::uint16_t>(clock.minutes().count()),
+            static_cast<std::uint16_t>(clock.seconds().count())};
+    }
     const auto offset = std::uint64_t(file.sector) * 2048;
     check(offset <= size_ && file.size <= size_ - offset, "ISO extent outside image");
     return file;

@@ -16,6 +16,7 @@ inline constexpr std::uint32_t kUmdWaitDriveStatCBNid = 0x4A9E5E29u;
 inline constexpr std::uint32_t kUmdActivateNid = 0xC6183D47u;
 inline constexpr std::uint32_t kIoOpenNid = 0x109F50BCu, kIoCloseNid = 0x810C4BC3u;
 inline constexpr std::uint32_t kIoIoctlNid = 0x63632449u;
+inline constexpr std::uint32_t kIoGetstatNid = 0xACE946E8u;
 
 struct DiscHandle { DiscFile file; std::uint64_t position = 0; };
 // Runtime-local, immutable mounted media; no host-directory mapping or writes.
@@ -24,7 +25,7 @@ struct IoStartupState {
     std::shared_ptr<IsoMedia> media;
     std::map<std::uint32_t, DiscHandle> files;
     std::uint32_t next_fd = 0x74000000u;
-    std::uint64_t opens = 0, sector_queries = 0;
+    std::uint64_t opens = 0, sector_queries = 0, stat_queries = 0;
     std::vector<std::uint32_t> fatms_callbacks;
     std::array<std::uint8_t, 6> wlan_address{0x02, 0x00, 0x00, 0x00, 0x00, 0x01};
     std::uint32_t wlan_address_reads = 0;

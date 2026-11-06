@@ -48,6 +48,34 @@ std::shared_ptr<IoStartupState> register_io_startup_hle(
             c.set_gpr(2, fd);
         } catch (const std::exception& error) { runtime.stop(error.what()); }
     });
+    rt.nids().add("IoFileMgrForUser", kIoGetstatNid, "sceIoGetstat");
+    rt.register_hle("IoFileMgrForUser", kIoGetstatNid, [state, threads](auto& runtime, auto& c) {
+        if (!io_caller(runtime, c, *state, *threads)) return;
+        if (!state->media || !state->umd_activated) { c.set_gpr(2, 0x80010013u); return; }
+        const auto out = c.gpr[5];
+        const auto current = threads->current_thread();
+        if ((out & 3) || out < current->stack_base ||
+            std::uint64_t(out) + 88 > std::uint64_t(current->stack_base) + current->stack_size) {
+            runtime.stop("Disc stat output requires live caller stack"); return;
+        }
+        try {
+            const auto file = state->media->find(disc_path(runtime, c.gpr[4]));
+            if (!file) { c.set_gpr(2, missing); return; }
+            auto& memory = runtime.memory();
+            memory.store32(out, (file->directory ? 0x1000u : 0x2000u) | 0555u);
+            memory.store32(out + 4, file->directory ? 0x10u : 0x20u);
+            memory.store32(out + 8, file->size);
+            memory.store32(out + 12, 0);
+            for (unsigned at : {16u, 32u, 48u}) {
+                for (unsigned i = 0; i < file->recorded_utc.size(); ++i)
+                    memory.store16(out + at + i * 2, file->recorded_utc[i]);
+                memory.store32(out + at + 12, 0);
+            }
+            memory.store32(out + 64, file->sector); // UMD private[0]; preserve private[1..5].
+            ++state->stat_queries;
+            c.set_gpr(2, 0);
+        } catch (const std::exception& error) { runtime.stop(error.what()); }
+    });
     rt.nids().add("IoFileMgrForUser", kIoCloseNid, "sceIoClose");
     rt.register_hle("IoFileMgrForUser", kIoCloseNid, [state, threads](auto& runtime, auto& c) {
         if (!io_caller(runtime, c, *state, *threads)) return;

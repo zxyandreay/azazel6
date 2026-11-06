@@ -194,6 +194,34 @@ void mounted_disc_contracts() {
     require(c.gpr[2] == 0x80010009u, "Stale file handle accepted");
     f.rt->invoke_import("IoFileMgrForUser", kIoIoctlNid, c);
     require(c.gpr[2] == 0x80010009u && io->sector_queries == 1, "Stale ioctl wrote output");
+    const auto output = f.threads->current_thread()->stack_base;
+    auto& memory = f.rt->memory();
+    for (unsigned i = 0; i < 88; i += 4) memory.store32(output + i, 0xCCCCCCCCu);
+    c.gpr[4] = 0x08811000; c.gpr[5] = output;
+    f.rt->invoke_import("IoFileMgrForUser", kIoGetstatNid, c);
+    require(!f.rt->stopped() && c.gpr[2] == 0 && io->stat_queries == 1 &&
+            memory.load32(output) == (0x2000 | 0555) && memory.load32(output + 4) == 0x20 &&
+            memory.load32(output + 8) == 4 && !memory.load32(output + 12) &&
+            memory.load32(output + 64) == 26, "Incorrect disc stat");
+    const std::array<std::uint16_t, 6> expected_date{2000, 2, 29, 23, 15, 22};
+    for (unsigned offset : {16u, 32u, 48u}) {
+        for (unsigned i = 0; i < expected_date.size(); ++i)
+            require(memory.load16(output + offset + 2 * i) == expected_date[i], "Incorrect UTC recording date");
+        require(!memory.load32(output + offset + 12), "Incorrect stat microseconds");
+    }
+    for (unsigned i = 68; i < 88; i += 4)
+        require(memory.load32(output + i) == 0xCCCCCCCCu, "Stat clobbered reserved fields");
+    memory.store8(0x08811000 + sizeof(path) - 2, 'X');
+    memory.store32(output, 0xCCCCCCCCu);
+    f.rt->invoke_import("IoFileMgrForUser", kIoGetstatNid, c);
+    require(c.gpr[2] == 0x80010002u && memory.load32(output) == 0xCCCCCCCCu &&
+            io->stat_queries == 1, "Missing stat mutated output");
+    memory.store8(0x08811000 + sizeof(path) - 2, 'N');
+    c.gpr[5] = output + f.threads->current_thread()->stack_size - 84;
+    memory.store32(c.gpr[5], 0xCCCCCCCCu);
+    f.rt->invoke_import("IoFileMgrForUser", kIoGetstatNid, c);
+    require(f.rt->stopped() && memory.load32(c.gpr[5]) == 0xCCCCCCCCu &&
+            io->stat_queries == 1, "Cross-stack stat wrote partial output");
     for (unsigned scenario = 0; scenario < 7; ++scenario) {
         Fixture bad;
         auto rejected = register_io_startup_hle(*bad.rt, bad.threads, {}, media);

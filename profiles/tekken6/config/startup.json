@@ -504,7 +504,24 @@
     "0x08AA2A34",
     "0x08896EA4",
     "0x08896E70",
-    "0x08AA2008"
+    "0x08AA2008",
+    "0x08898710",
+    "0x088975F4",
+    "0x08898AB8",
+    "0x0889A2AC",
+    "0x0889A000",
+    "0x08AE0E38",
+    "0x08AE34C8",
+    "0x08AE1BF4",
+    "0x08AE4CC8",
+    "0x08AE3D50",
+    "0x08AE3E00",
+    "0x08AE3F40",
+    "0x08B78CA4",
+    "0x08B7CA68",
+    "0x08AE59B4",
+    "0x08AE3DBC",
+    "0x08AE0550"
   ],
   "max_instructions_per_root": 4096,
   "evidence": "Exact-hash ELF entry, investigated startup, direct-call and validated pointer-call roots, explicit shared ranges and validated constructor-table targets; bounded batches, no recursive callee discovery.",
@@ -635,10 +652,6 @@
       "register": 2
     },
     {
-      "site": "0x08AE12EC",
-      "register": 2
-    },
-    {
       "site": "0x08B60CC8",
       "register": 2
     },
@@ -661,6 +674,18 @@
     {
       "site": "0x088996CC",
       "register": 6
+    },
+    {
+      "site": "0x0889A1DC",
+      "register": 2
+    },
+    {
+      "site": "0x0889A208",
+      "register": 2
+    },
+    {
+      "site": "0x0889A288",
+      "register": 2
     }
   ],
   "pointer_calls": [
@@ -1223,6 +1248,13 @@
       "pointers": [
         "0x08B94BC8"
       ]
+    },
+    {
+      "site": "0x08AE4DF4",
+      "register": 2,
+      "pointers": [
+        "0x08BEFBB4"
+      ]
     }
   ],
   "pointer_tails": [
@@ -1443,6 +1475,10 @@
         {
           "upper": "0x08898900",
           "lower": "0x08898904"
+        },
+        {
+          "upper": "0x08899880",
+          "lower": "0x08899888"
         }
       ]
     },
@@ -1460,7 +1496,8 @@
       "site": "0x0889B264",
       "register": 2,
       "sources": [
-        "0x089B5788"
+        "0x089B5788",
+        "0x08898AEC"
       ]
     },
     {
@@ -1498,6 +1535,31 @@
         {
           "upper": "0x088976D0",
           "lower": "0x088976D8"
+        }
+      ]
+    },
+    {
+      "site": "0x0889877C",
+      "register": 6,
+      "sources": [
+        "0x08899814",
+        "0x088975F8"
+      ]
+    },
+    {
+      "site": "0x08AE12EC",
+      "register": 2,
+      "sources": [
+        "0x08AE3554"
+      ]
+    },
+    {
+      "site": "0x08AE1C28",
+      "register": 2,
+      "sources": [
+        {
+          "upper": "0x08AE0E6C",
+          "lower": "0x08AE0E78"
         }
       ]
     }

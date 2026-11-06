@@ -39,6 +39,9 @@ inline std::vector<std::uint8_t> image() {
     record(data, pos, "PARAM.SFO;1", 24, 512);
     record(data, 22 * 2048, "EBOOT.BIN;1", 25, 4);
     record(data, 23 * 2048, "DATA.BIN;1", 26, 4);
+    // 2000-03-01 00:15:22 at UTC+01:00, crossing leap day in UTC.
+    const std::array<std::uint8_t, 7> stamp{100, 3, 1, 0, 15, 22, 4};
+    std::copy(stamp.begin(), stamp.end(), data.begin() + 23 * 2048 + 18);
     text(data, 25 * 2048, "fake"); text(data, 26 * 2048, "test");
     const auto s = 24 * 2048;
     put(data, s, 0x46535000); put(data, s + 4, 0x101); put(data, s + 8, 84); put(data, s + 12, 160); put(data, s + 16, 4);

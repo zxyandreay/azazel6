@@ -188,6 +188,7 @@ int main(int argc, char** argv) {
         std::cout << "umd_activated=" << io->umd_activated
                   << " umd_activation_count=" << io->umd_activation_count << std::endl;
         std::cout << "disc_opens=" << io->opens << " disc_sector_queries=" << io->sector_queries
+                  << " disc_stat_queries=" << io->stat_queries
                   << " disc_open_handles=" << io->files.size() << std::endl;
         if (rt->stop_reason().starts_with("Unverified indirect target ")) {
             const auto arg0 = rt->cpu().gpr[4];

@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -15,6 +16,7 @@ std::string media_sha256(std::istream& input);
 struct DiscFile {
     std::uint32_t sector = 0, size = 0;
     bool directory = false;
+    std::array<std::uint16_t, 6> recorded_utc{};
 };
 
 // Read-only, single-volume ISO9660. No host directory mapping or decompression.

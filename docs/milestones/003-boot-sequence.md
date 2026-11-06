@@ -1,5 +1,10 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-06.** The native game requests file metadata, receives the
+checked ISO result and continues through its own semaphore completion path.
+The 522-root run next needs the file operation at `0x08AE0670`. Title boot
+remains open. See the [file request trace](../research/local-media-continuation.md#first-file-metadata-request-2026-11-06).
+
 **2026-11-05 local continuation:** checked read-only ISO access removes the
 empty-drive dependency. The media worker completes its actual file-sector query
 and exits; the main thread advances to guarded callback `0x08898710` from
