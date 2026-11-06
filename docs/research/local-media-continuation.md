@@ -171,3 +171,10 @@ table `0x08B94698` at offset 8. The callback cleared three object fields.
 The caller then constructed its second object through `0x0889D1D4` and
 loaded `0x08895264` from `0x08B94650 + 8` at `0x08894BB8`. Each
 dispatch checks its own file-backed pointer slot.
+
+**VERIFIED state transition.** The guest constructs `0x088977D4` with the
+address pair at `0x088987F4/F8` and stores it at object offset `0x68` at
+`0x08898814`. The guarded dispatch at `0x08897ADC` entered this 13-word
+list-unlink callback. The main thread then reached its direct call from
+`0x088627F4` to `0x08894734`. The native run recorded 15 frames and 14 GE
+lists. Scanout still contained zero nonblack pixels.
