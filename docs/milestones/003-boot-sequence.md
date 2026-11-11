@@ -1,7 +1,8 @@
 # Milestone 003: boot sequence
 
 **VERIFIED, 2026-11-12.** The checked system button preference query returns
-the configured Cross value. Startup reaches controller sampling-cycle setup.
+the configured Cross value. Startup configures VBLANK controller sampling and
+analog mode, then reaches uncovered direct callee `0x08887C70`.
 The 15-frame real-media capture is still black; title boot remains open.
 See [settings evidence](../research/language-mode.md#system-button-preference-2026-11-12).
 

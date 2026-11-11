@@ -235,7 +235,10 @@ int main(int argc, char** argv) {
                                    [](const auto& slot) { return slot.has_value(); })
                   << " power_notifications=" << power->pending_notifications.size() << std::endl;
         std::cout << "controller_idle_thresholds=" << controller->idle_reset << '/'
-                  << controller->idle_back << " controller_setting_writes=" << controller->writes << std::endl;
+                  << controller->idle_back << " controller_setting_writes=" << controller->writes
+                  << " controller_sampling_mode=" << controller->sampling_mode
+                  << " controller_cycle_writes=" << controller->cycle_writes
+                  << " controller_mode_writes=" << controller->mode_writes << std::endl;
         for (const auto& thread : threads->snapshot())
             std::cout << "thread=" << thread.uid << " status=" << static_cast<std::uint32_t>(thread.status)
                       << " entry=" << hex32(thread.entry)

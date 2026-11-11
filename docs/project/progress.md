@@ -22,7 +22,7 @@ Azazel6 is not playable. See
 | Clock conversion | VERIFIED unsigned immediate and pointer-form microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
 | System-time query | VERIFIED low and wide microseconds plus current Hcount from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
 | Power services | VERIFIED immutable nominal startup PLL/CPU/bus reads at 222/222/111 MHz plus owned callback-slot registration and queued initial `0x10E4` notification; delivery, host clocks, clock transitions and timing rescale remain unimplemented |
-| Controller settings | VERIFIED runtime-local idle-cancel thresholds, including signed `-1` and checked 0..128 values; guest pad sampling remains unimplemented |
+| Controller settings | VERIFIED runtime-local idle-cancel thresholds, VBLANK sampling configuration and digital/analog mode transitions; guest pad sampling remains unimplemented |
 | Startup device control | VERIFIED source-only `fatms0:` callback ownership registration with checked live-stack input; no host path, media state, capacity, file or callback delivery |
 | Startup WLAN identity | VERIFIED one fixed locally administered unicast address copied only to a checked live caller stack; no host networking or connectivity |
 | UMD activation / media | VERIFIED exact-hash read-only ISO admission, checked title/region and file extents, real sector query and handle closure; omission preserves empty-drive timeouts |
@@ -44,7 +44,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 571 reviewed roots / 36,503 words. The 128-byte object constructor completes the system button preference query and reaches `sceCtrlSetSamplingCycle`. Fifteen display frames, fourteen GE lists and zero nonblack pixels. |
+| Native entry execution | VERIFIED 571 reviewed roots / 36,503 words. The object constructor configures VBLANK controller sampling and analog mode, then reaches uncovered helper `0x08887C70`. Fifteen display frames, fourteen GE lists and zero nonblack pixels. |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
