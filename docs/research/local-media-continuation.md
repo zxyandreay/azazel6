@@ -203,3 +203,16 @@ and called `sceUtilityGetSystemParamInt` (NID `0xA5DA2406`) at
 `0x0889DF5C`. The native trace shows ID 9 and a word output at the current
 SP. The pinned PSPSDK identifies this ID as the confirm-button assignment.
 The guest tests the service result before reading its stack word.
+
+**VERIFIED object/list setup, 2026-11-12.** After controller configuration,
+the constructor invokes `0x08887C70`. Its reviewed body allocates a 112-byte
+object, installs its tables and initializes the two record containers through
+`0x08887B5C`. The caller clears the counters with `0x089B7A0C` and tails into
+`0x089B8CDC`. Its first direct callee, `0x089B8A68`, resets/swaps the container
+fields using `0x08887C30`; the two possible destructor calls at `0x089B8B80`
+and `0x089B8BDC` retain terminal guards. Neither call executes in this run.
+The next uncovered helper is `0x089B8894`, return `0x089B8D18`.
+Coverage is 577 roots / 36,767 words. The run still records 15 frames, 14 GE
+lists and 28,196 ISO bytes, with black scanout. The wrapper reports failure
+at uncovered code, not boot success. Python, integrated CTest and ARM64 checks
+pass; title boot remains open.
