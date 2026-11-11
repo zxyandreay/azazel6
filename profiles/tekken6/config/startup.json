@@ -444,6 +444,9 @@
     "0x089B9550",
     "0x089B8EF0",
     "0x089B80D8",
+    "0x088874E4",
+    "0x089B8E70",
+    "0x089B8DF8",
     "0x08868224",
     "0x0889CE24",
     "0x0889D1D4",
@@ -638,7 +641,7 @@
       "register": 2
     },
     {
-      "site": "0x089B8FC4",
+      "site": "0x089B90B4",
       "register": 2
     },
     {
@@ -783,6 +786,13 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x089B8FC4",
+      "register": 2,
+      "pointers": [
+        "0x08B938A0"
+      ]
+    },
     {
       "site": "0x08894BB8",
       "register": 2,

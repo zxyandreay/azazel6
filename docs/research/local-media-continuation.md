@@ -226,3 +226,12 @@ word contains that target. The constructor installs this table at `0x08887D1C`.
 Coverage is 582 roots / 37,470 words. All 94 Python tests, 25 CTest suites and
 the ARM64 build pass. The native run is a guarded failure with unchanged black
 scanout, 15 frames and 14 GE lists; it has not entered the allocation callback.
+
+**VERIFIED record allocation.** The exact table slot now authorizes only
+`0x088874E4` at that site. The six-word callback scales the requested record
+count by 76 and tails into the existing allocator. Reviewed copy/fill helpers
+`0x089B8E70` and `0x089B8DF8` complete. The adjacent byte container then requests
+60 elements at `0x089B95F4`, where the guard observes `0x0887DC78`. Its table
+slot is `0x08B939E8`, installed at `0x08887D5C`. Coverage is 585 roots / 37,607
+words; the full Python/CTest/ARM64 checks pass. Native execution still ends at
+the guard with 15 black display frames, before the byte allocation callback.
