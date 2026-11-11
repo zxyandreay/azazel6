@@ -1,5 +1,10 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-12.** The checked system button preference query returns
+the configured Cross value. Startup reaches controller sampling-cycle setup.
+The 15-frame real-media capture is still black; title boot remains open.
+See [settings evidence](../research/language-mode.md#system-button-preference-2026-11-12).
+
 **VERIFIED object callbacks.** Both object initializers executed on the main
 thread. The next guard observed target `0x088977D4` at `0x08897ADC`. The
 capture still has zero nonblack pixels.

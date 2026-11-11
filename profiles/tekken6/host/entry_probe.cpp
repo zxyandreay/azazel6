@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
             image_segment->vaddr + image_segment->file_size, module.gp,
             AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size}, allocator);
         azazel6::register_power_callback_hle(*rt, power, threads);
+        azazel6::register_system_param_hle(*rt, threads, AZAZEL6_CONFIRM_BUTTON);
         const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.

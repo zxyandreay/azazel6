@@ -32,7 +32,7 @@ Azazel6 is not playable. See
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
 | Fixed pools | VERIFIED single-block creation, immediate allocation, free/delete and shared ownership; multi-block/waiting services remain rejecting |
-| Language settings | VERIFIED explicit English/Cross defaults and checked runtime-local get/set; no host locale dependency |
+| Language settings | VERIFIED explicit English/Cross defaults, checked runtime-local get/set and caller-stack system button preference query; no host locale dependency |
 | Event flags | VERIFIED create/delete, set/clear, polling, queued waits, FIFO wakeups and cancellation; timeouts remain rejecting |
 | Graphics memory | VERIFIED immutable EDRAM size/base queries backed by allocated guest VRAM; first native VRAM clear verified; general GE rendering remains unimplemented |
 | Framebuffer readback | VERIFIED synthetic CPU RGBA snapshot in all four framebuffer formats, checked strides/latches and GE-clear integration; native probe now captures current scanout locally as RGBA/PPM. The 51-frame checkpoint is uniformly black; no scene presentation |
@@ -44,7 +44,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 571 reviewed roots / 36,503 words. The 128-byte object constructor calls `sceUtilityGetSystemParamInt` with parameter 9 and a caller-stack output. Fifteen display frames, fourteen GE lists and zero nonblack pixels. |
+| Native entry execution | VERIFIED 571 reviewed roots / 36,503 words. The 128-byte object constructor completes the system button preference query and reaches `sceCtrlSetSamplingCycle`. Fifteen display frames, fourteen GE lists and zero nonblack pixels. |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

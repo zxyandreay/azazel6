@@ -72,6 +72,7 @@ class ThreadRegistry {
 public:
     [[nodiscard]] std::vector<GuestThread> snapshot() const { return threads_; }
     [[nodiscard]] std::optional<GuestThread> current_thread() const;
+    [[nodiscard]] bool belongs_to(const psprecomp::Runtime& runtime) const { return owner_ == &runtime; }
     [[nodiscard]] std::uint32_t current_uid() const { return current_uid_; }
     [[nodiscard]] bool interrupts_enabled() const { return interrupts_enabled_; }
     [[nodiscard]] bool in_interrupt() const { return in_interrupt_; }
@@ -97,7 +98,7 @@ public:
     [[nodiscard]] const std::map<std::uint32_t, GuestEventFlag>& event_flags() const { return event_flags_; }
 private:
     friend std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime&, ThreadArena, std::shared_ptr<GuestAllocator>);
-    explicit ThreadRegistry(ThreadArena arena) : arena_(arena) {}
+    ThreadRegistry(const psprecomp::Runtime& owner, ThreadArena arena) : owner_(&owner), arena_(arena) {}
     void create(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void erase(psprecomp::Runtime&, psprecomp::AllegrexContext&);
     void start(psprecomp::Runtime&, psprecomp::AllegrexContext&);
@@ -134,6 +135,7 @@ private:
     bool wake_event(psprecomp::Runtime&, std::uint32_t uid, GuestEventFlag&,
                     std::uint32_t pattern, std::uint32_t result);
     bool event_output(psprecomp::Runtime&, std::uint32_t address) const;
+    const psprecomp::Runtime* owner_;
     ThreadArena arena_;
     std::shared_ptr<GuestAllocator> allocator_;
     std::vector<GuestThread> threads_;

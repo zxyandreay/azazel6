@@ -3,6 +3,8 @@
 #include <memory>
 
 namespace azazel6 {
+class ThreadRegistry;
+void register_system_param_hle(psprecomp::Runtime&, std::shared_ptr<ThreadRegistry>, std::uint32_t confirm_button);
 struct LanguageMode {
     std::uint32_t language, confirm_button;
     std::uint64_t reads = 0, writes = 0;

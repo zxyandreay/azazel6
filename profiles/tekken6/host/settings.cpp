@@ -1,7 +1,27 @@
 #include "azazel6/settings.hpp"
+#include "azazel6/threads.hpp"
 #include "psprecomp/common.hpp"
 
 namespace azazel6 {
+void register_system_param_hle(psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads,
+                               std::uint32_t confirm_button) {
+    if (!threads || !threads->belongs_to(rt) || confirm_button > 1)
+        throw psprecomp::Error("Invalid system button preference or thread owner");
+    constexpr std::uint32_t get_int = 0xA5DA2406u;
+    rt.nids().add("sceUtility", get_int, "sceUtilityGetSystemParamInt");
+    rt.register_hle("sceUtility", get_int, [threads, confirm_button](auto& runtime, auto& c) {
+        if (c.gpr[4] != 9) { runtime.stop("Unsupported integer system parameter"); return; }
+        const auto caller = threads->current_thread();
+        const auto out = c.gpr[5];
+        if (&c != &runtime.cpu() || !caller || caller->status != ThreadStatus::Running ||
+            threads->in_interrupt() || !threads->interrupts_enabled() || (out & 3u) ||
+            out < caller->stack_base || std::uint64_t(out) + 4 > std::uint64_t(caller->stack_base) + caller->stack_size) {
+            runtime.stop("System parameter output requires an aligned word on the live caller stack"); return;
+        }
+        runtime.memory().store32(out, confirm_button);
+        c.set_gpr(2, 0);
+    });
+}
 std::shared_ptr<LanguageMode> register_language_hle(psprecomp::Runtime& rt, LanguageMode initial,
                                                   std::uint32_t begin, std::uint32_t end) {
     if (initial.language > 11 || initial.confirm_button > 1 || begin >= end ||

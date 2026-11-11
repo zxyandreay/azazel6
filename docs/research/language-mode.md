@@ -38,3 +38,23 @@ confirm button 1. Startup creates a fourth mutex, then reaches
 dispatches. All constructor returns, the 2048-record initialization loop and the
 single-block pool allocation remain intact. Coverage is 238 roots/21593 words;
 Windows and Android ARM64 compilation pass. Title-screen boot is still pending.
+
+## System button preference, 2026-11-12
+
+**VERIFIED:** the later object constructor calls `sceUtilityGetSystemParamInt`
+(`0xA5DA2406`) with ID 9 and an output word on its live stack. The profile now
+returns its explicit Circle/Cross preference for this ID only. This immutable
+system preference is separate from mutable `sceImpose` language-mode state.
+Unknown IDs, foreign runtime ownership, detached CPU contexts, interrupt-disabled
+callers and outputs outside an aligned live caller-stack word reject before writing.
+
+**DOCUMENTED:** pinned PSPSDK names ID 9 `BUTTON_SWAP`. PPSSPP's
+[`sceUtility.cpp` at `cf17b0ac7966ba4b172a32340333d209a2d747e7`](https://github.com/hrydgard/ppsspp/blob/cf17b0ac7966ba4b172a32340333d209a2d747e7/Core/HLE/sceUtility.cpp)
+returns the configured button preference (with its own compatibility override).
+This reference establishes the setting's meaning, not hardware equivalence.
+
+**VERIFIED:** synthetic contracts cover both values, stack endpoints, invalid
+configuration, identity, alignment, overflow and mutation-free rejection. The
+real-media probe passes the query and reaches `sceCtrlSetSamplingCycle` at
+`0x08B89098`, returning to `0x08ADFEC4`. It records 15 frames, 14 GE lists and
+28,196 disc bytes; captured scanout remains black. Title boot remains open.

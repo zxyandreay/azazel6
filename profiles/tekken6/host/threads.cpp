@@ -137,7 +137,7 @@ std::shared_ptr<ThreadRegistry> register_thread_hle(psprecomp::Runtime& rt, Thre
             psprecomp::GuestMemory::kPhysicalBase + static_cast<std::uint64_t>(rt.memory().size()) ||
         arena.image_begin <= kThreadReturnGate + 4))
         throw psprecomp::Error("Invalid bootstrap ownership");
-    auto state = std::shared_ptr<ThreadRegistry>(new ThreadRegistry(arena));
+    auto state = std::shared_ptr<ThreadRegistry>(new ThreadRegistry(rt, arena));
     if (!allocator) allocator = std::make_shared<GuestAllocator>(arena.begin, arena.end);
     if (allocator->begin() != arena.begin || allocator->end() != arena.end)
         throw psprecomp::Error("Thread allocator ownership mismatch");

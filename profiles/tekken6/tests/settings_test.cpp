@@ -1,5 +1,6 @@
 #include "azazel6/settings.hpp"
 #include "azazel6/bootstrap.hpp"
+#include "azazel6/threads.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -83,8 +84,67 @@ void configuration() {
         check(rejected, "Invalid writable range accepted");
     }
 }
+void system_button_query() {
+    constexpr std::uint32_t stack = 0x09010000u, size = 0x4000u, poison = 0xDEADBEEFu;
+    constexpr ThreadArena arena{0x09000000u, stack, begin, end, begin, end, begin, 40, size};
+    for (auto button : {0u, 1u}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        auto threads = register_thread_hle(*rt, arena);
+        register_system_param_hle(*rt, threads, button);
+        for (auto out : {stack, stack + size - 4}) {
+            auto& c = rt->cpu(); c.gpr[4] = 9; c.gpr[5] = out; c.gpr[2] = poison;
+            c.gpr[31] = begin + 4; c.pc = begin;
+            rt->memory().store32(out, poison);
+            invoke_returning_import(*rt, c, "sceUtility", 0xA5DA2406u);
+            check(!rt->stopped() && c.pc == begin + 4 && !c.gpr[2] &&
+                  rt->memory().load32(out) == button, "Button setting ABI");
+        }
+        auto other = std::make_unique<psprecomp::Runtime>();
+        bool rejected = false;
+        try { register_system_param_hle(*other, threads, button); }
+        catch (const std::exception&) { rejected = true; }
+        check(rejected, "Foreign system parameter owner");
+    }
+    for (auto [id, out] : {std::pair{8u, stack}, {9u, stack - 4}, {9u, stack + size},
+                            {9u, stack + 1}, {9u, 0xFFFFFFFCu}}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        register_system_param_hle(*rt, register_thread_hle(*rt, arena), 1);
+        auto& c = rt->cpu(); c.gpr[4] = id; c.gpr[5] = out; c.gpr[2] = poison;
+        rt->memory().store32(stack, poison);
+        if (rt->memory().contains(out, 4) && !(out & 3u)) rt->memory().store32(out, poison);
+        rt->invoke_import("sceUtility", 0xA5DA2406u, c);
+        check(rt->stopped() && c.gpr[2] == poison && rt->memory().load32(stack) == poison,
+              "Unsupported system parameter request returned or wrote output");
+        if (rt->memory().contains(out, 4) && !(out & 3u))
+            check(rt->memory().load32(out) == poison, "System parameter wrote outside stack");
+    }
+    for (bool foreign_context : {false, true}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        register_system_param_hle(*rt, register_thread_hle(*rt, arena), 1);
+        if (!foreign_context) rt->invoke_import("Kernel_Library", 0x092968F4u, rt->cpu());
+        auto detached = rt->cpu();
+        auto& c = foreign_context ? detached : rt->cpu();
+        c.gpr[4] = 9; c.gpr[5] = stack; c.gpr[2] = poison;
+        rt->memory().store32(stack, poison);
+        rt->invoke_import("sceUtility", 0xA5DA2406u, c);
+        check(rt->stopped() && c.gpr[2] == poison && rt->memory().load32(stack) == poison,
+              "Invalid caller context changed system parameter output");
+    }
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    auto threads = register_thread_hle(*rt, arena);
+    for (auto button : {2u, 0xFFFFFFFFu}) {
+        bool rejected = false;
+        try { register_system_param_hle(*rt, threads, button); }
+        catch (const std::exception&) { rejected = true; }
+        check(rejected, "Invalid system button setting accepted");
+    }
+    bool rejected = false;
+    try { register_system_param_hle(*rt, {}, 1); }
+    catch (const std::exception&) { rejected = true; }
+    check(rejected, "Missing system parameter owner accepted");
+}
 }
 int main() {
-    try { roundtrip(); failure_atomicity(); configuration(); std::cout << "Language mode contracts passed\n"; }
+    try { roundtrip(); failure_atomicity(); configuration(); system_button_query(); std::cout << "Settings contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
