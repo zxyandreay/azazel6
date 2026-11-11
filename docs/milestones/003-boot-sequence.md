@@ -3,7 +3,7 @@
 **VERIFIED, 2026-11-12.** The checked system button preference query returns
 the configured Cross value. Startup configures VBLANK controller sampling and
 analog mode and initializes the next object/list containers. The next uncovered
-direct callee is `0x089B8894`.
+boundary is allocation callback `0x088874E4` at guarded site `0x089B8FC4`.
 The 15-frame real-media capture is still black; title boot remains open.
 See [settings evidence](../research/language-mode.md#system-button-preference-2026-11-12).
 

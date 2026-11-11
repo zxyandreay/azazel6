@@ -216,3 +216,13 @@ Coverage is 577 roots / 36,767 words. The run still records 15 frames, 14 GE
 lists and 28,196 ISO bytes, with black scanout. The wrapper reports failure
 at uncovered code, not boot success. Python, integrated CTest and ARM64 checks
 pass; title boot remains open.
+
+**VERIFIED container allocation boundary.** The next five reviewed roots cover
+the population helper, record erasure, bounded fill/clear loops and the two
+container growth paths. Unknown allocation calls remain terminal. Native execution
+enters `0x089B8EF0` with a request for 60 records and observes `0x088874E4`
+at `0x089B8FC4`; register 6 holds table `0x08B938A0`, whose first file-backed
+word contains that target. The constructor installs this table at `0x08887D1C`.
+Coverage is 582 roots / 37,470 words. All 94 Python tests, 25 CTest suites and
+the ARM64 build pass. The native run is a guarded failure with unchanged black
+scanout, 15 frames and 14 GE lists; it has not entered the allocation callback.
