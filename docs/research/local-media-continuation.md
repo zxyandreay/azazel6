@@ -243,3 +243,11 @@ and the enclosing constructor returns to `0x08868168`. The next guard at
 at offset 8. Coverage is 588 roots / 37,722 words. Python, integrated CTest
 and ARM64 validation pass. The native checkpoint still has 15 frames, 14 GE
 lists and zero nonblack pixels; no title or input result is claimed.
+
+**VERIFIED member reset.** The parent constructor installs table `0x08B90C88`
+at object offset `0x78` with the store at `0x08868398`. Its slot at
+`0x08B90C90` now authorizes the observed four-word reset method at
+`0x08868178`. The method returns and startup reaches shared tail dispatch
+`0x0885F16C`, with receiver table `0x08B95320` and target `0x0889CE0C`.
+Coverage is 589 roots / 37,767 words; all Python, CTest and ARM64 checks pass.
+The run remains a guarded failure with 15 black display frames.
