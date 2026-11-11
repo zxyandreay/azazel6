@@ -3,9 +3,9 @@
 **VERIFIED, 2026-11-12.** The checked system button preference query returns
 the configured Cross value. Startup configures VBLANK controller sampling and
 analog mode and initializes the next object/list containers. The next uncovered
-boundary is shared tail dispatch `0x0885F16C` with target `0x0889CE0C`, after
-both container allocations, the constructor return and the member reset.
-The 15-frame real-media capture is still black; title boot remains open.
+boundary is main-state dispatch `0x08860FBC` with target `0x08862D40`, after
+both container allocations, the constructor return, member reset and status methods.
+The 16-frame real-media capture is still black; title boot remains open.
 See [settings evidence](../research/language-mode.md#system-button-preference-2026-11-12).
 
 **VERIFIED object callbacks.** Both object initializers executed on the main

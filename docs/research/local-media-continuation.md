@@ -251,3 +251,12 @@ at object offset `0x78` with the store at `0x08868398`. Its slot at
 `0x0885F16C`, with receiver table `0x08B95320` and target `0x0889CE0C`.
 Coverage is 589 roots / 37,767 words; all Python, CTest and ARM64 checks pass.
 The run remains a guarded failure with 15 black display frames.
+
+**VERIFIED next main state.** Constructor store `0x0889D2CC` installs table
+`0x08B95320`. Its status slot at `0x08B95334` authorizes the observed two-word
+method `0x0889CE0C` for `0x0885F16C`. The alternate branch at `0x0885F144`
+has checked slot `0x08B95338` and reviewed method `0x0889D0C0`; its internal
+member calls remain guarded. The native run advances to frame 16 and 15 GE
+lists, then the main dispatch at `0x08860FBC` observes `0x08862D40` in register
+5. Coverage is 591 roots / 37,818 words. Python/CTest/ARM64 checks pass;
+captured scanout remains black and the unknown callback still stops execution.
