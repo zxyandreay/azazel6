@@ -3,8 +3,8 @@
 **VERIFIED, 2026-11-12.** The checked system button preference query returns
 the configured Cross value. Startup configures VBLANK controller sampling and
 analog mode and initializes the next object/list containers. The next uncovered
-boundary is byte-container allocation callback `0x0887DC78` at guarded site
-`0x089B95F4`, after record allocation/fill completes.
+boundary is member callback `0x088685D4` at guarded site `0x08868178`, after
+both container allocations complete and the enclosing constructor returns.
 The 15-frame real-media capture is still black; title boot remains open.
 See [settings evidence](../research/language-mode.md#system-button-preference-2026-11-12).
 

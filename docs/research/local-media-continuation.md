@@ -235,3 +235,11 @@ count by 76 and tails into the existing allocator. Reviewed copy/fill helpers
 slot is `0x08B939E8`, installed at `0x08887D5C`. Coverage is 585 roots / 37,607
 words; the full Python/CTest/ARM64 checks pass. Native execution still ends at
 the guard with 15 black display frames, before the byte allocation callback.
+
+**VERIFIED constructor return.** Slot `0x08B939E8` now authorizes that
+byte-allocation call. Its body and the direct byte copy/fill helpers execute,
+and the enclosing constructor returns to `0x08868168`. The next guard at
+`0x08868178` observes `0x088685D4`, loaded from receiver table `0x08B90C88`
+at offset 8. Coverage is 588 roots / 37,722 words. Python, integrated CTest
+and ARM64 validation pass. The native checkpoint still has 15 frames, 14 GE
+lists and zero nonblack pixels; no title or input result is claimed.
