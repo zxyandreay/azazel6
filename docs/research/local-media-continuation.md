@@ -260,3 +260,14 @@ member calls remain guarded. The native run advances to frame 16 and 15 GE
 lists, then the main dispatch at `0x08860FBC` observes `0x08862D40` in register
 5. Coverage is 591 roots / 37,818 words. Python/CTest/ARM64 checks pass;
 captured scanout remains black and the unknown callback still stops execution.
+
+**VERIFIED geometry preparation.** The address pair `0x08862808/0C` and store
+at `0x08862824` establish the next main callback. Its reviewed direct helpers
+include startup state setters and geometry-buffer setup. The shared body at
+`0x089C94FC` has one explicit root to avoid overlapping its two callers.
+Native execution enters `0x08862D40`, completes the geometry preparation and
+reaches resource helper `0x08ADF158`, return `0x089C97EC`. Cache diagnostics
+increase to 29 ranges, including 20 writebacks. Later state setters have static
+coverage only. Coverage is 602 roots / 38,134 words; full Python, integrated
+CTest and ARM64 checks pass. Sixteen frames and 15 GE lists still produce black
+scanout. Resource allocation and visible title boot remain unverified.
