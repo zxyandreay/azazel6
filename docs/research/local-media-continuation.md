@@ -271,3 +271,11 @@ increase to 29 ranges, including 20 writebacks. Later state setters have static
 coverage only. Coverage is 602 roots / 38,134 words; full Python, integrated
 CTest and ARM64 checks pass. Sixteen frames and 15 GE lists still produce black
 scanout. Resource allocation and visible title boot remain unverified.
+
+**VERIFIED resource query boundary.** The reviewed wrapper `0x08ADF158`
+reorders its arguments and tails into `0x08AED9D0`. The latter obtains the
+existing global resource object through `0x08ACF110`. Its first virtual call
+at `0x08AEDA14` observes `0x08ACF924` from table `0x08BCFC88 + 0x38`, with
+resource identifier `0x20002000`. The call remains terminal pending target
+review. Coverage is 604 roots / 38,171 words. Python/CTest/ARM64 checks pass;
+the real-media run still records 16 black frames and 15 GE lists.
