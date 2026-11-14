@@ -52,3 +52,8 @@ input remain unverified.
 executes its reviewed data path. The next missing direct callee is
 `0x088AB6F0`. Coverage is 626 roots / 39,233 words. The bounded real-media
 run still records one controller read and 16 black display frames.
+
+**VERIFIED post-input helpers:** the game enters `0x088AB6F0`,
+`0x089B83FC` and `0x088AA0AC` after the first sampled read. The next direct
+callee `0x089B7984` remains uncovered. Coverage is 629 roots / 39,565
+words. The bounded capture remains 16 black frames and 15 GE lists.
