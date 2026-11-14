@@ -1,6 +1,7 @@
 #pragma once
 #include "psprecomp/runtime.hpp"
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <vector>
 #include "azazel6/interrupts.hpp"
@@ -55,6 +56,7 @@ public:
     std::uint64_t system_time_reads = 0;
     std::uint64_t hcount_reads = 0;
     bool mode_set = false; // Only the observed LCD 480x272 mode is supported.
+    void set_vblank_observer(std::function<void(std::uint64_t)> observer);
     // An explicit time producer must return control for guest callbacks at each edge.
     void advance(psprecomp::Runtime&, std::uint64_t ticks);
     // Research-only idle jump. Never converts runnable execution into elapsed time.
@@ -69,6 +71,7 @@ private:
     std::shared_ptr<ThreadRegistry> threads_;
     std::shared_ptr<InterruptDelivery> interrupts_;
     std::uint64_t idle_limit_ = 0, idle_frames_ = 0, idle_events_ = 0;
+    std::function<void(std::uint64_t)> vblank_observer_;
 };
 std::shared_ptr<DisplayState> register_display_hle(psprecomp::Runtime&,
     std::shared_ptr<ThreadRegistry>, std::shared_ptr<InterruptDelivery>, std::uint64_t idle_frame_budget = 0);

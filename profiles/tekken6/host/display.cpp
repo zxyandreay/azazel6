@@ -188,11 +188,16 @@ void DisplayState::advance(psprecomp::Runtime& rt, std::uint64_t ticks) {
         throw psprecomp::Error("Clock advance must yield at the next timeout");
     const auto edges = clock.advance(ticks);
     if (edges.empty()) { threads_->wake_timeouts(rt, rt.cpu(), clock.ticks()); return; }
+    if (vblank_observer_) vblank_observer_(clock.microseconds());
     interrupts_->raise_vblank();
     interrupts_->dispatch(rt, rt.cpu());
     if (rt.stopped()) return;
     buffers.vblank();
     // Publish all state for this event before selecting a runnable thread.
     threads_->wake_clock(rt, rt.cpu(), clock.ticks(), clock.frames());
+}
+void DisplayState::set_vblank_observer(std::function<void(std::uint64_t)> observer) {
+    if (!observer || vblank_observer_) throw psprecomp::Error("Invalid or duplicate VBLANK observer");
+    vblank_observer_ = std::move(observer);
 }
 }

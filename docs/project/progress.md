@@ -44,15 +44,15 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 622 reviewed roots / 38,787 words. The callback tail `0x0886804C`, callback `0x08868518` and two direct helpers execute. The next stop is missing direct callee `0x08ADFE30`. Sixteen display frames, fifteen GE lists and zero nonblack pixels. |
+| Native entry execution | VERIFIED 625 reviewed roots / 38,906 words. The callback helper chain reaches `sceCtrlReadBufferPositive`; one VBLANK-produced neutral sample is consumed. The next stop is missing direct callee `0x088AB3A8`. Sixteen display frames, fifteen GE lists and zero nonblack pixels. |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
 | Android host APK | VERIFIED synthetic SDL/Vulkan probe builds, signs and passes ARM64 and x86_64 ELF / 16 KiB ELF and ZIP alignment checks; no game code |
-| Host input | VERIFIED synthetic touch identity, stock coordinate and analog contracts; SDL gamepad/touch adapter compiled, guest input integration remains unimplemented |
+| Host input | VERIFIED synthetic touch identity, stock coordinate and analog contracts; SDL gamepad/touch adapter compiled. Guest one-sample read consumes a VBLANK-produced pad snapshot in the native probe; game-running Android input wiring remains open. |
 | Android virtual device | VERIFIED official emulator API 37 x86_64 / 16 KiB and API 35 x86_64 / 4 KiB: APK installation, Vulkan pixels, touch, virtual controller, navigation overlays, three Home/resume cycles and 30-second advancing-frame intervals; API 35 setup limitations documented |
 | Physical Android device | BLOCKED: no physical ARM64 device/controller attached; hardware GPU/input behavior unverified |
-| Game boot/combat/graphics/audio/input | First native VRAM clear only; title, visible scene, stock gameplay, audio and guest controls remain unimplemented |
+| Game boot/combat/graphics/audio/input | Native boot reaches the first guest controller read and earlier VRAM clears; title, visible scene, stock gameplay, audio and physical guest controls remain unverified. |
 | Ultrawide gameplay hooks / moveset packages | PLANNED; reference research only |
 
 Supported game-input identity is limited to the exact USA decrypted baseline.

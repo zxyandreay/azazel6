@@ -1,7 +1,9 @@
 #include "azazel6/bootstrap.hpp"
 #include "azazel6/controller.hpp"
+#include "azazel6/display.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <tuple>
 
 using namespace azazel6;
 void require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
@@ -75,7 +77,52 @@ void sampling_settings() {
     }
 }
 
+void positive_read_contracts() {
+    auto call = [](auto& rt, std::uint32_t address, std::uint32_t count) {
+        auto& c = rt.cpu(); c.gpr[4] = address; c.gpr[5] = count; c.gpr[2] = 0xDEADBEEFu;
+        c.pc = 0x08804000u; c.gpr[31] = 0x08805000u;
+        invoke_returning_import(rt, c, "sceCtrl", kCtrlReadBufferPositiveNid);
+        return c.gpr[2];
+    };
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    const auto state = register_controller_settings_hle(*rt);
+    const auto display = std::make_shared<DisplayState>();
+    register_controller_read_hle(*rt, state, display, [] { return PadSample{cross | right, 21, 239}; });
+    state->sampling_mode = 1;
+    state->publish_sample({cross | right, 21, 239}, 16683);
+    constexpr auto address = 0x08010000u;
+    require(call(*rt, address, 1) == 1 && !rt->stopped() && rt->cpu().pc == 0x08805000u &&
+            rt->memory().load32(address) == 16683 &&
+            rt->memory().load32(address + 4) == (cross | right) &&
+            rt->memory().load8(address + 8) == 21 && rt->memory().load8(address + 9) == 239 &&
+            rt->memory().load32(address + 12) == 0 && state->reads == 1,
+            "VBLANK controller sample layout or return ABI");
+    require(call(*rt, address, 1) == 0xDEADBEEFu && rt->stopped() && state->reads == 1,
+            "Controller read reused an already consumed sample");
+    for (const auto [buffer, count, error] : {
+             std::tuple{0u, 1u, 0x80000023u},
+             std::tuple{address + 1, 1u, 0x80000023u},
+             std::tuple{0xFFFFFFFFu, 1u, 0x80000023u},
+             std::tuple{address, 0u, 0x80000104u},
+             std::tuple{address, 64u, 0x80000104u}}) {
+        auto invalid = std::make_unique<psprecomp::Runtime>();
+        const auto settings = register_controller_settings_hle(*invalid);
+        register_controller_read_hle(*invalid, settings, std::make_shared<DisplayState>(), [] { return PadSample{}; });
+        settings->publish_sample({}, 1);
+        require(call(*invalid, buffer, count) == error && !invalid->stopped() && !settings->reads &&
+                settings->sample_generation != settings->consumed_generation,
+                "Invalid controller read consumed sample or accepted bad buffer");
+    }
+    auto digital = std::make_unique<psprecomp::Runtime>();
+    const auto settings = register_controller_settings_hle(*digital);
+    register_controller_read_hle(*digital, settings, std::make_shared<DisplayState>(), [] { return PadSample{}; });
+    settings->publish_sample({start | 0x01000000u, 0, 255}, 42);
+    require(call(*digital, address, 1) == 1 && digital->memory().load32(address + 4) == start &&
+            digital->memory().load8(address + 8) == 128 && digital->memory().load8(address + 9) == 128,
+            "Digital sampling leaked analog values");
+}
+
 int main() {
-    try { threshold_contracts(); sampling_settings(); std::cout << "Controller settings contracts passed\n"; }
+    try { threshold_contracts(); sampling_settings(); positive_read_contracts(); std::cout << "Controller settings contracts passed\n"; }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

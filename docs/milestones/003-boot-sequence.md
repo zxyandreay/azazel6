@@ -6,7 +6,8 @@ analog mode and initializes the next object/list containers. The reviewed
 resource-object virtual call `0x08ACC910` at `0x08ACC558` now executes. Its
 field-read target `0x08ACC66C`, metadata method `0x08ACC61C` and subsequent
 allocator helpers, VRAM command writers and the callback path through
-`0x088AA298` run. The next missing direct callee is `0x08ADFE30`, after allocation and both
+`0x088AA298` run. The game consumes one VBLANK-produced controller sample;
+the next missing direct callee is `0x088AB3A8`, after allocation and both
 container allocations, the constructor return, status methods and geometry
 preparation.
 The 16-frame real-media capture is still black; title boot remains open.

@@ -121,6 +121,9 @@ int main(int argc, char** argv) {
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
         const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
+        auto host_input = std::make_shared<azazel6::InputState>();
+        azazel6::register_controller_read_hle(*rt, controller, display,
+            [host_input] { return host_input->pad; });
         const auto io = azazel6::register_io_startup_hle(*rt, threads, display, media, partition);
         const auto ge_queue = azazel6::register_ge_list_hle(*rt, ge_callbacks, threads, AZAZEL6_GE_LIST_SPANS,
             {partition, data_cache, interrupt_delivery, module.gp});
@@ -238,7 +241,8 @@ int main(int argc, char** argv) {
                   << controller->idle_back << " controller_setting_writes=" << controller->writes
                   << " controller_sampling_mode=" << controller->sampling_mode
                   << " controller_cycle_writes=" << controller->cycle_writes
-                  << " controller_mode_writes=" << controller->mode_writes << std::endl;
+                  << " controller_mode_writes=" << controller->mode_writes
+                  << " controller_reads=" << controller->reads << std::endl;
         for (const auto& thread : threads->snapshot())
             std::cout << "thread=" << thread.uid << " status=" << static_cast<std::uint32_t>(thread.status)
                       << " entry=" << hex32(thread.entry)
