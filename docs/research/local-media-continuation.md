@@ -311,3 +311,11 @@ tail returns to the resource path. The next guard at `0x08AEDAB0` observes
 `0x08ACD2F4` on the same object. Coverage is 607 roots / 38,215 words. All
 94 Python tests, 25 integrated CTest suites and ARM64 compilation pass. Scanout
 remains black after 16 frames and 15 GE lists; title boot remains open.
+
+**VERIFIED resource-object tail.** The next checked method `0x08ACD2F4`
+enters its reviewed body at `0x08ACD81C`. The tail at `0x08ACD830` remains
+guarded and observes `0x08ACC534`, read from file-backed slot `0x08BCF8D0`.
+Other resource-path calls at `0x08AEDAE0` and `0x08AEDBD8` retain terminal
+guards. Coverage is 608 roots / 38,297 words. All 94 Python tests, 25 CTest
+suites and ARM64 compilation pass. The real-media capture still has 16 black
+frames and 15 GE lists; no title boot is verified.
