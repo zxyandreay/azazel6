@@ -63,3 +63,14 @@ six-word `0x089B7984` leaf and 54-word `0x089B7F48` path. The bounded
 validated-media run reaches `0x089B833C` from `0x088AB8A4` and stops on
 missing AOT coverage. It retains one controller read, 16 display frames,
 15 GE lists and zero nonblack pixels. Coverage is 631 roots / 39,625 words.
+
+**VERIFIED callback continuation:** the exact EBOOT CFG for `0x089B833C`
+has one direct callee, `0x089B7BE8`. After both execute, object
+`0x090A98C0` reaches the tail dispatcher at `0x08808314`. Its executed
+constructor `0x088AB8D0` installs vtable `0x08B95EB8`; the file-backed
+slot `+0x18` contains `0x0880831C`, a return-zero method. Admitting only
+that slot and target advances the bounded run to guarded callback site
+`0x0889D128`, with target `0x0889D4CC`. The static EBOOT contains that
+target in a descriptor at `0x08B953A4`; the write to the observed object's
+callback field has not yet been established. Coverage is 634 roots /
+39,718 words. The 16-frame capture remains black.
