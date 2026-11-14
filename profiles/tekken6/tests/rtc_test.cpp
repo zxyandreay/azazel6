@@ -53,6 +53,37 @@ void tick_contract() {
     check(rtc->reads == 4u, "RTC query accounting mismatch");
 }
 
+void arithmetic_contract() {
+    using namespace azazel6;
+    auto query = [](std::uint32_t nid, std::uint64_t source_tick, std::uint64_t units,
+                    std::uint64_t expected, bool alias) {
+        psprecomp::Runtime rt;
+        auto display = std::make_shared<DisplayState>();
+        auto rtc = register_rtc_hle(rt, display, 0u);
+        constexpr std::uint32_t source = 0x08000100u;
+        const auto destination = alias ? source : 0x08000110u;
+        rt.memory().store32(source, static_cast<std::uint32_t>(source_tick));
+        rt.memory().store32(source + 4u, static_cast<std::uint32_t>(source_tick >> 32));
+        auto& c = rt.cpu(); c.pc = 0x08001000u; c.gpr[31] = 0x08001004u;
+        c.gpr[4] = destination; c.gpr[5] = source;
+        c.gpr[6] = static_cast<std::uint32_t>(units);
+        c.gpr[7] = static_cast<std::uint32_t>(units >> 32);
+        c.gpr[2] = 42u; c.gpr[16] = 77u;
+        invoke_returning_import(rt, c, "sceRtc", nid);
+        const auto actual = static_cast<std::uint64_t>(rt.memory().load32(destination)) |
+            (static_cast<std::uint64_t>(rt.memory().load32(destination + 4u)) << 32);
+        check(!rt.stopped() && actual == expected && c.gpr[2] == 0u &&
+            c.gpr[16] == 77u && c.pc == 0x08001004u &&
+            (nid == 0xF2A4AFE5u ? rtc->seconds_adds : rtc->minutes_adds) == 1u,
+            "RTC arithmetic or return ABI mismatch");
+    };
+    query(0xF2A4AFE5u, 62135596800000000ULL, 0u, 62135596800000000ULL, false);
+    query(0xF2A4AFE5u, 62135596800000000ULL, 2u, 62135596802000000ULL, false);
+    query(0xF2A4AFE5u, 62135596800000000ULL, ~0ULL, 62135596799000000ULL, true);
+    query(0xE6605BCAu, 62135596800000000ULL, 480u, 62135625600000000ULL, true);
+    query(0xE6605BCAu, 62135596800000000ULL, ~0ULL, 62135596740000000ULL, false);
+}
+
 void failure_contracts() {
     using namespace azazel6;
     for (const auto address : {0u, 0x08000101u, 0x09FFFFFCu}) {
@@ -79,12 +110,45 @@ void failure_contracts() {
     check(rt.stopped() && rtc->reads == 0u && c.gpr[2] == 99u &&
         rt.memory().load32(c.gpr[4]) == 0xABCD1234u,
         "RTC tick overflow mutated guest state");
+
+    auto invalid_arithmetic = [](std::uint32_t nid, std::uint32_t destination, std::uint32_t source,
+                                 std::uint64_t source_tick, std::uint64_t units) {
+        psprecomp::Runtime runtime;
+        auto display_state = std::make_shared<DisplayState>();
+        auto rtc_state = register_rtc_hle(runtime, display_state, 0u);
+        constexpr std::uint32_t sentinel = 0x08000120u;
+        runtime.memory().store32(sentinel, 0xABCD1234u);
+        if (runtime.memory().contains(source, 8u)) {
+            runtime.memory().store32(source, static_cast<std::uint32_t>(source_tick));
+            runtime.memory().store32(source + 4u, static_cast<std::uint32_t>(source_tick >> 32));
+        }
+        auto& context = runtime.cpu(); context.gpr[4] = destination; context.gpr[5] = source;
+        context.gpr[6] = static_cast<std::uint32_t>(units);
+        context.gpr[7] = static_cast<std::uint32_t>(units >> 32);
+        context.gpr[2] = 99u;
+        runtime.invoke_import("sceRtc", nid, context);
+        check(runtime.stopped() && rtc_state->seconds_adds == 0u &&
+            rtc_state->minutes_adds == 0u && context.gpr[2] == 99u &&
+            runtime.memory().load32(sentinel) == 0xABCD1234u,
+            "Invalid RTC arithmetic mutated guest state");
+    };
+    invalid_arithmetic(0xF2A4AFE5u, 0x09FFFFFCu, 0x08000100u, 10u, 0u);
+    invalid_arithmetic(0xE6605BCAu, 0x08000120u, 0x09FFFFFCu, 10u, 0u);
+    invalid_arithmetic(0xE6605BCAu, 0x08000121u, 0x08000100u, 10u, 0u);
+    invalid_arithmetic(0xF2A4AFE5u, 0x08000120u, 0x08000100u, 0u, ~0ULL);
+    invalid_arithmetic(0xE6605BCAu, 0x08000120u, 0x08000100u, 0u, ~0ULL);
+    invalid_arithmetic(0xF2A4AFE5u, 0x08000120u, 0x08000100u,
+        std::numeric_limits<std::uint64_t>::max(), 1u);
+    invalid_arithmetic(0xE6605BCAu, 0x08000120u, 0x08000100u,
+        std::numeric_limits<std::uint64_t>::max(), 1u);
+    invalid_arithmetic(0xF2A4AFE5u, 0x08000120u, 0x08000100u, 10u,
+        static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()));
 }
 }
 
 int main() {
     try {
-        conversion_contract(); tick_contract(); failure_contracts();
+        conversion_contract(); tick_contract(); arithmetic_contract(); failure_contracts();
         std::cout << "RTC contracts passed\n";
         return 0;
     } catch (const std::exception& error) {

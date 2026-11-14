@@ -7,7 +7,7 @@ resource-object virtual call `0x08ACC910` at `0x08ACC558` now executes. Its
 field-read target `0x08ACC66C`, metadata method `0x08ACC61C` and subsequent
 allocator helpers, VRAM command writers and the callback path through
 `0x088AA298` run. The game consumes one VBLANK-produced controller sample;
-the next missing game thunk is `0x088C3D8C` for `sceRtcTickAddSeconds`, after
+the next missing service is `sceRtcSetTick` (`0x7ED29E40`), after
 allocation and both container allocations, the constructor return, status
 methods and geometry preparation.
 The 16-frame real-media capture is still black; title boot remains open.

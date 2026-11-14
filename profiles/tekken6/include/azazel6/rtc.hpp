@@ -11,6 +11,8 @@ std::uint64_t rtc_tick_from_unix_microseconds(std::int64_t unix_microseconds);
 
 struct RtcState {
     std::uint64_t reads = 0;
+    std::uint64_t seconds_adds = 0;
+    std::uint64_t minutes_adds = 0;
 };
 
 std::shared_ptr<RtcState> register_rtc_hle(psprecomp::Runtime& runtime,

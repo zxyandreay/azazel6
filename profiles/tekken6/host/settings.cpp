@@ -1,24 +1,39 @@
 #include "azazel6/settings.hpp"
 #include "azazel6/threads.hpp"
+#include "azazel6/memory.hpp"
 #include "psprecomp/common.hpp"
+#include <algorithm>
 
 namespace azazel6 {
 void register_system_param_hle(psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads,
-                               std::uint32_t confirm_button) {
-    if (!threads || !threads->belongs_to(rt) || confirm_button > 1)
-        throw psprecomp::Error("Invalid system button preference or thread owner");
+                               std::uint32_t confirm_button, std::int32_t timezone_minutes,
+                               std::shared_ptr<const PartitionMemory> partition) {
+    if (!threads || !threads->belongs_to(rt) || confirm_button > 1 ||
+        timezone_minutes < -840 || timezone_minutes > 840 ||
+        (partition && partition->owner != &rt))
+        throw psprecomp::Error("Invalid system settings or owner");
     constexpr std::uint32_t get_int = 0xA5DA2406u;
     rt.nids().add("sceUtility", get_int, "sceUtilityGetSystemParamInt");
-    rt.register_hle("sceUtility", get_int, [threads, confirm_button](auto& runtime, auto& c) {
-        if (c.gpr[4] != 9) { runtime.stop("Unsupported integer system parameter"); return; }
+    rt.register_hle("sceUtility", get_int, [threads, confirm_button, timezone_minutes, partition](auto& runtime, auto& c) {
+        const auto id = c.gpr[4];
+        if (id != 6u && id != 9u) { runtime.stop("Unsupported integer system parameter"); return; }
         const auto caller = threads->current_thread();
         const auto out = c.gpr[5];
+        const auto finish = static_cast<std::uint64_t>(out) + 4u;
+        const bool stack = caller && out >= caller->stack_base &&
+            finish <= static_cast<std::uint64_t>(caller->stack_base) + caller->stack_size;
+        const bool block = id == 6u && partition && std::any_of(partition->blocks.begin(), partition->blocks.end(),
+            [out, finish](const auto& item) {
+                const auto& allocation = item.second;
+                return out >= allocation.base &&
+                    finish <= static_cast<std::uint64_t>(allocation.base) + allocation.size;
+            });
         if (&c != &runtime.cpu() || !caller || caller->status != ThreadStatus::Running ||
             threads->in_interrupt() || !threads->interrupts_enabled() || (out & 3u) ||
-            out < caller->stack_base || std::uint64_t(out) + 4 > std::uint64_t(caller->stack_base) + caller->stack_size) {
-            runtime.stop("System parameter output requires an aligned word on the live caller stack"); return;
+            !runtime.memory().contains(out, 4u) || (!stack && !block)) {
+            runtime.stop("System parameter output outside live caller memory"); return;
         }
-        runtime.memory().store32(out, confirm_button);
+        runtime.memory().store32(out, id == 9u ? confirm_button : static_cast<std::uint32_t>(timezone_minutes));
         c.set_gpr(2, 0);
     });
 }

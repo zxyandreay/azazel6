@@ -21,7 +21,7 @@ reads and host elapsed time do not advance that clock. The HLE validates the
 entire eight-byte guest destination and arithmetic before writing, and stops
 on invalid buffers or overflow. Deterministic synthetic contracts cover
 the epoch conversion, repeated reads, an explicit clock advance, return ABI,
-partial-write rejection and overflow. Other RTC NIDs remain unsupported.
+partial-write rejection and overflow. Unknown RTC NIDs remain unsupported.
 
 The bounded validated-media run executes one tick query and next stops at
 missing game thunk `0x088C3D8C`. That thunk points to `sceRtcTickAddSeconds`
@@ -29,3 +29,16 @@ missing game thunk `0x088C3D8C`. That thunk points to `sceRtcTickAddSeconds`
 capture remains black. **HYPOTHESIS:** broader runnable-time behavior may
 become necessary after this pure tick arithmetic. No such timing model is
 authorized by this checkpoint.
+
+**VERIFIED timezone continuation:** the game calls `sceRtcTickAddSeconds`
+with zero seconds, then queries `sceUtilityGetSystemParamInt` ID 6 into an
+object inside a live partition allocation. Pinned PSPSDK identifies ID 6 as
+the timezone offset in minutes east of UTC. Azazel6 samples the host zone
+once with the calendar anchor, accepts only ID 6 and the existing button ID
+9, and checks the live caller stack or partition lease before writing. The
+game receives 480 minutes in the current local environment and passes that
+value to `sceRtcTickAddMinutes`. The shared checked arithmetic handles
+positive and negative 64-bit seconds/minutes, source/destination aliasing,
+invalid buffers and overflow. The next bounded run stops at `sceRtcSetTick`
+(`0x7ED29E40`). Coverage is 641 roots / 39,893 words; one RTC tick read,
+one seconds add, one minutes add and a black 16-frame capture.

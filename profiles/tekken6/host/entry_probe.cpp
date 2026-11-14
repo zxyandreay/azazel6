@@ -18,6 +18,7 @@
 #include "azazel6/ge_lists.hpp"
 #include <algorithm>
 #include <chrono>
+#include <ctime>
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -27,6 +28,27 @@
 namespace psprecomp { void register_generated_functions(Runtime&); }
 
 namespace azazel6 { void register_profile_imports(psprecomp::Runtime&); }
+
+namespace {
+std::int32_t local_timezone_minutes(std::chrono::system_clock::time_point now) {
+    const auto seconds = std::chrono::system_clock::to_time_t(now);
+    std::tm local{}, utc{};
+#ifdef _WIN32
+    if (localtime_s(&local, &seconds) || gmtime_s(&utc, &seconds))
+        throw psprecomp::Error("Host timezone unavailable");
+#else
+    if (!localtime_r(&seconds, &local) || !gmtime_r(&seconds, &utc))
+        throw psprecomp::Error("Host timezone unavailable");
+#endif
+    const int days = local.tm_year == utc.tm_year ? local.tm_yday - utc.tm_yday
+        : (local.tm_year > utc.tm_year ? 1 : -1);
+    const int minutes = days * 1440 + (local.tm_hour - utc.tm_hour) * 60 +
+        local.tm_min - utc.tm_min;
+    if (minutes < -840 || minutes > 840)
+        throw psprecomp::Error("Host timezone outside PSP range");
+    return minutes;
+}
+}
 
 int main(int argc, char** argv) {
     using namespace psprecomp;
@@ -117,8 +139,10 @@ int main(int argc, char** argv) {
             image_segment->vaddr, image_end, image_segment->vaddr,
             image_segment->vaddr + image_segment->file_size, module.gp,
             AZAZEL6_BOOTSTRAP_PRIORITY, bootstrap_size}, allocator);
+        const auto host_now = std::chrono::system_clock::now();
         azazel6::register_power_callback_hle(*rt, power, threads);
-        azazel6::register_system_param_hle(*rt, threads, AZAZEL6_CONFIRM_BUTTON);
+        azazel6::register_system_param_hle(*rt, threads, AZAZEL6_CONFIRM_BUTTON,
+            local_timezone_minutes(host_now), partition);
         const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
@@ -126,7 +150,7 @@ int main(int argc, char** argv) {
         // The host supplies the calendar date once. Runnable guest work never
         // advances this clock; only the display scheduler's guest events do.
         const auto unix_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
+            host_now.time_since_epoch()).count();
         const auto rtc = azazel6::register_rtc_hle(*rt, display,
             azazel6::rtc_tick_from_unix_microseconds(unix_microseconds));
         auto host_input = std::make_shared<azazel6::InputState>();
@@ -165,7 +189,9 @@ int main(int argc, char** argv) {
         std::cout << "system_time_reads=" << display->system_time_reads
                   << " guest_time_us=" << display->clock.microseconds()
                   << " hcount_reads=" << display->hcount_reads << std::endl;
-        std::cout << "rtc_tick_reads=" << rtc->reads << std::endl;
+        std::cout << "rtc_tick_reads=" << rtc->reads
+                  << " rtc_seconds_adds=" << rtc->seconds_adds
+                  << " rtc_minutes_adds=" << rtc->minutes_adds << std::endl;
         for (const auto& [id, list] : ge_queue->lists()) {
             std::cout << "ge_list=" << id << " begin=" << hex32(list.begin) << " end=" << hex32(list.end)
                       << " pc=" << hex32(list.pc) << " commands=" << list.commands

@@ -1,6 +1,7 @@
 #include "azazel6/settings.hpp"
 #include "azazel6/bootstrap.hpp"
 #include "azazel6/threads.hpp"
+#include "azazel6/memory.hpp"
 #include <iostream>
 #include <stdexcept>
 
@@ -143,8 +144,62 @@ void system_button_query() {
     catch (const std::exception&) { rejected = true; }
     check(rejected, "Missing system parameter owner accepted");
 }
+void system_timezone_query() {
+    constexpr std::uint32_t stack = 0x09010000u, size = 0x4000u;
+    constexpr ThreadArena arena{0x09000000u, stack, begin, end, begin, end, begin, 40, size};
+    {
+        psprecomp::Runtime rt;
+        auto threads = register_thread_hle(rt, arena);
+        register_system_param_hle(rt, threads, 1, -300);
+        auto& c = rt.cpu(); c.gpr[4] = 6; c.gpr[5] = stack;
+        rt.invoke_import("sceUtility", 0xA5DA2406u, c);
+        check(!rt.stopped() && c.gpr[2] == 0 &&
+            rt.memory().load32(stack) == static_cast<std::uint32_t>(-300),
+            "Signed timezone stack result");
+    }
+    {
+        psprecomp::Runtime rt;
+        auto threads = register_thread_hle(rt, arena);
+        auto allocator = std::make_shared<GuestAllocator>(0x09020000u, 0x09030000u);
+        auto partition = register_memory_hle(rt, allocator);
+        const auto block = allocator->allocate(0x100u);
+        check(block.has_value(), "Timezone partition fixture allocation");
+        partition->blocks.emplace(0x10000000u, *block);
+        register_system_param_hle(rt, threads, 1, 480, partition);
+        auto& c = rt.cpu(); c.gpr[4] = 6; c.gpr[5] = block->base + 0x20u;
+        invoke_returning_import(rt, c, "sceUtility", 0xA5DA2406u);
+        check(!rt.stopped() && c.gpr[2] == 0 &&
+            rt.memory().load32(c.gpr[5]) == 480u,
+            "Live partition timezone result");
+    }
+    for (const auto id : {6u, 9u}) {
+        psprecomp::Runtime rt;
+        auto threads = register_thread_hle(rt, arena);
+        auto allocator = std::make_shared<GuestAllocator>(0x09020000u, 0x09030000u);
+        auto partition = register_memory_hle(rt, allocator);
+        const auto block = allocator->allocate(0x100u);
+        check(block.has_value(), "Timezone failure fixture allocation");
+        partition->blocks.emplace(0x10000000u, *block);
+        register_system_param_hle(rt, threads, 1, 480, partition);
+        auto& c = rt.cpu(); c.gpr[4] = id; c.gpr[5] = block->base + 0x20u;
+        rt.memory().store32(c.gpr[5], 0xDEADBEEFu);
+        if (id == 6u) partition->blocks.clear();
+        rt.invoke_import("sceUtility", 0xA5DA2406u, c);
+        check(rt.stopped() && rt.memory().load32(c.gpr[5]) == 0xDEADBEEFu,
+            "Stale partition or button query into heap was accepted");
+    }
+    for (const auto timezone : {-841, 841}) {
+        psprecomp::Runtime rt;
+        auto threads = register_thread_hle(rt, arena);
+        bool rejected = false;
+        try { register_system_param_hle(rt, threads, 1, timezone); }
+        catch (const std::exception&) { rejected = true; }
+        check(rejected, "Invalid timezone setting accepted");
+    }
+}
 }
 int main() {
-    try { roundtrip(); failure_atomicity(); configuration(); system_button_query(); std::cout << "Settings contracts passed\n"; }
+    try { roundtrip(); failure_atomicity(); configuration(); system_button_query();
+        system_timezone_query(); std::cout << "Settings contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
