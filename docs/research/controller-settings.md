@@ -57,3 +57,9 @@ run still records one controller read and 16 black display frames.
 `0x089B83FC` and `0x088AA0AC` after the first sampled read. The next direct
 callee `0x089B7984` remains uncovered. Coverage is 629 roots / 39,565
 words. The bounded capture remains 16 black frames and 15 GE lists.
+
+**VERIFIED post-input data path:** exact-EBOOT coverage now includes the
+six-word `0x089B7984` leaf and 54-word `0x089B7F48` path. The bounded
+validated-media run reaches `0x089B833C` from `0x088AB8A4` and stops on
+missing AOT coverage. It retains one controller read, 16 display frames,
+15 GE lists and zero nonblack pixels. Coverage is 631 roots / 39,625 words.
