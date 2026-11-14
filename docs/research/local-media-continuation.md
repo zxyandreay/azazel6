@@ -325,3 +325,11 @@ the observed tail `0x08ACC534` at `0x08ACD830`. Its first virtual call at
 `0x08ACC558` observes `0x08ACC910` from slot `0x08BCF8FC`; this remains a
 terminal guard. Coverage is 609 roots / 38,308 words. All 94 Python tests,
 25 CTest suites and ARM64 compilation pass. The 16-frame capture is black.
+
+**VERIFIED resource virtual method.** The observed `0x08ACC910` method now
+enters through the file-backed slot `0x08BCF8FC`. Its call at `0x08ACC924`
+observes `0x08ACC66C` and stops at the terminal guard; the caller's later
+callback at `0x08ACC590` also remains guarded. Coverage is 610 roots / 38,336
+words. All 94 Python tests, 25 integrated CTest suites and ARM64 compilation
+pass. The bounded media run reports failure at the guard. The 16-frame capture
+remains black with 15 GE lists, so title boot is unverified.

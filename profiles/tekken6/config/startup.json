@@ -471,6 +471,7 @@
     "0x08AC1EDC",
     "0x08ACD2F4",
     "0x08ACC534",
+    "0x08ACC910",
     "0x08868224",
     "0x0889CE24",
     "0x0889D1D4",
@@ -661,7 +662,11 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x08ACC558",
+      "site": "0x08ACC590",
+      "register": 8
+    },
+    {
+      "site": "0x08ACC924",
       "register": 2
     },
     {
@@ -826,6 +831,11 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x08ACC558",
+      "register": 2,
+      "pointers": ["0x08BCF8FC"]
+    },
     {
       "site": "0x08AEDAB0",
       "register": 2,
