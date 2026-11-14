@@ -47,3 +47,8 @@ continues to missing direct callee `0x088AB3A8`. Coverage is 625 roots /
 Synthetic contracts cover sample layout, analog/digital behavior, repeated
 read refusal and invalid buffer and count boundaries. Title and physical
 input remain unverified.
+
+**VERIFIED callback continuation:** the post-read helper `0x088AB3A8`
+executes its reviewed data path. The next missing direct callee is
+`0x088AB6F0`. Coverage is 626 roots / 39,233 words. The bounded real-media
+run still records one controller read and 16 black display frames.
