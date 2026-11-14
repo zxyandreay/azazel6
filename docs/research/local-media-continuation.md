@@ -279,3 +279,12 @@ at `0x08AEDA14` observes `0x08ACF924` from table `0x08BCFC88 + 0x38`, with
 resource identifier `0x20002000`. The call remains terminal pending target
 review. Coverage is 604 roots / 38,171 words. Python/CTest/ARM64 checks pass;
 the real-media run still records 16 black frames and 15 GE lists.
+
+**VERIFIED resource lookup, 2026-11-14.** The existing reviewed method
+`0x08ACF924` was admitted only through file-backed table slot `0x08BCFCC0` at
+`0x08AEDA14`. The game executes the query and continues to `0x08AEDA70`, where
+the guard observes `0x08ACF8C4` for the next resource operation. Its receiver
+still holds table `0x08BCFC88`; the next callback remains unapproved. The
+regenerated slice covers 604 roots / 38,194 words. All 94 Python tests, 25
+integrated CTest suites and ARM64 compilation pass. The 16-frame capture remains
+uniformly black, so title boot is still open.

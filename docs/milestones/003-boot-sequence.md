@@ -3,7 +3,7 @@
 **VERIFIED, 2026-11-12.** The checked system button preference query returns
 the configured Cross value. Startup configures VBLANK controller sampling and
 analog mode and initializes the next object/list containers. The next uncovered
-boundary is resource-query target `0x08ACF924` at guarded site `0x08AEDA14`, after both container
+boundary is resource operation `0x08ACF8C4` at guarded site `0x08AEDA70`, after the checked resource query and both container
 allocations, the constructor return, status methods and geometry preparation.
 The 16-frame real-media capture is still black; title boot remains open.
 See [settings evidence](../research/language-mode.md#system-button-preference-2026-11-12).

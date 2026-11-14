@@ -656,7 +656,7 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x08AEDA14",
+      "site": "0x08AEDA70",
       "register": 2
     },
     {
@@ -813,6 +813,11 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x08AEDA14",
+      "register": 2,
+      "pointers": ["0x08BCFCC0"]
+    },
     {
       "site": "0x08868178",
       "register": 2,
