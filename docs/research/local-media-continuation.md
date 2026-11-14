@@ -288,3 +288,11 @@ still holds table `0x08BCFC88`; the next callback remains unapproved. The
 regenerated slice covers 604 roots / 38,194 words. All 94 Python tests, 25
 integrated CTest suites and ARM64 compilation pass. The 16-frame capture remains
 uniformly black, so title boot is still open.
+
+**VERIFIED resource operation, 2026-11-14.** The same file-backed resource
+table's slot `0x08BCFC9C` admits `0x08ACF8C4` at `0x08AEDA70`. Its reviewed
+tail enters the existing allocation path. Azazel6 then reaches an uncovered
+direct helper at `0x08AEB858`, return `0x08AEB674`. The next virtual call
+inside the resource path remains guarded. Coverage is 605 roots / 38,203
+words. All 94 Python tests, 25 CTest suites and ARM64 compilation pass; the
+real-media capture remains black at 16 frames and 15 GE lists.
