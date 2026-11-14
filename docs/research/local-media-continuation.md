@@ -296,3 +296,11 @@ direct helper at `0x08AEB858`, return `0x08AEB674`. The next virtual call
 inside the resource path remains guarded. Coverage is 605 roots / 38,203
 words. All 94 Python tests, 25 CTest suites and ARM64 compilation pass; the
 real-media capture remains black at 16 frames and 15 GE lists.
+
+**VERIFIED resource object allocation.** The direct helper at `0x08AEB858`
+shares the reviewed body at `0x08AC1EDC` with an earlier wrapper, so that body
+has one explicit AOT entry. Native execution allocates a resource object at
+`0x09CA0300` and advances to `0x08AEDA88`. Its next guarded call observes
+`0x08ACD7F0` from receiver table `0x08BCFB58` at offset `0x14`.
+Coverage is 607 roots / 38,205 words. All 94 Python tests, 25 CTest suites
+and ARM64 compilation pass. The 16-frame capture remains black.
