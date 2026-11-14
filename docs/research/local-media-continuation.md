@@ -359,3 +359,12 @@ nested object at `+0x10` and reads `0x08ACC744` from file-backed slot
 the native target guard and corrected before commit. The next stop is guarded
 target `0x0886804C` at `0x0885F144`. Coverage is 619 roots / 38,616 words.
 The bounded capture remains 16 black frames and 15 GE lists.
+
+**VERIFIED callback follow-up.** At `0x0885F144`, file-backed slot
+`0x08B90C58` supplies the already reviewed target `0x0886804C`. Its
+callback call at `0x088680C4` observes `0x08868518`, constructed by the
+exact `lui`/`addiu` pair at `0x088681A4`/`0x088681A8` and stored into the
+guest callback node. The callback enters `0x088AB824` and `0x088AA298`.
+The next direct callee `0x08ADFE30` is not yet covered. Coverage is 622
+roots / 38,787 words. The bounded run fails at that missing callee, with
+16 black frames and 15 GE lists; title boot remains unverified.
