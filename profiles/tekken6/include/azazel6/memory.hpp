@@ -38,9 +38,9 @@ struct DataCacheState {
     // partition span. ticket identifies the allocation, not merely its address.
     std::optional<GuestAllocation> writeback_lease;
 };
-// Single-threaded coherent RAM. Additional reviewed file-backed data leases
-// authorize writeback only; invalidation retains its original BSS/RAM boundary.
-// Large writebacks (64..512 KiB) additionally require one live partition block.
+// Single-threaded coherent RAM and canonical VRAM. Reviewed file-backed data
+// leases and bounded VRAM ranges authorize writeback only; invalidation keeps
+// its BSS/RAM boundary. Large writebacks require one live partition block.
 std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime&,
     std::uint32_t data_begin, std::uint32_t data_end,
     std::vector<std::pair<std::uint32_t, std::uint32_t>> writeback_spans = {},

@@ -36,7 +36,12 @@ std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
                     return address >= block.base &&
                         finish <= static_cast<std::uint64_t>(block.base) + block.size;
                 });
-        if ((size >= 0x10000u && !large_owned) || (!(address >= begin && finish <= end) && !extra)) {
+        const bool vram_writeback = writeback && size < 0x10000u &&
+            address >= psprecomp::GuestMemory::kVramPhysicalBase &&
+            finish <= static_cast<std::uint64_t>(psprecomp::GuestMemory::kVramPhysicalBase) +
+                runtime.memory().vram_size();
+        if ((size >= 0x10000u && !large_owned) ||
+            (!(address >= begin && finish <= end) && !extra && !vram_writeback)) {
             runtime.stop("Data-cache range outside verified coherent startup memory"); return;
         }
         if (size) {

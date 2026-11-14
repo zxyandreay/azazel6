@@ -349,3 +349,13 @@ The later virtual call at `0x08AEB38C` observes `0x08ACC62C` and stops at
 its terminal guard. Coverage is 616 roots / 38,497 words. The real-media
 probe still fails safely with 16 black frames and 15 GE lists; title boot
 is unverified.
+
+**VERIFIED VRAM command path.** The setter `0x08ACC62C` completes, then
+writeback of `[0x040CC030, 0x040D2030)` succeeds under the checked canonical
+VRAM rule. The game's command writers `0x08ACC7A0` and `0x08ACC744` produce
+two further 32-byte VRAM writebacks. The call at `0x08AEDAE0` follows its
+nested object at `+0x10` and reads `0x08ACC744` from file-backed slot
+`0x08BCF904`. An attempted outer-object slot `0x08BCFB8C` was rejected by
+the native target guard and corrected before commit. The next stop is guarded
+target `0x0886804C` at `0x0885F144`. Coverage is 619 roots / 38,616 words.
+The bounded capture remains 16 black frames and 15 GE lists.

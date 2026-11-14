@@ -3,6 +3,7 @@
 #include "azazel6/bootstrap.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <tuple>
 using namespace azazel6;
 void check(bool ok, const char* message) { if (!ok) throw std::runtime_error(message); }
 void allocator_contracts() {
@@ -121,6 +122,37 @@ void cache_contracts() {
         check(invalid, "Invalid writeback lease accepted");
     }
 }
+void vram_writeback_contracts() {
+    constexpr std::uint32_t begin = 0x08010000u, end = 0x08030000u;
+    constexpr std::uint32_t vram = psprecomp::GuestMemory::kVramPhysicalBase;
+    auto call = [](auto& runtime, std::uint32_t address, std::uint32_t size, std::uint32_t nid) {
+        auto& c = runtime.cpu(); c.gpr[4] = address; c.gpr[5] = size;
+        c.gpr[2] = 0xDEADBEEFu; c.gpr[31] = 0x08001800u; c.pc = 0x08001900u;
+        invoke_returning_import(runtime, c, "UtilsForUser", nid);
+    };
+    auto rt = std::make_unique<psprecomp::Runtime>();
+    const auto state = register_data_cache_hle(*rt, begin, end);
+    rt->memory().store32(vram + 0xCC030u, 0x12345678u);
+    call(*rt, vram + 0xCC030u, 0x6000u, 0x3EE30821u);
+    check(!rt->stopped() && state->completed_ranges == 1 && state->writeback_ranges == 1 &&
+          state->last_address == vram + 0xCC030u && state->last_size == 0x6000u &&
+          !state->writeback_lease && rt->memory().load32(vram + 0xCC030u) == 0x12345678u &&
+          rt->cpu().gpr[2] == 0 && rt->cpu().pc == 0x08001800u,
+          "Bounded canonical VRAM writeback lost coherent data or return ABI");
+    for (auto [address, size, nid] : {
+             std::tuple{vram + 0xCC030u, 0x6000u, 0x34B9FA9Eu},
+             std::tuple{vram + psprecomp::GuestMemory::kVramSize - 1u, 2u, 0x3EE30821u},
+             std::tuple{vram + psprecomp::GuestMemory::kVramSize, 1u, 0x3EE30821u},
+             std::tuple{vram + 0xCC030u, 0x10000u, 0x3EE30821u},
+             std::tuple{0xFFFFFFFFu, 0x6000u, 0x3EE30821u}}) {
+        auto bad = std::make_unique<psprecomp::Runtime>();
+        const auto rejected = register_data_cache_hle(*bad, begin, end);
+        call(*bad, address, size, nid);
+        check(bad->stopped() && !rejected->completed_ranges && !rejected->writeback_ranges &&
+              bad->cpu().gpr[2] == 0xDEADBEEFu && bad->cpu().pc == 0x08001900u,
+              "Invalid VRAM cache operation accepted");
+    }
+}
 void large_writeback_contracts() {
     static constexpr std::uint32_t begin = 0x08010000u, end = 0x08110000u;
     struct Fixture {
@@ -188,6 +220,6 @@ void large_writeback_contracts() {
     check(foreign && outside, "Invalid large-writeback registration accepted");
 }
 int main() {
-    try { allocator_contracts(); hle_contracts(); cache_contracts(); large_writeback_contracts(); std::cout << "Shared guest allocation contracts passed\n"; }
+    try { allocator_contracts(); hle_contracts(); cache_contracts(); vram_writeback_contracts(); large_writeback_contracts(); std::cout << "Shared guest allocation contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

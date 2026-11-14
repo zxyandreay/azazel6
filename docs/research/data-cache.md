@@ -116,3 +116,19 @@ large invalidation and cross-runtime/out-of-arena registration.
 No additional GE list or display frame is observed. All 70 Python cases,
 18 CTest suites (52.40 seconds), Windows Release and Android ARM64 builds pass.
 This is host-native game startup research, not Android game execution.
+
+## Canonical VRAM writeback (2026-11-14)
+
+**VERIFIED observation:** after the resource object's setter, the game calls
+`sceKernelDcacheWritebackRange` from `0x08ACC964` with address `0x040CC030`
+and size `0x6000`. Its own command writers then request two 32-byte
+writebacks at `0x040D2030`. All three intervals lie within the canonical
+2 MiB VRAM window. The prior RAM-only cache policy stopped the first call.
+
+The Tekken profile now accepts writeback requests smaller than 64 KiB whose
+entire interval lies within that window, using the runtime's already coherent
+VRAM storage. It continues to reject VRAM invalidation, mirror addresses,
+cross-boundary ranges and large VRAM writebacks. No partition lifetime or GE
+submission authority is inferred from a VRAM writeback. Synthetic contracts
+cover the observed request, coherent bytes, return ABI and these rejection
+cases. This is a bounded host coherency rule; PSP cache timing is unverified.
