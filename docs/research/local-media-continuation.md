@@ -304,3 +304,10 @@ has one explicit AOT entry. Native execution allocates a resource object at
 `0x08ACD7F0` from receiver table `0x08BCFB58` at offset `0x14`.
 Coverage is 607 roots / 38,205 words. All 94 Python tests, 25 CTest suites
 and ARM64 compilation pass. The 16-frame capture remains black.
+
+**VERIFIED resource-object method.** The method `0x08ACD7F0` executes through
+the checked receiver slot `0x08BCFB6C` at `0x08AEDA88`. Its existing translated
+tail returns to the resource path. The next guard at `0x08AEDAB0` observes
+`0x08ACD2F4` on the same object. Coverage is 607 roots / 38,215 words. All
+94 Python tests, 25 integrated CTest suites and ARM64 compilation pass. Scanout
+remains black after 16 frames and 15 GE lists; title boot remains open.
