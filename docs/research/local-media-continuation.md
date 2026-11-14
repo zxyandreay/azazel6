@@ -341,3 +341,11 @@ the short field-read method `0x08ACC66C`. The caller then enters direct helper
 virtual calls at `0x08ACBFBC` and callback `0x08ACC590` remain guarded until
 reached. Coverage is 613 roots / 38,383 words. The bounded media capture still
 has 16 black frames and 15 GE lists; title boot is unverified.
+
+**VERIFIED metadata and allocation follow-up.** The call at `0x08AEB35C`
+uses file-backed slot `0x08BCF8F0` to reach `0x08ACC61C`. Direct helpers
+`0x08AE720C` and `0x08AE70CC` then allocate through the guest's own path.
+The later virtual call at `0x08AEB38C` observes `0x08ACC62C` and stops at
+its terminal guard. Coverage is 616 roots / 38,497 words. The real-media
+probe still fails safely with 16 black frames and 15 GE lists; title boot
+is unverified.

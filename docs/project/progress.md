@@ -44,7 +44,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 613 reviewed roots / 38,383 words. The resource virtual field read `0x08ACC66C`, direct helper `0x08ACBF80` and callee `0x08AEB33C` execute; the latter observes guarded target `0x08ACC61C` at `0x08AEB35C`. Sixteen display frames, fifteen GE lists and zero nonblack pixels. |
+| Native entry execution | VERIFIED 616 reviewed roots / 38,497 words. Resource metadata method `0x08ACC61C` and allocator helpers `0x08AE720C` / `0x08AE70CC` execute. The next virtual call observes guarded target `0x08ACC62C` at `0x08AEB38C`. Sixteen display frames, fifteen GE lists and zero nonblack pixels. |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
