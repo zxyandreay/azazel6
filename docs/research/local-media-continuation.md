@@ -333,3 +333,11 @@ callback at `0x08ACC590` also remains guarded. Coverage is 610 roots / 38,336
 words. All 94 Python tests, 25 integrated CTest suites and ARM64 compilation
 pass. The bounded media run reports failure at the guard. The 16-frame capture
 remains black with 15 GE lists, so title boot is unverified.
+
+**VERIFIED resource helper chain.** The virtual call at `0x08ACC924` reaches
+the short field-read method `0x08ACC66C`. The caller then enters direct helper
+`0x08ACBF80` and its callee `0x08AEB33C`. The latter's first virtual call at
+`0x08AEB35C` observes `0x08ACC61C` and stops at a terminal guard. Later
+virtual calls at `0x08ACBFBC` and callback `0x08ACC590` remain guarded until
+reached. Coverage is 613 roots / 38,383 words. The bounded media capture still
+has 16 black frames and 15 GE lists; title boot is unverified.

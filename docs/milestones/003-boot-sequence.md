@@ -4,9 +4,10 @@
 the configured Cross value. Startup configures VBLANK controller sampling and
 analog mode and initializes the next object/list containers. The reviewed
 resource-object virtual call `0x08ACC910` at `0x08ACC558` now executes. Its
-next call observes guarded target `0x08ACC66C` at `0x08ACC924`, after allocation
-and both container allocations, the constructor return, status methods and
-geometry preparation.
+field-read target `0x08ACC66C` and subsequent direct helpers run. The next
+guard observes `0x08ACC61C` at `0x08AEB35C`, after allocation and both
+container allocations, the constructor return, status methods and geometry
+preparation.
 The 16-frame real-media capture is still black; title boot remains open.
 See [settings evidence](../research/language-mode.md#system-button-preference-2026-11-12).
 
