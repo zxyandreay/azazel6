@@ -443,6 +443,8 @@
     "0x089B833C",
     "0x089B7BE8",
     "0x0880831C",
+    "0x0889D4CC",
+    "0x088C3D3C",
     "0x08868124",
     "0x088AB8D0",
     "0x0889DF24",
@@ -692,10 +694,6 @@
     {
       "site": "0x08AEDBD8",
       "register": 2
-    },
-    {
-      "site": "0x0889D128",
-      "register": 5
     },
     {
       "site": "0x0889D174",
@@ -1744,6 +1742,11 @@
     "confirm_button": 1
   },
   "immediate_calls": [
+    {
+      "site": "0x0889D128",
+      "register": 5,
+      "sources": ["0x0889D284"]
+    },
     {
       "site": "0x088680C4",
       "register": 5,

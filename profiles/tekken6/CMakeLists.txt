@@ -3,7 +3,7 @@ option(AZAZEL6_PROBE_FAST_BUILD "Disable entry-probe optimization for coverage r
 add_library(azazel6_bootstrap STATIC host/bootstrap.cpp host/threads.cpp host/memory.cpp host/module.cpp host/media.cpp host/media_hash.cpp
     host/fixed_pools.cpp host/settings.cpp host/event_flags.cpp host/graphics_memory.cpp host/ge_callbacks.cpp
     host/interrupts.cpp host/display.cpp host/ge_lists.cpp host/ge_state.cpp host/ge_clear.cpp host/power.cpp
-    host/io.cpp host/controller.cpp)
+    host/io.cpp host/controller.cpp host/rtc.cpp)
 target_include_directories(azazel6_bootstrap PUBLIC include)
 target_link_libraries(azazel6_bootstrap PUBLIC psprecomp_core)
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
@@ -25,6 +25,9 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_executable(azazel6_display_tests tests/display_test.cpp)
     target_link_libraries(azazel6_display_tests PRIVATE azazel6_bootstrap)
     add_test(NAME azazel6_display COMMAND azazel6_display_tests)
+    add_executable(azazel6_rtc_tests tests/rtc_test.cpp)
+    target_link_libraries(azazel6_rtc_tests PRIVATE azazel6_bootstrap)
+    add_test(NAME azazel6_rtc COMMAND azazel6_rtc_tests)
     add_executable(azazel6_interrupt_tests tests/interrupts_test.cpp)
     target_link_libraries(azazel6_interrupt_tests PRIVATE azazel6_bootstrap)
     add_test(NAME azazel6_interrupts COMMAND azazel6_interrupt_tests)

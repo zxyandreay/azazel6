@@ -14,8 +14,10 @@
 #include "azazel6/interrupts.hpp"
 #include "azazel6/io.hpp"
 #include "azazel6/display.hpp"
+#include "azazel6/rtc.hpp"
 #include "azazel6/ge_lists.hpp"
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -121,6 +123,12 @@ int main(int argc, char** argv) {
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
         const auto display = azazel6::register_display_hle(*rt, threads, interrupt_delivery, 64);
+        // The host supplies the calendar date once. Runnable guest work never
+        // advances this clock; only the display scheduler's guest events do.
+        const auto unix_microseconds = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        const auto rtc = azazel6::register_rtc_hle(*rt, display,
+            azazel6::rtc_tick_from_unix_microseconds(unix_microseconds));
         auto host_input = std::make_shared<azazel6::InputState>();
         azazel6::register_controller_read_hle(*rt, controller, display,
             [host_input] { return host_input->pad; });
@@ -157,6 +165,7 @@ int main(int argc, char** argv) {
         std::cout << "system_time_reads=" << display->system_time_reads
                   << " guest_time_us=" << display->clock.microseconds()
                   << " hcount_reads=" << display->hcount_reads << std::endl;
+        std::cout << "rtc_tick_reads=" << rtc->reads << std::endl;
         for (const auto& [id, list] : ge_queue->lists()) {
             std::cout << "ge_list=" << id << " begin=" << hex32(list.begin) << " end=" << hex32(list.end)
                       << " pc=" << hex32(list.pc) << " commands=" << list.commands
