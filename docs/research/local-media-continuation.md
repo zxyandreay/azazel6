@@ -319,3 +319,9 @@ Other resource-path calls at `0x08AEDAE0` and `0x08AEDBD8` retain terminal
 guards. Coverage is 608 roots / 38,297 words. All 94 Python tests, 25 CTest
 suites and ARM64 compilation pass. The real-media capture still has 16 black
 frames and 15 GE lists; no title boot is verified.
+
+**VERIFIED resource tail method.** File-backed slot `0x08BCF8D0` now admits
+the observed tail `0x08ACC534` at `0x08ACD830`. Its first virtual call at
+`0x08ACC558` observes `0x08ACC910` from slot `0x08BCF8FC`; this remains a
+terminal guard. Coverage is 609 roots / 38,308 words. All 94 Python tests,
+25 CTest suites and ARM64 compilation pass. The 16-frame capture is black.
