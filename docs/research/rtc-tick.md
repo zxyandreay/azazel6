@@ -233,3 +233,20 @@ frames with zero nonblack pixels. **LIMITATION:** this is a bounded
 host-native startup trace, not title boot or physical ARM64 evidence.
 **NEXT:** inspect `0x0893AE58` and its direct callees, then rerun with
 `0x08866540` guarded until its live target is known.
+
+**VERIFIED, 2026-11-18 further guarded continuation:** direct helper
+`0x0893AE58` executes, and the call at `0x08866540` observes the
+file-backed `0x08B908F0` slot and existing target `0x08866D34`.
+The following direct helper `0x0883DAE4` and its three inspected
+callees execute before the call at `0x088665B0` observes the same
+slot and target. Its nested `0x0883DA84` call remains a terminal
+guard because it has not executed in this bounded path. The next
+direct helper `0x08A3E27C` and its two inspected callees execute.
+The latest 721-root / 43,763-word ISO-backed run stops at the guarded
+`0x088666E8` call, with live target `0x08866D34` and object vtable
+`0x08B908E8`; no mapping for this site has been admitted yet.
+Fifteen GE lists, one controller sample and sixteen uniformly black
+480×272 frames remain. **LIMITATION:** title boot and physical ARM64
+graphics/input are unverified. **NEXT:** admit only the checked
+`0x088666E8` slot after reviewing its exact load, then inspect the
+next bounded stop.

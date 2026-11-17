@@ -1,5 +1,14 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 further object continuation.** The exact-input
+native slice covers 721 roots / 43,763 instruction words. Two more
+checked calls through file-backed slot `0x08B908F0` and the intervening
+direct helpers execute. The bounded run stops at guarded call
+`0x088666E8`, where the live target is `0x08866D34`. Another indirect
+site in a deeper helper remains trapped. All sixteen captured frames
+are black, so title boot remains open. See
+[continuation evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-18 guarded object continuation.** Exact-input
 coverage is 713 roots / 43,270 instruction words. The bounded ISO-backed
 probe executes six further direct roots and checked
