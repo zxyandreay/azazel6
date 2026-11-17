@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 checked field-helper checkpoint.** Coverage
+is 705 roots / 42,658 instruction words. The bounded ISO-backed
+probe executes `0x08AA0BF8` and another file-backed virtual call,
+then stops at missing direct constructor `0x08A53A08`. Sixteen
+captured frames remain black; title boot is open. See
+[continuation evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-18 next constructor checkpoint.** Coverage is
 704 roots / 42,619 instruction words. The bounded ISO-backed run
 passes another checked object call and direct constructor before

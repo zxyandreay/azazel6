@@ -194,3 +194,11 @@ observes file-backed slot `0x08B908F0`, targeting existing root
 missing direct helper `0x08AA0BF8` before the still-trapped call
 at `0x088662A0`. Fifteen GE lists and sixteen black frames are
 unchanged. No title-screen boot has been observed.
+
+**VERIFIED next checked call:** the exact four-instruction helper
+`0x08AA0BF8` clears object fields, then the virtual call at
+`0x088662A0` observes file-backed slot `0x08B908F0` and target
+`0x08866D34`. The 705-root / 42,658-word bounded ISO run next
+stops at missing direct constructor `0x08A53A08`, before the
+still-trapped indirect call at `0x08866310`. Fifteen GE lists and
+sixteen black frames remain unchanged.
