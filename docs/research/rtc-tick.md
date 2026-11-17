@@ -98,3 +98,16 @@ remains trapped: execution first stops at direct helper `0x0892FEF4`,
 whose CFG exposes uncovered callee `0x08825ED4`. Current coverage is
 655 roots / 40,754 words. The bounded run reports failure there, with
 the same black 16-frame scanout. No title-screen claim follows.
+
+**VERIFIED, 2026-11-17 tail-path continuation:** the sixth object's
+direct helper `0x0892FEF4` enters `0x08825ED4`. The latter's exact
+EBOOT code branches into a distant direct tail path; its two indirect
+sites `0x08ACE4F8` and `0x08ACE580` were first held as terminal traps.
+The executed path passes reviewed helpers `0x08ACB214`, `0x08ACB0B0`
+and `0x08ACB0B8`. At `0x08ACE4F8`, the live object carries file-backed
+vtable `0x08BCFBD0`; slot `0x08BCFC20` contains `0x08ACE978`. The
+guarded dispatch executes that 19-word target. It then enters direct
+helper `0x08ACB68C`, whose two indirect sites remain trapped, and
+stops first at missing 3-word callee `0x08ACB1BC`. Coverage is 664
+roots / 41,111 words. The bounded run fails at that direct callee;
+sixteen captured frames remain uniformly black.

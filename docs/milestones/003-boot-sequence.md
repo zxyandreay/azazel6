@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-17 tail-path checkpoint.** Coverage is 664 roots
+and 41,111 instruction words. The sixth object's helper enters a
+guarded distant tail path, executes a file-backed vtable call through
+`0x08BCFC20`, then stops at missing direct callee `0x08ACB1BC`.
+Later indirect calls remain trapped. The 16-frame capture is black;
+title-screen boot remains open. See [exact-input evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-17 further continuation.** Coverage is 655 roots
 and 40,754 instruction words. The fourth and fifth object calls both
 resolve through checked file-backed slot `0x08B908F0` to `0x08866D34`.
