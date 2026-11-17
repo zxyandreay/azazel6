@@ -202,3 +202,12 @@ unchanged. No title-screen boot has been observed.
 stops at missing direct constructor `0x08A53A08`, before the
 still-trapped indirect call at `0x08866310`. Fifteen GE lists and
 sixteen black frames remain unchanged.
+
+**VERIFIED, 2026-11-18 further object construction:** direct
+constructors `0x08A53A08` and `0x089983E0` execute. The
+subsequent virtual calls at `0x08866310` and `0x08866380`
+both observe file-backed slot `0x08B908F0`, targeting existing
+root `0x08866D34`. The 707-root / 42,902-word bounded ISO run
+next stops at missing direct helper `0x08927E24`, before the
+still-trapped call at `0x088663F0`. Its fifteen GE lists and
+sixteen black captured frames do not verify title boot.
