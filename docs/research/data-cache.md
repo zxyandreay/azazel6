@@ -132,3 +132,21 @@ cross-boundary ranges and large VRAM writebacks. No partition lifetime or GE
 submission authority is inferred from a VRAM writeback. Synthetic contracts
 cover the observed request, coherent bytes, return ABI and these rejection
 cases. This is a bounded host coherency rule; PSP cache timing is unverified.
+
+## Null writeback and GIDX cache lines (2026-11-17)
+
+**VERIFIED observation:** the exact-input native run reaches
+`sceKernelDcacheWritebackRange` at `0x08ACC67C` with address zero and size
+`0x80`. Later, `0x08ACCCCC` writes back `0x80` bytes from `0x08B9C610`.
+The latter request lies inside the exact EBOOT's file-backed
+`[0x08B9C600, 0x08B9C6C0)` data, beginning with `GIDX` and static bytes.
+
+**DOCUMENTED:** the pinned PSP autotest `tests/misc/dcache.expected` reports
+success for a null-address writeback. The profile accepts only the observed
+zero-address, `0x80`-byte writeback shape; it records completion without
+reading or changing guest bytes. Null invalidation and other null lengths
+remain rejecting. The additional file-backed lease is exactly three aligned
+cache lines and remains subject to generation's code-overlap checks.
+Synthetic tests cover unchanged coherent bytes, return ABI, wrong null
+lengths, null invalidation and requests crossing the reviewed file lines.
+These contracts do not establish general PSP cache timing or device DMA.

@@ -1,5 +1,14 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-17 checked cache/object checkpoint.** Coverage is
+680 roots and 41,491 instruction words. The sixth object's tail path
+executes checked file-backed virtual calls and the observed null and
+GIDX cache writebacks. The latest bounded ISO-backed probe stops at
+missing direct helper `0x08ACB2A8`; later indirect sites remain trapped.
+All sixteen captured 480×272 frames are black. Title-screen boot
+remains open. See [continuation evidence](../research/rtc-tick.md) and
+[cache evidence](../research/data-cache.md).
+
 **VERIFIED, 2026-11-17 tail-path checkpoint.** Coverage is 664 roots
 and 41,111 instruction words. The sixth object's helper enters a
 guarded distant tail path, executes a file-backed vtable call through

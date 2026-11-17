@@ -473,6 +473,22 @@
     "0x08ACE978",
     "0x08ACB68C",
     "0x08ACB1B0",
+    "0x08ACB1BC",
+    "0x08ACF8D0",
+    "0x08ACB1C8",
+    "0x08ACB274",
+    "0x08ACD304",
+    "0x08ACB1D0",
+    "0x08ACCC48",
+    "0x08ACC67C",
+    "0x08ACCD20",
+    "0x08ACCD28",
+    "0x08ACCCCC",
+    "0x08ACB2D4",
+    "0x08ACF93C",
+    "0x08AEBAF8",
+    "0x08AC1E5C",
+    "0x08ACF8F4",
     "0x08868124",
     "0x088AB8D0",
     "0x0889DF24",
@@ -716,11 +732,27 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x08ACB700",
+      "site": "0x08ACB8A0",
       "register": 2
     },
     {
-      "site": "0x08ACB758",
+      "site": "0x08ACB780",
+      "register": 2
+    },
+    {
+      "site": "0x08ACB918",
+      "register": 2
+    },
+    {
+      "site": "0x08ACD354",
+      "register": 3
+    },
+    {
+      "site": "0x08ACB728",
+      "register": 2
+    },
+    {
+      "site": "0x08ACB8C4",
       "register": 2
     },
     {
@@ -890,6 +922,61 @@
   ],
   "pointer_calls": [
     {
+      "site": "0x08ACB87C",
+      "register": 2,
+      "pointers": ["0x08BCFCAC"]
+    },
+    {
+      "site": "0x08ACB758",
+      "register": 2,
+      "pointers": ["0x08BCFCC8"]
+    },
+    {
+      "site": "0x08ACCD04",
+      "register": 3,
+      "pointers": ["0x08BCFA04"]
+    },
+    {
+      "site": "0x08ACD890",
+      "register": 2,
+      "pointers": ["0x08BCF9D4"]
+    },
+    {
+      "site": "0x08ACCCA4",
+      "register": 2,
+      "pointers": ["0x08BCFA04"]
+    },
+    {
+      "site": "0x08ACCC94",
+      "register": 7,
+      "pointers": ["0x08BCFA00"]
+    },
+    {
+      "site": "0x08ACCC6C",
+      "register": 2,
+      "pointers": ["0x08BCF9FC"]
+    },
+    {
+      "site": "0x08ACD868",
+      "register": 2,
+      "pointers": ["0x08BCF9D0"]
+    },
+    {
+      "site": "0x08ACB844",
+      "register": 2,
+      "pointers": ["0x08BCFB84"]
+    },
+    {
+      "site": "0x08ACB81C",
+      "register": 2,
+      "pointers": ["0x08BCFCA0"]
+    },
+    {
+      "site": "0x08ACB700",
+      "register": 2,
+      "pointers": ["0x08BCFCC0"]
+    },
+    {
       "site": "0x08ACE4F8",
       "register": 2,
       "pointers": ["0x08BCFC20"]
@@ -942,12 +1029,12 @@
     {
       "site": "0x08AEB38C",
       "register": 3,
-      "pointers": ["0x08BCF8F4"]
+      "pointers": ["0x08BCF8F4", "0x08BCF9F4"]
     },
     {
       "site": "0x08AEB35C",
       "register": 2,
-      "pointers": ["0x08BCF8F0"]
+      "pointers": ["0x08BCF8F0", "0x08BCF9F0"]
     },
     {
       "site": "0x08ACC924",
@@ -2024,6 +2111,10 @@
     }
   ],
   "cache_writeback_spans": [
+    {
+      "begin": "0x08B9C600",
+      "end": "0x08B9C6C0"
+    },
     {
       "begin": "0x08BEF340",
       "end": "0x08BEF480"

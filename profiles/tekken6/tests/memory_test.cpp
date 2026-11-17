@@ -95,19 +95,51 @@ void cache_contracts() {
     writer->memory().aot_fast_view().aot_store32(data + 4, 0xCAFEBABEu);
     call(*writer, data + 4, 32, 0x3EE30821u);
     call(*writer, begin, 0, 0x3EE30821u);
-    check(!writer->stopped() && writes->writeback_ranges == 2 && writes->completed_ranges == 2 &&
+    writer->memory().store32(begin, 0x13579BDFu);
+    call(*writer, 0u, 0x80u, 0x3EE30821u);
+    check(!writer->stopped() && writes->writeback_ranges == 3 && writes->completed_ranges == 3 &&
           writer->cpu().gpr[2] == 0 && writer->cpu().pc == 0x08001800u &&
-          writer->memory().load32(data + 4) == 0xCAFEBABEu, "Writeback coherence/return ABI");
+          writer->memory().load32(data + 4) == 0xCAFEBABEu &&
+          writer->memory().load32(begin) == 0x13579BDFu,
+          "Null-range writeback changed coherent data or return ABI");
     call(*writer, data + 4, 32);
-    check(writer->stopped() && writes->completed_ranges == 2, "Writeback lease widened invalidation");
+    check(writer->stopped() && writes->completed_ranges == 3, "Writeback lease widened invalidation");
     for (auto [address, size] : {std::pair{data - 1, 1u}, {data + 63, 2u}, {data + 64, 1u},
-                               {0xFFFFFFFFu, 2u}, {begin, 65536u}, {0x88010000u, 4u}}) {
+                               {0xFFFFFFFFu, 2u}, {begin, 65536u}, {0x88010000u, 4u},
+                               {0u, 0u}, {0u, 0x7Fu}, {0u, 0x81u}}) {
         auto bad = std::make_unique<psprecomp::Runtime>();
         const auto rejected_write = register_data_cache_hle(*bad, begin, end, {{data, data + 64}});
         call(*bad, address, size, 0x3EE30821u);
         check(bad->stopped() && !rejected_write->completed_ranges && !rejected_write->writeback_ranges &&
               bad->cpu().gpr[2] == 0xDEADBEEFu, "Invalid writeback accepted");
     }
+    constexpr auto file_lines = begin - 256u;
+    auto file_writer = std::make_unique<psprecomp::Runtime>();
+    const auto file_state = register_data_cache_hle(*file_writer, begin, end,
+        {{file_lines, file_lines + 192u}});
+    file_writer->memory().store32(file_lines + 16u, 0x12345678u);
+    call(*file_writer, file_lines + 16u, 0x80u, 0x3EE30821u);
+    check(!file_writer->stopped() && file_state->completed_ranges == 1u &&
+          file_state->writeback_ranges == 1u &&
+          file_writer->memory().load32(file_lines + 16u) == 0x12345678u,
+          "Three-line file-backed writeback lost coherent data");
+    for (const auto [address, size] : {
+            std::pair{file_lines + 16u, 0xB1u},
+            std::pair{file_lines - 1u, 0x80u}}) {
+        auto bad = std::make_unique<psprecomp::Runtime>();
+        const auto rejected = register_data_cache_hle(*bad, begin, end,
+            {{file_lines, file_lines + 192u}});
+        call(*bad, address, size, 0x3EE30821u);
+        check(bad->stopped() && !rejected->completed_ranges &&
+              bad->cpu().gpr[2] == 0xDEADBEEFu,
+              "File-backed writeback crossed reviewed cache lines");
+    }
+    auto null_invalidate = std::make_unique<psprecomp::Runtime>();
+    const auto invalidation_state = register_data_cache_hle(*null_invalidate, begin, end);
+    call(*null_invalidate, 0u, 0x80u, 0x34B9FA9Eu);
+    check(null_invalidate->stopped() && !invalidation_state->completed_ranges &&
+          null_invalidate->cpu().gpr[2] == 0xDEADBEEFu,
+          "Null-range writeback widened invalidation");
     auto code = std::make_unique<psprecomp::Runtime>();
     const auto code_state = register_data_cache_hle(*code, begin, end, {{data, data + 64}});
     code->register_function(data, [](auto&, auto&) {}, "synthetic_code");

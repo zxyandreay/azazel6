@@ -111,3 +111,28 @@ helper `0x08ACB68C`, whose two indirect sites remain trapped, and
 stops first at missing 3-word callee `0x08ACB1BC`. Coverage is 664
 roots / 41,111 words. The bounded run fails at that direct callee;
 sixteen captured frames remain uniformly black.
+
+**VERIFIED, 2026-11-17 checked object/cache continuation:** the sixth
+object's tail path passes direct helper `0x08ACB1BC` and follows the
+file-backed vtable at `0x08BCFC88`. Live guarded calls observe slots
+`0x08BCFCC0`, `0x08BCFCA0` and `0x08BCFB84`, targeting
+`0x08ACF924`, `0x08ACF8D0` and `0x08ACD304` respectively. Inner
+dispatches use checked slots `0x08BCF9D0`, `0x08BCF9FC`,
+`0x08BCFA00`, `0x08BCFA04` and `0x08BCF9D4`. The exact path
+performs a null `0x80`-byte data-cache writeback, then a file-backed
+writeback from `0x08B9C610`; both are covered by narrow profile
+contracts and synthetic rejection tests. The following direct
+five-instruction helper at `0x08ACB2D4` executes. A later guarded
+call reads `0x08BCFCC8` and targets `0x08ACF93C`. Further exposed
+indirect sites remain trapped pending live evidence. This is native
+host execution with validated media, not a title-screen boot.
+
+**VERIFIED bounded checkpoint:** the `0x08ACF93C` path enters direct
+`0x08AEBAF8` and its shared tail target `0x08AC1E5C`. The next live
+vtable call at `0x08ACB87C` reads file-backed slot `0x08BCFCAC` and
+targets `0x08ACF8F4`. The resulting path stops at missing direct
+helper `0x08ACB2A8` before reaching the still-trapped later indirect
+sites. Coverage is 680 roots / 41,491 words. The ISO-backed,
+15-second guest run reports failure at that boundary; its sixteen
+480×272 frames have zero nonblack pixels. The 240-second media
+validation bound is separate from the guest execution bound.
