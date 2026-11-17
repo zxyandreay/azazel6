@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-17 further object continuation.** Coverage is
+686 roots / 41,585 instruction words. The additional guarded call at
+`0x08ACB8A0` follows file-backed slot `0x08BD07B8` to
+`0x08AEC8CC`. The bounded ISO-backed run next stops at missing direct
+helper `0x08ACB200`. Sixteen captured frames are black. Title boot
+remains open; see [continuation evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-17 checked cache/object checkpoint.** Coverage is
 680 roots and 41,491 instruction words. The sixth object's tail path
 executes checked file-backed virtual calls and the observed null and

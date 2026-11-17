@@ -136,3 +136,13 @@ sites. Coverage is 680 roots / 41,491 words. The ISO-backed,
 15-second guest run reports failure at that boundary; its sixteen
 480×272 frames have zero nonblack pixels. The 240-second media
 validation bound is separate from the guest execution bound.
+
+**VERIFIED bounded continuation:** direct helpers `0x08ACB2A8`,
+`0x08AEB9D8`, `0x08AECA28` and the `0x08AEBB00` tail thunk execute.
+The subsequent guarded call at `0x08ACB8A0` observes object vtable
+`0x08BD0790`, whose file-backed slot `0x08BD07B8` contains
+`0x08AEC8CC`. Its shared tail code at `0x08ACD838` was separated
+into a nonoverlapping AOT root. The 686-root / 41,585-word run next
+stops at missing direct helper `0x08ACB200`, called from
+`0x08AEC8F0`. Later indirect calls remain trapped. The validated ISO
+run has fifteen GE lists, sixteen black display frames and no title.
