@@ -1,5 +1,13 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 continued constructor checkpoint.** Coverage
+is 701 roots / 42,368 instruction words. Four more object
+constructors and their checked calls through file-backed slot
+`0x08B908F0` execute. The next bounded ISO-backed stop is missing
+direct helper `0x089872C8`, before another trapped virtual call.
+The 16-frame capture remains black; title boot is unverified. See
+[continuation evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-17 further constructor checkpoint.** Coverage
 is 697 roots / 41,933 instruction words. The sixth object call and
 the next constructor execute through checked file-backed vtable

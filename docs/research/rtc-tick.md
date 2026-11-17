@@ -173,3 +173,15 @@ checked call through the same slot at `0x0886601C`. The 697-root /
 `0x089484A0`, before the still-trapped call at `0x0886608C`.
 There are still fifteen GE lists, sixteen black frames and zero
 nonblack pixels; no title-screen inference is warranted.
+
+**VERIFIED further constructor sequence:** exact constructors
+`0x089484A0`, `0x0882BBCC`, `0x08A54D6C` and `0x089773E4`
+execute on the continuing startup path. The virtual calls at
+`0x0886608C`, `0x088660FC`, `0x0886616C` and `0x088661DC`
+each observe file-backed slot `0x08B908F0` with target
+`0x08866D34`. Every next indirect site was first held as a
+terminal trap until its live target could be checked. The latest
+701-root / 42,368-word bounded ISO run stops at missing direct
+helper `0x089872C8`, before the trapped call at `0x0886624C`.
+The capture still contains sixteen black 480×272 frames; there
+are fifteen GE lists and no title-screen evidence.
