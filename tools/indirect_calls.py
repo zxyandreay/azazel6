@@ -98,6 +98,91 @@ def immediate_maps(elf, descriptors):
     return result
 
 
+def watched_slot_maps(elf, descriptors):
+    """Guard a runtime-written BSS slot with reviewed exact instruction witnesses.
+
+    The witnesses establish the source and storage shape; a bounded write watch
+    must separately establish that the store actually executed. Other live
+    indices/targets remain rejected by the generated runtime guard.
+    """
+    result = {}
+
+    def read(address):
+        if type(address) is not int or address & 3 or not any(
+                s.flags & 1 and s.vaddr <= address and address + 4 <= s.vaddr + s.filesz
+                for s in elf.segments):
+            raise ValidationError('Watched-slot witness is not executable file-backed code')
+        offset = elf.guest_to_offset(address, 4)
+        return int.from_bytes(elf.data[offset:offset + 4], 'little')
+
+    def address_pair(upper_address, lower_address):
+        upper, lower = read(upper_address), read(lower_address)
+        register = (upper >> 16) & 31
+        if (upper >> 26 != 15 or (upper >> 21) & 31 or not register or
+                lower >> 26 != 9 or (lower >> 21) & 31 != register or
+                ((lower >> 16) & 31) == 0):
+            raise ValidationError('Watched-slot address pair is not LUI/ADDIU')
+        low = lower & 0xFFFF
+        if low & 0x8000:
+            low -= 0x10000
+        return (((upper & 0xFFFF) << 16) + low) & 0xFFFFFFFF, (lower >> 16) & 31
+
+    for descriptor in descriptors:
+        if set(descriptor) != {'site', 'register', 'slot', 'index', 'stride',
+                               'target_upper', 'target_lower', 'slot_upper',
+                               'slot_lower', 'store', 'load'}:
+            raise ValidationError('Invalid watched-slot descriptor fields')
+        site = int(descriptor['site'], 16)
+        slot = int(descriptor['slot'], 16)
+        index, stride = descriptor['index'], descriptor['stride']
+        register = descriptor['register']
+        upper = int(descriptor['target_upper'], 16)
+        lower = int(descriptor['target_lower'], 16)
+        base_upper = int(descriptor['slot_upper'], 16)
+        base_lower = int(descriptor['slot_lower'], 16)
+        store = int(descriptor['store'], 16)
+        load = int(descriptor['load'], 16)
+        if (not 1 <= register <= 31 or slot & 3 or
+                type(index) is not int or not 0 <= index < 1024 or
+                type(stride) is not int or not 4 <= stride <= 4096 or stride & 3 or
+                not upper < lower < store < load < site or
+                base_lower != base_upper + 4 or base_lower >= store or load + 4 != site or
+                read(site) != (register << 21) | (31 << 11) | 9):
+            raise ValidationError('Invalid watched-slot call site or witness order')
+        target, value_register = address_pair(upper, lower)
+        base, base_register = address_pair(base_upper, base_lower)
+        store_word, load_word = read(store), read(load)
+        displacement = store_word & 0xFFFF
+        if displacement & 0x8000:
+            displacement -= 0x10000
+        load_displacement = load_word & 0xFFFF
+        if load_displacement & 0x8000:
+            load_displacement -= 0x10000
+        if (store_word >> 26 != 43 or (store_word >> 21) & 31 != base_register or
+                (store_word >> 16) & 31 != value_register or
+                (base + displacement) & 0xFFFFFFFF != slot or
+                load_word >> 26 != 35 or (load_word >> 16) & 31 != register or
+                displacement != index * stride + load_displacement):
+            raise ValidationError('Watched-slot store/load witness mismatch')
+        if not any(s.flags & 2 and s.vaddr + s.filesz <= base and
+                   s.vaddr + s.filesz <= slot and
+                   s.vaddr <= base and slot + 4 <= s.vaddr + s.memsz
+                   for s in elf.segments):
+            raise ValidationError('Watched slot is not owned writable BSS')
+        if target & 3 or not any(s.flags & 1 and s.vaddr <= target and
+                                 target + 4 <= s.vaddr + s.filesz
+                                 for s in elf.segments):
+            raise ValidationError('Watched-slot target is not executable file-backed code')
+        row = result.setdefault(site, {'register': register, 'targets': [],
+                                       'slots': [], 'witnesses': []})
+        if row['register'] != register or slot in row['slots']:
+            raise ValidationError('Duplicate or conflicting watched-slot call')
+        row['targets'].append(target)
+        row['slots'].append(slot)
+        row['witnesses'].append([upper, lower, base_upper, base_lower, store, load])
+    return result
+
+
 def pointer_maps(elf, descriptors, *, tail=False):
     """Resolve explicit file-backed function-pointer slots, never literal targets."""
     result = {}

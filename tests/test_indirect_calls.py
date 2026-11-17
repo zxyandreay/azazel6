@@ -3,7 +3,7 @@ import unittest
 from elf import Elf, ValidationError
 from entry_cfg import discover_entry
 from indirect_calls import (constructor_maps, jump_maps, trap_maps, pointer_maps,
-                            immediate_maps, merge_call_maps, guard_generated,
+                            immediate_maps, watched_slot_maps, merge_call_maps, guard_generated,
                             verify_break_stops)
 from test_entry_cfg import program
 
@@ -11,6 +11,76 @@ BASE = 0x08804000
 
 
 class IndirectCallTests(unittest.TestCase):
+    def test_watched_bss_slot_rejects_unowned_or_changed_witnesses(self):
+        # A synthetic initializer writes a code address into BSS; a later
+        # indirect call reads the slot. Only that derived target is guarded.
+        words = [0x3C1E0880, 0x27C34030, 0x3C0C0880, 0x258C4040,
+                 0xAD830010, 0x8CC20010, 0x0040F809, 0,
+                 0x03E00008, 0, 0, 0, 0x03E00008, 0, 0, 0]
+        desc = dict(site=hex(BASE + 24), register=2, slot=hex(BASE + 0x50),
+                    index=0, stride=8,
+                    target_upper=hex(BASE), target_lower=hex(BASE + 4),
+                    slot_upper=hex(BASE + 8), slot_lower=hex(BASE + 12),
+                    store=hex(BASE + 16), load=hex(BASE + 20))
+
+        def elf_with(words, *, memsz=0x80, flags=7):
+            data = bytearray(program(words).data)
+            struct.pack_into('<II', data, 52 + 20, memsz, flags)
+            return Elf.parse(data)
+
+        maps = watched_slot_maps(elf_with(words), [desc])
+        self.assertEqual(maps[BASE + 24]['targets'], [BASE + 0x30])
+        self.assertEqual(maps[BASE + 24]['slots'], [BASE + 0x50])
+        self.assertIn('ctx.gpr[2], {0x08804030u}',
+                      guard_generated(f'L_{BASE + 24:08X}:\n', maps))
+        with self.assertRaises(ValidationError):
+            watched_slot_maps(elf_with(words), [desc, desc])
+        for index, replacement in ((0, 0x3C1D0880), (1, 0x27C38000),
+                                   (3, 0x258C4020), (4, 0xAD820010),
+                                   (5, 0x8CC30010), (6, 0x00400008)):
+            changed = words.copy()
+            changed[index] = replacement
+            with self.subTest(index=index), self.assertRaises(ValidationError):
+                watched_slot_maps(elf_with(changed), [desc])
+        for changes in ({'slot': hex(BASE + 0x54)}, {'slot': hex(BASE + 0x51)},
+                        {'register': 3},
+                        {'load': hex(BASE + 16)}, {'site': hex(BASE + 28)}):
+            with self.subTest(changes=changes), self.assertRaises(ValidationError):
+                watched_slot_maps(elf_with(words), [desc | changes])
+        with self.assertRaises(ValidationError):
+            watched_slot_maps(elf_with(words, flags=5), [desc])
+        with self.assertRaises(ValidationError):
+            watched_slot_maps(elf_with(words, memsz=0x50), [desc])
+
+    def test_watched_bss_slots_share_one_guarded_call(self):
+        words = [0x3C1E0880, 0x27C34050, 0x3C0C0880, 0x258C4080,
+                 0xAD830010, 0x3C110880, 0x26244058, 0x3C0C0880,
+                 0x25904080, 0xAE040018, 0x8CC20010, 0x0040F809,
+                 0, 0, 0, 0, 0, 0, 0, 0,
+                 0x03E00008, 0, 0x03E00008, 0, 0, 0, 0, 0]
+        data = bytearray(program(words).data)
+        struct.pack_into('<II', data, 52 + 20, 0xC0, 7)
+        elf = Elf.parse(data)
+        common = dict(site=hex(BASE + 44), register=2, stride=8,
+                      load=hex(BASE + 40))
+        first = common | dict(slot=hex(BASE + 0x90), index=0,
+                              target_upper=hex(BASE), target_lower=hex(BASE + 4),
+                              slot_upper=hex(BASE + 8), slot_lower=hex(BASE + 12),
+                              store=hex(BASE + 16))
+        second = common | dict(slot=hex(BASE + 0x98), index=1,
+                               target_upper=hex(BASE + 20), target_lower=hex(BASE + 24),
+                               slot_upper=hex(BASE + 28), slot_lower=hex(BASE + 32),
+                               store=hex(BASE + 36))
+        maps = watched_slot_maps(elf, [first, second])
+        self.assertEqual(maps[BASE + 44]['targets'], [BASE + 0x50, BASE + 0x58])
+        self.assertEqual(maps[BASE + 44]['slots'], [BASE + 0x90, BASE + 0x98])
+        self.assertIn('{0x08804050u, 0x08804058u}',
+                      guard_generated(f'L_{BASE + 44:08X}:\n', maps))
+        with self.assertRaises(ValidationError):
+            watched_slot_maps(elf, [first, second | {'index': 0}])
+        with self.assertRaises(ValidationError):
+            watched_slot_maps(elf, [first, second | {'stride': 4}])
+
     def test_related_slot_calls_keep_separate_targets_and_terminal_tail(self):
         # Synthetic three-call/final-tail sequence, with independent slot identity.
         words = [0x0040F809, 0x24840004, 0x0040F809, 0,

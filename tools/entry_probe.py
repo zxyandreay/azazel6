@@ -9,7 +9,7 @@ from elf import load_profile, validate
 from psp_module import module_report
 from entry_cfg import discover_entry
 from indirect_calls import (constructor_maps, jump_maps, trap_maps, pointer_maps,
-                            immediate_maps, merge_call_maps, guard_generated,
+                            immediate_maps, watched_slot_maps, merge_call_maps, guard_generated,
                             verify_break_stops)
 from aot_registration import compact_registration
 
@@ -73,7 +73,10 @@ def main():
     constructors = constructor_maps(elf, startup.get("constructor_calls", []))
     pointers = pointer_maps(elf, startup.get("pointer_calls", []))
     immediates = immediate_maps(elf, startup.get("immediate_calls", []))
-    indirect = merge_call_maps(constructors, pointers, immediates)
+    watched = watched_slot_maps(elf, startup.get("watched_slot_calls", []))
+    if watched.keys() & (constructors.keys() | pointers.keys() | immediates.keys()):
+        raise ValueError("Watched-slot call overlaps another guarded call source")
+    indirect = merge_call_maps(constructors, pointers, immediates, watched)
     jumps = jump_maps(elf, startup.get("jump_tables", []))
     tails = pointer_maps(elf, startup.get("pointer_tails", []), tail=True)
     traps = trap_maps(elf, startup.get("trapped_calls", []))

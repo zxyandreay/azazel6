@@ -265,3 +265,10 @@ has fifteen GE lists, one controller read, sixteen black frames and no
 title-screen evidence. **NEXT:** inspect the exact load at
 `0x0886686C`, then admit only the observed slot and continue the
 bounded run.
+
+**VERIFIED, 2026-11-18 callback-table continuation:** the checked call
+at `0x0886686C` executes, then `0x0893A1D0` reaches a dynamically
+written BSS callback table. Two target slots were traced and admitted
+under a new narrow guard. The 729-root / 44,242-word run next stops at
+missing direct root `0x088788B8` with the same black sixteen-frame
+capture. See [slot provenance and limits](watched-callback-table.md).

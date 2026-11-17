@@ -533,6 +533,9 @@
     "0x08943380",
     "0x08943404",
     "0x08AFD96C",
+    "0x0893A1D0",
+    "0x08934C00",
+    "0x08934BF8",
     "0x0887C39C",
     "0x08B13BC8",
     "0x08868124",
@@ -778,10 +781,6 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x0886686C",
-      "register": 2
-    },
-    {
       "site": "0x0883DA84",
       "register": 2
     },
@@ -975,6 +974,11 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x0886686C",
+      "register": 2,
+      "pointers": ["0x08B908F0"]
+    },
     {
       "site": "0x08866804",
       "register": 3,
@@ -2259,6 +2263,34 @@
           "lower": "0x08AE078C"
         }
       ]
+    }
+  ],
+  "watched_slot_calls": [
+    {
+      "site": "0x0893A320",
+      "register": 2,
+      "slot": "0x08C16AE8",
+      "index": 0,
+      "stride": 88,
+      "target_upper": "0x089351F8",
+      "target_lower": "0x08936068",
+      "slot_upper": "0x0893604C",
+      "slot_lower": "0x08936050",
+      "store": "0x08936078",
+      "load": "0x0893A31C"
+    },
+    {
+      "site": "0x0893A320",
+      "register": 2,
+      "slot": "0x08C18248",
+      "index": 68,
+      "stride": 88,
+      "target_upper": "0x08939228",
+      "target_lower": "0x0893923C",
+      "slot_upper": "0x089391EC",
+      "slot_lower": "0x089391F0",
+      "store": "0x08939260",
+      "load": "0x0893A31C"
     }
   ],
   "trapped_tails": [

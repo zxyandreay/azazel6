@@ -14,7 +14,7 @@ from elf import ValidationError, load_profile, validate
 from entry_cfg import discover_entry
 from psp_module import module_report
 from indirect_calls import (constructor_maps, immediate_maps, jump_maps, pointer_maps,
-                            trap_maps, merge_call_maps)
+                            trap_maps, watched_slot_maps, merge_call_maps)
 
 
 def reviewed_transfers(elf, startup):
@@ -22,11 +22,14 @@ def reviewed_transfers(elf, startup):
     calls = constructor_maps(elf, startup.get("constructor_calls", []))
     pointers = pointer_maps(elf, startup.get("pointer_calls", []))
     immediates = immediate_maps(elf, startup.get("immediate_calls", []))
+    watched = watched_slot_maps(elf, startup.get("watched_slot_calls", []))
+    if watched.keys() & (calls.keys() | pointers.keys() | immediates.keys()):
+        raise ValidationError("Watched-slot call overlaps another guarded call source")
     jumps = jump_maps(elf, startup.get("jump_tables", []))
     tails = pointer_maps(elf, startup.get("pointer_tails", []), tail=True)
     traps = trap_maps(elf, startup.get("trapped_calls", []))
     tail_traps = trap_maps(elf, startup.get("trapped_tails", []), tail=True)
-    call_maps = merge_call_maps(calls, pointers, immediates)
+    call_maps = merge_call_maps(calls, pointers, immediates, watched)
     families = (call_maps, jumps, tails, traps, tail_traps)
     if any(set(first) & set(second) for i, first in enumerate(families)
            for second in families[i + 1:]):

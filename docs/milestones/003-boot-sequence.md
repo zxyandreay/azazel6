@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 watched callback table checkpoint.** The
+exact-input bounded slice covers 729 roots / 44,242 instruction words.
+It passes the `0x0893A320` call through two write-watched BSS table
+targets and next stops at missing direct root `0x088788B8`. The sixteen
+captured frames remain black. Title-screen boot is still open; see
+[callback table evidence](../research/watched-callback-table.md).
+
 **VERIFIED, 2026-11-18 sibling helper continuation.** The bounded
 ISO-backed slice covers 726 roots / 44,069 instruction words. Calls
 at `0x088666E8` and `0x08866804` execute through the checked
