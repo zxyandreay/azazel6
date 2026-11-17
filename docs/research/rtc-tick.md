@@ -185,3 +185,12 @@ terminal trap until its live target could be checked. The latest
 helper `0x089872C8`, before the trapped call at `0x0886624C`.
 The capture still contains sixteen black 480×272 frames; there
 are fifteen GE lists and no title-screen evidence.
+
+**VERIFIED, 2026-11-18 next constructor path:** direct constructor
+`0x089872C8` executes and the virtual call at `0x0886624C`
+observes file-backed slot `0x08B908F0`, targeting existing root
+`0x08866D34`. A direct thunk at `0x08A9F1B8` leads to constructor
+`0x08A9F020`. The 704-root / 42,619-word bounded run stops at
+missing direct helper `0x08AA0BF8` before the still-trapped call
+at `0x088662A0`. Fifteen GE lists and sixteen black frames are
+unchanged. No title-screen boot has been observed.
