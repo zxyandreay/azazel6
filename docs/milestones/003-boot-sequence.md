@@ -1,5 +1,13 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 sibling helper continuation.** The bounded
+ISO-backed slice covers 726 roots / 44,069 instruction words. Calls
+at `0x088666E8` and `0x08866804` execute through the checked
+file-backed slot `0x08B908F0`; the latter reads `vtable + 8`.
+The next guarded call at `0x0886686C` observes target `0x08866D34`.
+Sixteen black frames leave the title-screen gate open. See
+[continuation evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-18 further object continuation.** The exact-input
 native slice covers 721 roots / 43,763 instruction words. Two more
 checked calls through file-backed slot `0x08B908F0` and the intervening

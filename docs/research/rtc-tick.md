@@ -250,3 +250,18 @@ Fifteen GE lists, one controller sample and sixteen uniformly black
 graphics/input are unverified. **NEXT:** admit only the checked
 `0x088666E8` slot after reviewing its exact load, then inspect the
 next bounded stop.
+
+**VERIFIED, 2026-11-18 sibling helper continuation:** exact instructions
+at `0x088666E0/0x088666E4` and `0x088667FC/0x08866800` load the
+observed call targets from the file-backed `0x08B908F0` slot. Bounded
+ISO-backed runs execute those calls, then reach direct helper
+`0x08943690`. Its three direct callees execute; the two sibling CFGs
+share a distant file-backed range at `0x08AFD96C`, which is separated
+as a nonoverlapping AOT root. Execution of that shared branch is not
+claimed. The 726-root / 44,069-word run stops at guarded call
+`0x0886686C` with live target `0x08866D34` and object vtable
+`0x08B908E8`. The deeper `0x0883DA84` site remains trapped. It still
+has fifteen GE lists, one controller read, sixteen black frames and no
+title-screen evidence. **NEXT:** inspect the exact load at
+`0x0886686C`, then admit only the observed slot and continue the
+bounded run.
