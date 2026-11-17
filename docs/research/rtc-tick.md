@@ -211,3 +211,25 @@ root `0x08866D34`. The 707-root / 42,902-word bounded ISO run
 next stops at missing direct helper `0x08927E24`, before the
 still-trapped call at `0x088663F0`. Its fifteen GE lists and
 sixteen black captured frames do not verify title boot.
+
+**VERIFIED, 2026-11-18 next guarded object sequence:** the exact
+ULUS10466 executable and separately pinned read-only ISO passed their
+SHA-256 admission checks. Bounded CFG inspection covered direct roots
+`0x08927E24`, `0x0887C39C`, `0x08B13BC8`, `0x08928840`,
+`0x0895AE6C` and `0x0895A214`; the last required a terminal guard
+before its target was mapped. The three new calls at
+`0x088663F0`, `0x08866460` and `0x088664D0` observed target
+`0x08866D34` through the file-backed
+`0x08B908F0` slot. The call at `0x0895A268` loaded
+`0x08B8F860` through `vtable + 8` and observed existing root
+`0x0885E644`; other targets still reject. The later call at
+`0x08866540` remains a terminal trap. Regeneration and Windows native
+build succeeded at 713 roots / 43,270 words. The latest
+`tools/run_probe.py --iso --capture-framebuffer` run stopped at the
+missing direct helper `0x0893AE58` before that trap, within the
+15-second guest bound. It read 28,196 disc bytes, completed fifteen GE
+lists, consumed one controller sample and captured sixteen 480×272
+frames with zero nonblack pixels. **LIMITATION:** this is a bounded
+host-native startup trace, not title boot or physical ARM64 evidence.
+**NEXT:** inspect `0x0893AE58` and its direct callees, then rerun with
+`0x08866540` guarded until its live target is known.

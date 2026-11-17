@@ -1,5 +1,13 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 guarded object continuation.** Exact-input
+coverage is 713 roots / 43,270 instruction words. The bounded ISO-backed
+probe executes six further direct roots and checked
+virtual calls through file-backed slots `0x08B908F0` and `0x08B8F860`.
+It next stops at missing direct helper `0x0893AE58`, before the still-trapped
+call at `0x08866540`. Fifteen GE lists and sixteen captured black frames
+do not establish title-screen boot. See [continuation evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-18 further object checkpoint.** Coverage is
 707 roots / 42,902 instruction words. Two more constructors and
 checked virtual calls execute before the bounded ISO-backed run
