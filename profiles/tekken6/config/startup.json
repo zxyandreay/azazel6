@@ -457,6 +457,9 @@
     "0x08865CAC",
     "0x088699C4",
     "0x08866D34",
+    "0x0889C958",
+    "0x08889BD4",
+    "0x0886CC28",
     "0x08868124",
     "0x088AB8D0",
     "0x0889DF24",
@@ -700,7 +703,7 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x08865DEC",
+      "site": "0x08865ECC",
       "register": 2
     },
     {
@@ -861,6 +864,21 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x08865E5C",
+      "register": 2,
+      "pointers": ["0x08B908F0"]
+    },
+    {
+      "site": "0x08865DEC",
+      "register": 2,
+      "pointers": ["0x08B908F0"]
+    },
+    {
+      "site": "0x0889C98C",
+      "register": 2,
+      "pointers": ["0x08B8C2D8"]
+    },
     {
       "site": "0x08865D78",
       "register": 2,

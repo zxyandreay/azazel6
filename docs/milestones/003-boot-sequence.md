@@ -1,5 +1,13 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-17 continuation.** Coverage is now 651 roots and
+40,468 instruction words. A file-backed vtable dispatch reaches existing
+root `0x0882C5E0`; two subsequent object calls reach `0x08866D34`
+through the same checked slot. The next bounded stop is direct helper
+`0x088AD6C4`, before the fourth trapped virtual call. The 16-frame
+capture remains black, so the title-screen gate remains open. See
+[callback evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-17.** The exact-input native slice now covers 648 roots
 and 40,165 instruction words. The game completes three RTC calendar
 conversions, reads libc Unix time with a null output, and enters two

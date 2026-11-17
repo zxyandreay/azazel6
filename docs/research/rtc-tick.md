@@ -73,3 +73,17 @@ next missing AOT function `0x0889C958`, whose CFG contains an unreviewed
 indirect transfer at `0x0889C98C`. Current coverage is 648 roots / 40,165
 words. The run reports failure at that exact boundary. Its 16-frame,
 480×272 capture is uniformly black; title boot is unverified.
+
+**VERIFIED, 2026-11-17 virtual-call continuation:** the object at
+`0x090A9764` carries file-backed vtable `0x08B8C2D0`; slot
+`0x08B8C2D8` points to existing root `0x0882C5E0`. The guarded call at
+`0x0889C98C` executes that target and reaches direct helper
+`0x08889BD4`. The next two calls in `0x08865CAC`, at `0x08865DEC` and
+`0x08865E5C`, each observe file-backed slot `0x08B908F0` and target
+`0x08866D34`. The subsequent direct helper `0x0886CC28` executes.
+The fourth call at `0x08865ECC` is still trapped; execution first reaches
+missing direct helper `0x088AD6C4`. Its static CFG has uncovered direct
+callees `0x0882D62C` and `0x0885F17C`. The latest bounded native
+slice covers 651 roots / 40,468 words, fails at that helper, and retains
+the uniformly black 16-frame capture. The prior 648-root record above
+remains a historical checkpoint.
