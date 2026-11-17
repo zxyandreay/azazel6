@@ -1,5 +1,14 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-17.** The exact-input native slice now covers 648 roots
+and 40,165 instruction words. The game completes three RTC calendar
+conversions, reads libc Unix time with a null output, and enters two
+callbacks constructed from exact EBOOT address pairs. A checked virtual
+call follows file-backed slot `0x08B908F0`. The bounded run then fails at
+missing function `0x0889C958`; its indirect transfer at `0x0889C98C`
+requires review. The 16-frame ISO-backed capture is uniformly black.
+Title-screen boot remains open. See [RTC and callback evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-12.** The checked system button preference query returns
 the configured Cross value. Startup configures VBLANK controller sampling and
 analog mode and initializes the next object/list containers. The reviewed

@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-11-12: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-11-17: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -13,7 +13,7 @@ Azazel6 is not playable. See
 | Windows framework build/regressions | VERIFIED, three suites passed |
 | Python/profile tools | VERIFIED, 94 cases passed locally, including media validation and guest execution watchdogs |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-five integrated CTest suites passed |
+| Startup HLE / returning imports | VERIFIED synthetic contracts; twenty-six integrated CTest suites passed |
 | Thread lifecycle | VERIFIED create/start/exit/delete and exit-status queries, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attributes are supported at creation and by later addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; source-only lightweight-mutex creation initializes the guest workarea; waits/timeouts and later lightweight-mutex operations remain rejecting |
 | Semaphore lifecycle | VERIFIED synthetic creation, FIFO/priority waits, positive-count signaling, overflow checks, deletion wakeups and priority handoff; nonpositive signaling and timeouts remain unsupported; see [contracts](../research/semaphores.md) |
@@ -22,7 +22,7 @@ Azazel6 is not playable. See
 | Clock conversion | VERIFIED unsigned immediate and pointer-form microsecond conversion, including null-first output semantics, with atomic live-caller-stack validation; no time advancement |
 | System-time query | VERIFIED low and wide microseconds plus current Hcount from the explicit guest timeline, including GE interrupt reads, sub-microsecond truncation and wrap; reads do not advance time; runnable CPU time remains unmodeled |
 | Power services | VERIFIED immutable nominal startup PLL/CPU/bus reads at 222/222/111 MHz plus owned callback-slot registration and queued initial `0x10E4` notification; delivery, host clocks, clock transitions and timing rescale remain unimplemented |
-| Controller settings | VERIFIED runtime-local idle-cancel thresholds, VBLANK sampling configuration and digital/analog mode transitions; guest pad sampling remains unimplemented |
+| Controller settings | VERIFIED runtime-local idle-cancel thresholds, VBLANK sampling configuration and digital/analog mode transitions; one guest pad read consumes a VBLANK-produced snapshot |
 | Startup device control | VERIFIED source-only `fatms0:` callback ownership registration with checked live-stack input; no host path, media state, capacity, file or callback delivery |
 | Startup WLAN identity | VERIFIED one fixed locally administered unicast address copied only to a checked live caller stack; no host networking or connectivity |
 | UMD activation / media | VERIFIED exact-hash read-only ISO admission, checked title/region and file extents, real sector query and handle closure; omission preserves empty-drive timeouts |
@@ -44,7 +44,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 641 reviewed roots / 39,893 words. The post-input callback reads an RTC tick, adds seconds and the observed 480-minute timezone offset, then stops at `sceRtcSetTick`. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. |
+| Native entry execution | VERIFIED 648 reviewed roots / 40,165 words. Calendar conversion, libc time and guarded callback/vtable paths execute. The next missing AOT function is `0x0889C958`; its indirect call needs review. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [RTC evidence](../research/rtc-tick.md). |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
@@ -52,7 +52,7 @@ Azazel6 is not playable. See
 | Host input | VERIFIED synthetic touch identity, stock coordinate and analog contracts; SDL gamepad/touch adapter compiled. Guest one-sample read consumes a VBLANK-produced pad snapshot in the native probe; game-running Android input wiring remains open. |
 | Android virtual device | VERIFIED official emulator API 37 x86_64 / 16 KiB and API 35 x86_64 / 4 KiB: APK installation, Vulkan pixels, touch, virtual controller, navigation overlays, three Home/resume cycles and 30-second advancing-frame intervals; API 35 setup limitations documented |
 | Physical Android device | BLOCKED: no physical ARM64 device/controller attached; hardware GPU/input behavior unverified |
-| Game boot/combat/graphics/audio/input | Native boot reaches the first guest controller read and earlier VRAM clears; title, visible scene, stock gameplay, audio and physical guest controls remain unverified. |
+| Game boot/combat/graphics/audio/input | Native boot passes the first guest controller read, RTC calendar and libc time queries and earlier VRAM clears; title, visible scene, stock gameplay, audio and physical guest controls remain unverified. |
 | Ultrawide gameplay hooks / moveset packages | PLANNED; reference research only |
 
 Supported game-input identity is limited to the exact USA decrypted baseline.

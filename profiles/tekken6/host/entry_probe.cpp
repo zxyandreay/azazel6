@@ -191,7 +191,9 @@ int main(int argc, char** argv) {
                   << " hcount_reads=" << display->hcount_reads << std::endl;
         std::cout << "rtc_tick_reads=" << rtc->reads
                   << " rtc_seconds_adds=" << rtc->seconds_adds
-                  << " rtc_minutes_adds=" << rtc->minutes_adds << std::endl;
+                  << " rtc_minutes_adds=" << rtc->minutes_adds
+                  << " rtc_set_ticks=" << rtc->set_ticks
+                  << " libc_time_reads=" << rtc->libc_time_reads << std::endl;
         for (const auto& [id, list] : ge_queue->lists()) {
             std::cout << "ge_list=" << id << " begin=" << hex32(list.begin) << " end=" << hex32(list.end)
                       << " pc=" << hex32(list.pc) << " commands=" << list.commands

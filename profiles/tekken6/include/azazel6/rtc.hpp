@@ -13,6 +13,8 @@ struct RtcState {
     std::uint64_t reads = 0;
     std::uint64_t seconds_adds = 0;
     std::uint64_t minutes_adds = 0;
+    std::uint64_t set_ticks = 0;
+    std::uint64_t libc_time_reads = 0;
 };
 
 std::shared_ptr<RtcState> register_rtc_hle(psprecomp::Runtime& runtime,

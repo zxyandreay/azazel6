@@ -1,5 +1,6 @@
 #include "azazel6/rtc.hpp"
 #include "psprecomp/common.hpp"
+#include <chrono>
 #include <limits>
 
 namespace azazel6 {
@@ -65,6 +66,63 @@ std::shared_ptr<RtcState> register_rtc_hle(psprecomp::Runtime& runtime,
     });
     register_tick_add(runtime, state, 0xF2A4AFE5u, 1000000u, &RtcState::seconds_adds);
     register_tick_add(runtime, state, 0xE6605BCAu, 60000000u, &RtcState::minutes_adds);
+    runtime.register_hle("sceRtc", 0x7ED29E40u, [state](auto& rt, auto& ctx) {
+        constexpr std::uint64_t day_microseconds = 86400000000ULL;
+        constexpr std::int64_t days_to_unix_epoch = 719162;
+        const auto date_address = ctx.gpr[4], tick_address = ctx.gpr[5];
+        auto& memory = rt.memory();
+        if ((date_address & 3u) != 0u || (tick_address & 3u) != 0u ||
+            !memory.contains(date_address, 16u) || !memory.contains(tick_address, 8u)) {
+            rt.stop("RTC date or tick buffer outside guest memory"); return;
+        }
+        const auto tick = static_cast<std::uint64_t>(memory.load32(tick_address)) |
+            (static_cast<std::uint64_t>(memory.load32(tick_address + 4u)) << 32);
+        const auto day_index = tick / day_microseconds;
+        const auto last_day = static_cast<std::uint64_t>(
+            (std::chrono::sys_days{std::chrono::year{9999}/12/31} -
+             std::chrono::sys_days{std::chrono::year{1970}/1/1}).count() + days_to_unix_epoch);
+        if (day_index > last_day) { rt.stop("RTC tick outside supported calendar"); return; }
+        const auto date = std::chrono::year_month_day{std::chrono::sys_days{
+            std::chrono::days{static_cast<std::int64_t>(day_index) - days_to_unix_epoch}}};
+        if (!date.ok() || static_cast<int>(date.year()) < 1) {
+            rt.stop("RTC tick outside supported calendar"); return;
+        }
+        const auto remainder = tick % day_microseconds;
+        memory.store16(date_address, static_cast<std::uint16_t>(static_cast<int>(date.year())));
+        memory.store16(date_address + 2u, static_cast<std::uint16_t>(static_cast<unsigned>(date.month())));
+        memory.store16(date_address + 4u, static_cast<std::uint16_t>(static_cast<unsigned>(date.day())));
+        memory.store16(date_address + 6u, static_cast<std::uint16_t>(remainder / 3600000000ULL));
+        memory.store16(date_address + 8u, static_cast<std::uint16_t>((remainder / 60000000ULL) % 60u));
+        memory.store16(date_address + 10u, static_cast<std::uint16_t>((remainder / 1000000ULL) % 60u));
+        memory.store32(date_address + 12u, static_cast<std::uint32_t>(remainder % 1000000ULL));
+        ctx.set_gpr(2, 0u);
+        ++state->set_ticks;
+    });
+    runtime.register_hle("UtilsForUser", 0x27CC57F0u,
+        [state, display, anchor_tick](auto& rt, auto& ctx) {
+            const auto destination = ctx.gpr[4];
+            if (destination != 0u && ((destination & 3u) != 0u ||
+                !rt.memory().contains(destination, 4u))) {
+                // The firmware returns zero for an invalid optional time_t pointer.
+                ctx.set_gpr(2, 0u);
+                return;
+            }
+            const auto elapsed = display->clock.microseconds();
+            if (elapsed > std::numeric_limits<std::uint64_t>::max() - anchor_tick) {
+                rt.stop("libc time tick overflow"); return;
+            }
+            const auto tick = anchor_tick + elapsed;
+            if (tick < static_cast<std::uint64_t>(kRtcUnixEpochOffsetUs)) {
+                rt.stop("libc time before Unix epoch"); return;
+            }
+            const auto seconds = (tick - static_cast<std::uint64_t>(kRtcUnixEpochOffsetUs)) / 1000000u;
+            if (seconds > static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max())) {
+                rt.stop("libc time outside signed 32-bit range"); return;
+            }
+            if (destination != 0u) rt.memory().store32(destination, static_cast<std::uint32_t>(seconds));
+            ctx.set_gpr(2, static_cast<std::uint32_t>(seconds));
+            ++state->libc_time_reads;
+        });
     return state;
 }
 }

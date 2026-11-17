@@ -450,6 +450,13 @@
     "0x0889E0C4",
     "0x088C3D84",
     "0x088C3D4C",
+    "0x0889CE70",
+    "0x08B78B5C",
+    "0x08B7B5C8",
+    "0x088675EC",
+    "0x08865CAC",
+    "0x088699C4",
+    "0x08866D34",
     "0x08868124",
     "0x088AB8D0",
     "0x0889DF24",
@@ -693,6 +700,10 @@
   ],
   "trapped_calls": [
     {
+      "site": "0x08865DEC",
+      "register": 2
+    },
+    {
       "site": "0x08ACBFBC",
       "register": 2
     },
@@ -850,6 +861,11 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x08865D78",
+      "register": 2,
+      "pointers": ["0x08B908F0"]
+    },
     {
       "site": "0x08AEDAE0",
       "register": 2,
@@ -1747,6 +1763,16 @@
     "confirm_button": 1
   },
   "immediate_calls": [
+    {
+      "site": "0x08865504",
+      "register": 5,
+      "sources": ["0x088655C0"]
+    },
+    {
+      "site": "0x0886758C",
+      "register": 5,
+      "sources": ["0x088677BC"]
+    },
     {
       "site": "0x0889D128",
       "register": 5,

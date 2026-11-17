@@ -42,3 +42,34 @@ positive and negative 64-bit seconds/minutes, source/destination aliasing,
 invalid buffers and overflow. The next bounded run stops at `sceRtcSetTick`
 (`0x7ED29E40`). Coverage is 641 roots / 39,893 words; one RTC tick read,
 one seconds add, one minutes add and a black 16-frame capture.
+
+**VERIFIED, 2026-11-17 calendar and libc continuation:** pinned PSPSDK
+`psprtc.h` and `psptypes.h` define `sceRtcSetTick` as conversion from a
+microsecond tick to the 16-byte `pspTime` calendar layout. The exact game
+called it three times after two current-tick reads, two seconds adds and
+three minutes adds. Azazel6 converts through a checked Gregorian date,
+supports years 1 through 9999, and rejects truncated or unaligned buffers
+and out-of-range ticks without a partial date write. Synthetic tests cover
+the year-1 and Unix epochs, leap day and the last supported day.
+
+**DOCUMENTED libc contract:** pinned PSPSDK `psputils.h` and the PSP
+autotest identify `UtilsForUser::0x27CC57F0` as `sceKernelLibcTime(time_t*)`.
+The firmware reference returns Unix seconds, copies them to a valid optional
+output, and returns zero for an invalid output pointer. **VERIFIED Azazel6
+contract:** the game called it with a null output pointer. The profile
+derives signed 32-bit Unix seconds from the same sampled RTC anchor and
+explicit guest-event clock; it does not advance time on a read. Synthetic
+tests cover null, valid and invalid outputs, return ABI, overflow and the
+2038 boundary.
+
+**VERIFIED exact-input continuation:** the game constructs callback
+`0x088675EC` at `0x088677BC/0x088677C0` and callback `0x08865CAC` at
+`0x088655C0/0x088655C4`. Both enter through guarded indirect calls. A
+subsequent virtual call reads file-backed slot `0x08B908F0`, which contains
+`0x08866D34`; the four-word target clears three object fields. The next
+indirect call at `0x08865DEC` remains trapped because its target has not
+executed in this bounded run. The direct call at `0x08865DA4` reaches the
+next missing AOT function `0x0889C958`, whose CFG contains an unreviewed
+indirect transfer at `0x0889C98C`. Current coverage is 648 roots / 40,165
+words. The run reports failure at that exact boundary. Its 16-frame,
+480×272 capture is uniformly black; title boot is unverified.
