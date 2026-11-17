@@ -1,5 +1,13 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-17 further continuation.** Coverage is 655 roots
+and 40,754 instruction words. The fourth and fifth object calls both
+resolve through checked file-backed slot `0x08B908F0` to `0x08866D34`.
+The next direct helper `0x0892FEF4` is missing; its callee needs AOT
+review before the sixth trapped object call. Sixteen captured frames
+remain black. Title-screen boot is still unverified. See
+[callback evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-17 continuation.** Coverage is now 651 roots and
 40,468 instruction words. A file-backed vtable dispatch reaches existing
 root `0x0882C5E0`; two subsequent object calls reach `0x08866D34`

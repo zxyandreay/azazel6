@@ -87,3 +87,14 @@ callees `0x0882D62C` and `0x0885F17C`. The latest bounded native
 slice covers 651 roots / 40,468 words, fails at that helper, and retains
 the uniformly black 16-frame capture. The prior 648-root record above
 remains a historical checkpoint.
+
+**VERIFIED, 2026-11-17 object initialization continuation:** the exact
+`0x088AD6C4` helper and its two reviewed direct callees execute before
+the fourth virtual call. That call, at `0x08865ECC`, observes vtable
+slot `0x08B908F0` and target `0x08866D34`. The reviewed helper
+`0x088B99A8` executes before the fifth call at `0x08865F3C`, which
+observes the same slot and target. The sixth call at `0x08865FAC`
+remains trapped: execution first stops at direct helper `0x0892FEF4`,
+whose CFG exposes uncovered callee `0x08825ED4`. Current coverage is
+655 roots / 40,754 words. The bounded run reports failure there, with
+the same black 16-frame scanout. No title-screen claim follows.
