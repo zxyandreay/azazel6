@@ -162,3 +162,14 @@ The 694-root / 41,706-word bounded ISO run next stops at missing
 direct helper `0x08ACBCF8`. It reports 43 cache operations and 34
 writebacks; fifteen GE lists and sixteen uniformly black frames are
 unchanged. This is host-native game startup research, not title boot.
+
+**VERIFIED continued object construction:** direct helper
+`0x08ACBCF8` executes, then the `0x08AD8A24` thunk enters a reviewed
+tail path. The sixth virtual call at `0x08865FAC` observes file-backed
+slot `0x08B908F0`, containing existing target `0x08866D34`.
+Direct constructor `0x0892F114` then executes, followed by another
+checked call through the same slot at `0x0886601C`. The 697-root /
+41,933-word bounded run next stops at missing direct helper
+`0x089484A0`, before the still-trapped call at `0x0886608C`.
+There are still fifteen GE lists, sixteen black frames and zero
+nonblack pixels; no title-screen inference is warranted.
