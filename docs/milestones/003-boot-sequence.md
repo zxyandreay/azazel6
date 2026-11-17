@@ -1,5 +1,13 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-17 second object/cache checkpoint.** Coverage is
+694 roots / 41,706 instruction words. Checked calls through the second
+object vtable complete further cache writebacks, including the observed
+null/0x40 and file-backed `0x08B9C690` requests. The latest bounded
+ISO-backed run stops at missing direct helper `0x08ACBCF8` after
+43 cache operations. Fifteen GE lists and sixteen black frames remain;
+title boot is unverified. See [continuation evidence](../research/rtc-tick.md).
+
 **VERIFIED, 2026-11-17 further object continuation.** Coverage is
 686 roots / 41,585 instruction words. The additional guarded call at
 `0x08ACB8A0` follows file-backed slot `0x08BD07B8` to

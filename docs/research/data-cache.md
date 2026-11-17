@@ -150,3 +150,14 @@ cache lines and remains subject to generation's code-overlap checks.
 Synthetic tests cover unchanged coherent bytes, return ABI, wrong null
 lengths, null invalidation and requests crossing the reviewed file lines.
 These contracts do not establish general PSP cache timing or device DMA.
+
+**VERIFIED later exact-input continuation:** a second null-address
+writeback requests `0x40` bytes. The profile admits exactly the two
+observed null shapes, `0x40` and `0x80`, and still rejects adjacent
+lengths and null invalidation. A subsequent `0x40`-byte writeback from
+`0x08B9C690` reaches into the next file-backed cache line, so the
+checked lease is now `[0x08B9C600, 0x08B9C700)`. The added line
+contains data and metadata, not discovered instructions; generation
+enforces that non-overlap. Synthetic tests cover both observed request
+shapes, unchanged coherent bytes and requests crossing the outer lease.
+The latest bounded run completes 43 cache operations, 34 writebacks.

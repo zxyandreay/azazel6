@@ -40,10 +40,11 @@ std::shared_ptr<DataCacheState> register_data_cache_hle(psprecomp::Runtime& rt,
             address >= psprecomp::GuestMemory::kVramPhysicalBase &&
             finish <= static_cast<std::uint64_t>(psprecomp::GuestMemory::kVramPhysicalBase) +
                 runtime.memory().vram_size();
-        // The observed guest issues a 128-byte writeback at address zero.
+        // The observed guest issues 64- and 128-byte writebacks at address zero.
         // This cache operation never reads guest bytes; the pinned PSP
         // autotest also reports success for null-address writebacks.
-        const bool null_writeback = writeback && address == 0u && size == 0x80u;
+        const bool null_writeback = writeback && address == 0u &&
+            (size == 0x40u || size == 0x80u);
         if ((size >= 0x10000u && !large_owned) ||
             (!(address >= begin && finish <= end) && !extra && !vram_writeback && !null_writeback)) {
             runtime.stop("Data-cache range outside verified coherent startup memory"); return;

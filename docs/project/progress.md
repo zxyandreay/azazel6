@@ -29,7 +29,7 @@ Azazel6 is not playable. See
 | Idle timeouts | VERIFIED synthetic deadlines ordered with LCD edges, batched timeout/display wakeups, priority selection, subframe event budgets and preserved thread context; no runnable CPU time or callback delivery; see [ADR-0004](../decisions/ADR-0004-bounded-idle-timeouts.md) |
 | UMD continuation | VERIFIED native media-worker completion and UID deletion with actual disc data; startup advances to a new guarded callback; see [local media evidence](../research/local-media-continuation.md) |
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
-| Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB, canonical VRAM writebacks, the exact null/0x80 writeback and reviewed three-line GIDX file data; code/alias/unowned ranges reject |
+| Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB, canonical VRAM writebacks, exact null/0x40 and null/0x80 writebacks, and reviewed four-line file data; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
 | Fixed pools | VERIFIED single-block creation, immediate allocation, free/delete and shared ownership; multi-block/waiting services remain rejecting |
 | Language settings | VERIFIED explicit English/Cross defaults, checked runtime-local get/set and caller-stack system button preference query; no host locale dependency |
@@ -44,7 +44,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 686 reviewed roots / 41,585 words. Calendar/libc time, the sixth object's checked virtual tail path and bounded null/GIDX cache writebacks execute. A further object dispatch uses file-backed slot `0x08BD07B8`; the next missing AOT function is `0x08ACB200`. Later indirect calls remain trapped. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [continuation evidence](../research/rtc-tick.md). |
+| Native entry execution | VERIFIED 694 reviewed roots / 41,706 words. Calendar/libc time, the sixth object's checked virtual tail path, second object dispatch and bounded null/file-backed cache writebacks execute. The next missing AOT function is `0x08ACBCF8`; later indirect calls remain trapped. One VBLANK controller read, sixteen display frames, fifteen GE lists, 43 cache operations and zero nonblack pixels. See [continuation evidence](../research/rtc-tick.md). |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

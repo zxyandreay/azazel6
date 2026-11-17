@@ -146,3 +146,19 @@ into a nonoverlapping AOT root. The 686-root / 41,585-word run next
 stops at missing direct helper `0x08ACB200`, called from
 `0x08AEC8F0`. Later indirect calls remain trapped. The validated ISO
 run has fifteen GE lists, sixteen black display frames and no title.
+
+**VERIFIED, 2026-11-17 second object continuation:** exact direct helper
+`0x08ACB200` executes. The object at `0x09CD6300` changes the live
+target at `0x08ACD868` from the first checked vtable family to
+file-backed slot `0x08BCFA90` (`0x08ACCEF0`). Its guarded methods
+use slots `0x08BCFABC`, `0x08BCFAC0`, `0x08BCFAC4`,
+`0x08BCFA94` and `0x08BCFAB0`, with observed targets
+`0x08ACC67C`, `0x08ACCE50`, `0x08ACCE18`, `0x08ACCF74`
+and `0x08ACCFC8`/`0x08ACCFD0` through the shared accessors.
+The second null and extended file-backed cache requests complete
+under narrow contracts. A later tail call at `0x08ACD65C` observes
+file-backed slot `0x08BD0794` and executes `0x08ACD6F0`.
+The 694-root / 41,706-word bounded ISO run next stops at missing
+direct helper `0x08ACBCF8`. It reports 43 cache operations and 34
+writebacks; fifteen GE lists and sixteen uniformly black frames are
+unchanged. This is host-native game startup research, not title boot.

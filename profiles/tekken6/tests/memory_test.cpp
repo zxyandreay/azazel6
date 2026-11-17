@@ -97,16 +97,18 @@ void cache_contracts() {
     call(*writer, begin, 0, 0x3EE30821u);
     writer->memory().store32(begin, 0x13579BDFu);
     call(*writer, 0u, 0x80u, 0x3EE30821u);
-    check(!writer->stopped() && writes->writeback_ranges == 3 && writes->completed_ranges == 3 &&
+    call(*writer, 0u, 0x40u, 0x3EE30821u);
+    check(!writer->stopped() && writes->writeback_ranges == 4 && writes->completed_ranges == 4 &&
           writer->cpu().gpr[2] == 0 && writer->cpu().pc == 0x08001800u &&
           writer->memory().load32(data + 4) == 0xCAFEBABEu &&
           writer->memory().load32(begin) == 0x13579BDFu,
           "Null-range writeback changed coherent data or return ABI");
     call(*writer, data + 4, 32);
-    check(writer->stopped() && writes->completed_ranges == 3, "Writeback lease widened invalidation");
+    check(writer->stopped() && writes->completed_ranges == 4, "Writeback lease widened invalidation");
     for (auto [address, size] : {std::pair{data - 1, 1u}, {data + 63, 2u}, {data + 64, 1u},
                                {0xFFFFFFFFu, 2u}, {begin, 65536u}, {0x88010000u, 4u},
-                               {0u, 0u}, {0u, 0x7Fu}, {0u, 0x81u}}) {
+                               {0u, 0u}, {0u, 0x3Fu}, {0u, 0x41u},
+                               {0u, 0x7Fu}, {0u, 0x81u}}) {
         auto bad = std::make_unique<psprecomp::Runtime>();
         const auto rejected_write = register_data_cache_hle(*bad, begin, end, {{data, data + 64}});
         call(*bad, address, size, 0x3EE30821u);
@@ -116,19 +118,22 @@ void cache_contracts() {
     constexpr auto file_lines = begin - 256u;
     auto file_writer = std::make_unique<psprecomp::Runtime>();
     const auto file_state = register_data_cache_hle(*file_writer, begin, end,
-        {{file_lines, file_lines + 192u}});
+        {{file_lines, file_lines + 256u}});
     file_writer->memory().store32(file_lines + 16u, 0x12345678u);
+    file_writer->memory().store32(file_lines + 0x90u, 0x87654321u);
     call(*file_writer, file_lines + 16u, 0x80u, 0x3EE30821u);
-    check(!file_writer->stopped() && file_state->completed_ranges == 1u &&
-          file_state->writeback_ranges == 1u &&
-          file_writer->memory().load32(file_lines + 16u) == 0x12345678u,
-          "Three-line file-backed writeback lost coherent data");
+    call(*file_writer, file_lines + 0x90u, 0x40u, 0x3EE30821u);
+    check(!file_writer->stopped() && file_state->completed_ranges == 2u &&
+          file_state->writeback_ranges == 2u &&
+          file_writer->memory().load32(file_lines + 16u) == 0x12345678u &&
+          file_writer->memory().load32(file_lines + 0x90u) == 0x87654321u,
+          "Four-line file-backed writeback lost coherent data");
     for (const auto [address, size] : {
-            std::pair{file_lines + 16u, 0xB1u},
+            std::pair{file_lines + 0x90u, 0x71u},
             std::pair{file_lines - 1u, 0x80u}}) {
         auto bad = std::make_unique<psprecomp::Runtime>();
         const auto rejected = register_data_cache_hle(*bad, begin, end,
-            {{file_lines, file_lines + 192u}});
+            {{file_lines, file_lines + 256u}});
         call(*bad, address, size, 0x3EE30821u);
         check(bad->stopped() && !rejected->completed_ranges &&
               bad->cpu().gpr[2] == 0xDEADBEEFu,
@@ -140,6 +145,12 @@ void cache_contracts() {
     check(null_invalidate->stopped() && !invalidation_state->completed_ranges &&
           null_invalidate->cpu().gpr[2] == 0xDEADBEEFu,
           "Null-range writeback widened invalidation");
+    auto null_invalidate_64 = std::make_unique<psprecomp::Runtime>();
+    const auto invalidate_64 = register_data_cache_hle(*null_invalidate_64, begin, end);
+    call(*null_invalidate_64, 0u, 0x40u, 0x34B9FA9Eu);
+    check(null_invalidate_64->stopped() && !invalidate_64->completed_ranges &&
+          null_invalidate_64->cpu().gpr[2] == 0xDEADBEEFu,
+          "64-byte null writeback widened invalidation");
     auto code = std::make_unique<psprecomp::Runtime>();
     const auto code_state = register_data_cache_hle(*code, begin, end, {{data, data + 64}});
     code->register_function(data, [](auto&, auto&) {}, "synthetic_code");

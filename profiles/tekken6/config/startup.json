@@ -495,6 +495,14 @@
     "0x08AEBB00",
     "0x08AEC8CC",
     "0x08ACD838",
+    "0x08ACB200",
+    "0x08ACCEF0",
+    "0x08ACCFC8",
+    "0x08ACCFD0",
+    "0x08ACCE50",
+    "0x08ACCE18",
+    "0x08ACCF74",
+    "0x08ACD6F0",
     "0x08868124",
     "0x088AB8D0",
     "0x0889DF24",
@@ -742,10 +750,6 @@
       "register": 3
     },
     {
-      "site": "0x08ACB79C",
-      "register": 2
-    },
-    {
       "site": "0x08ACB780",
       "register": 2
     },
@@ -932,6 +936,31 @@
   ],
   "pointer_calls": [
     {
+      "site": "0x08ACB79C",
+      "register": 2,
+      "pointers": ["0x08BCFB88"]
+    },
+    {
+      "site": "0x08ACCFAC",
+      "register": 3,
+      "pointers": ["0x08BCFAC4"]
+    },
+    {
+      "site": "0x08ACCF4C",
+      "register": 2,
+      "pointers": ["0x08BCFAC4"]
+    },
+    {
+      "site": "0x08ACCF3C",
+      "register": 7,
+      "pointers": ["0x08BCFAC0"]
+    },
+    {
+      "site": "0x08ACCF14",
+      "register": 2,
+      "pointers": ["0x08BCFABC"]
+    },
+    {
       "site": "0x08ACB8A0",
       "register": 2,
       "pointers": ["0x08BD07B8"]
@@ -954,7 +983,7 @@
     {
       "site": "0x08ACD890",
       "register": 2,
-      "pointers": ["0x08BCF9D4"]
+      "pointers": ["0x08BCF9D4", "0x08BCFA94"]
     },
     {
       "site": "0x08ACCCA4",
@@ -974,7 +1003,7 @@
     {
       "site": "0x08ACD868",
       "register": 2,
-      "pointers": ["0x08BCF9D0"]
+      "pointers": ["0x08BCF9D0", "0x08BCFA90"]
     },
     {
       "site": "0x08ACB844",
@@ -1044,12 +1073,12 @@
     {
       "site": "0x08AEB38C",
       "register": 3,
-      "pointers": ["0x08BCF8F4", "0x08BCF9F4"]
+      "pointers": ["0x08BCF8F4", "0x08BCF9F4", "0x08BCFAB4"]
     },
     {
       "site": "0x08AEB35C",
       "register": 2,
-      "pointers": ["0x08BCF8F0", "0x08BCF9F0"]
+      "pointers": ["0x08BCF8F0", "0x08BCF9F0", "0x08BCFAB0"]
     },
     {
       "site": "0x08ACC924",
@@ -1868,7 +1897,8 @@
       "site": "0x08ACD65C",
       "register": 25,
       "pointers": [
-        "0x08BD070C"
+        "0x08BD070C",
+        "0x08BD0794"
       ]
     },
     {
@@ -2128,7 +2158,7 @@
   "cache_writeback_spans": [
     {
       "begin": "0x08B9C600",
-      "end": "0x08B9C6C0"
+      "end": "0x08B9C700"
     },
     {
       "begin": "0x08BEF340",
