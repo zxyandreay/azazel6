@@ -221,3 +221,23 @@ This does not establish title-screen boot.
 
 **PLANNED:** cover the inspected `0x0882421C` helper and continue the
 bounded run. Investigate the computed transfer only if observed.
+
+## Post-tail helpers and state transition
+
+**VERIFIED, 2026-11-19:** the inspected `0x0882421C`, `0x088BF718`,
+`0x088BF8AC`, and `0x088BEF10` roots are covered on the bounded path.
+The latter roots include a thunk into a 201-word CFG; other direct
+callees in that CFG remain unadmitted until their paths execute.
+The existing tail at `0x0885F16C` then observes `0x088ADA70` from
+checked file-backed vtable slot `0x08B9605C`. Its indirect call at
+`0x088ADB30` remains terminally trapped and has not executed.
+
+**VERIFIED bounded stop:** the 823-root / 49,379-word slice stops at
+missing direct function `0x088B8764` (return address `0x088ADAE0`).
+One volatile-memory lock remains held; fifteen GE lists, one
+controller read, sixteen black display frames, and a captured
+480×272 scanout with zero nonblack pixels remain. Title-screen boot
+is not verified.
+
+**PLANNED:** inspect the observed direct helper's callees and
+continue the exact-input run under the same bound.

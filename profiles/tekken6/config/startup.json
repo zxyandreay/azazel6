@@ -1,5 +1,10 @@
 {
   "roots": [
+    "0x088ADA70",
+    "0x088BEF10",
+    "0x088BF8AC",
+    "0x088BF718",
+    "0x0882421C",
     "0x088AD808",
     "0x0888B0C4",
     "0x0888E2D4",
@@ -869,6 +874,10 @@
     }
   ],
   "trapped_calls": [
+    {
+      "site": "0x088ADB30",
+      "register": 2
+    },
     {
       "site": "0x088B5CCC",
       "register": 3
@@ -2374,7 +2383,8 @@
         "0x08BBB4FC",
         "0x08BCB1B4",
         "0x08B94EE4",
-        "0x08B94BF4"
+        "0x08B94BF4",
+        "0x08B9605C"
       ]
     },
     {
