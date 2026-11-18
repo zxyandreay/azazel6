@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 volatile-memory continuation.** The
+774-root / 46,118-word exact-input slice returns from the observed
+mode-zero `sceKernelVolatileMemTryLock` through checked live-partition
+outputs. It next stops at guarded tail `0x08808314`, target
+`0x088891A0`. Sixteen captured frames remain black; title boot is
+open. See [contract and execution evidence](../research/volatile-memory.md).
+
 **VERIFIED, 2026-11-18 watched object continuation.** A witnessed
 constructor store and exact target guard pass the callback at
 `0x0886AEC4`. The bounded slice covers 762 roots / 45,442 words and

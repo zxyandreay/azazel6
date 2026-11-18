@@ -31,6 +31,7 @@ Azazel6 is not playable. See
 | Callbacks | VERIFIED inactive ownership, deletion and exit registration; delivery remains unimplemented |
 | Data-cache ranges | VERIFIED checked coherent startup RAM operations; bounded live-partition writebacks through 512 KiB, canonical VRAM writebacks, exact null/0x40 and null/0x80 writebacks, and reviewed four-line file data; code/alias/unowned ranges reject |
 | Shared guest memory | VERIFIED non-overlapping stack/heap ownership, allocation/free/alignment |
+| Volatile memory | VERIFIED synthetic mode-zero try-lock and unlock with runtime-owned state, checked live-partition outputs, busy and invalid-mode errors; exact-input native startup completes one try-lock. Blocking lock and suspend/resume remain unsupported; see [evidence](../research/volatile-memory.md) |
 | Fixed pools | VERIFIED single-block creation, immediate allocation, free/delete and shared ownership; multi-block/waiting services remain rejecting |
 | Language settings | VERIFIED explicit English/Cross defaults, checked runtime-local get/set and caller-stack system button preference query; no host locale dependency |
 | Event flags | VERIFIED create/delete, set/clear, polling, queued waits, FIFO wakeups and cancellation; timeouts remain rejecting |
@@ -44,7 +45,7 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 762 reviewed roots / 45,442 words. Calendar/libc time, checked virtual tail paths, callback table targets and bounded null/file-backed cache writebacks execute. A witnessed constructor callback and further checked object methods execute; the next stop is guarded object call `0x0885FCF4`, target `0x0888A1CC`. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [continuation evidence](../research/startup-vtables-2026-11-18.md). |
+| Native entry execution | VERIFIED 774 reviewed roots / 46,118 words. Calendar/libc time, checked virtual tail paths, callback table targets and bounded null/file-backed cache writebacks execute. Further checked object calls and direct helpers reach and return from mode-zero volatile-memory try-lock; the next stop is guarded tail `0x08808314`, target `0x088891A0`. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [continuation evidence](../research/volatile-memory.md). |
 | Exception boundaries | VERIFIED 53 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |

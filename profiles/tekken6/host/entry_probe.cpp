@@ -15,6 +15,7 @@
 #include "azazel6/io.hpp"
 #include "azazel6/display.hpp"
 #include "azazel6/rtc.hpp"
+#include "azazel6/volatile_memory.hpp"
 #include "azazel6/ge_lists.hpp"
 #include <algorithm>
 #include <chrono>
@@ -123,6 +124,7 @@ int main(int argc, char** argv) {
         const auto allocator = std::make_shared<azazel6::GuestAllocator>(
             (image_end + 255u) & ~255u, stack_top - bootstrap_size);
         const auto partition = azazel6::register_memory_hle(*rt, allocator);
+        const auto volatile_memory = azazel6::register_volatile_memory_hle(*rt, partition);
         const auto data_cache = azazel6::register_data_cache_hle(*rt,
             (image_segment->vaddr + image_segment->file_size + 63u) & ~63u, stack_top,
             AZAZEL6_CACHE_WRITEBACK_SPANS, partition);
@@ -181,6 +183,8 @@ int main(int argc, char** argv) {
                   << " sp=" << hex32(rt->cpu().gpr[29]) << " reason=" << rt->stop_reason() << std::endl;
         std::cout << "data_cache_ranges=" << data_cache->completed_ranges
                   << " writeback_ranges=" << data_cache->writeback_ranges << std::endl;
+        std::cout << "volatile_memory_locks=" << volatile_memory->successful_locks
+                  << " volatile_memory_held=" << volatile_memory->locked << std::endl;
         std::cout << "edram_size_reads=" << graphics_memory->size_reads
                   << " edram_address_reads=" << graphics_memory->address_reads << std::endl;
         std::cout << "ge_callback_count=" << ge_callbacks->count() << std::endl;

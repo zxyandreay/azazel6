@@ -3,7 +3,7 @@ option(AZAZEL6_PROBE_FAST_BUILD "Disable entry-probe optimization for coverage r
 add_library(azazel6_bootstrap STATIC host/bootstrap.cpp host/threads.cpp host/memory.cpp host/module.cpp host/media.cpp host/media_hash.cpp
     host/fixed_pools.cpp host/settings.cpp host/event_flags.cpp host/graphics_memory.cpp host/ge_callbacks.cpp
     host/interrupts.cpp host/display.cpp host/ge_lists.cpp host/ge_state.cpp host/ge_clear.cpp host/power.cpp
-    host/io.cpp host/controller.cpp host/rtc.cpp)
+    host/io.cpp host/controller.cpp host/rtc.cpp host/volatile_memory.cpp)
 target_include_directories(azazel6_bootstrap PUBLIC include)
 target_link_libraries(azazel6_bootstrap PUBLIC psprecomp_core)
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
@@ -70,6 +70,9 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_executable(azazel6_ge_callback_tests tests/ge_callbacks_test.cpp)
     target_link_libraries(azazel6_ge_callback_tests PRIVATE azazel6_bootstrap)
     add_test(NAME azazel6_ge_callbacks COMMAND azazel6_ge_callback_tests)
+    add_executable(azazel6_volatile_memory_tests tests/volatile_memory_test.cpp)
+    target_link_libraries(azazel6_volatile_memory_tests PRIVATE azazel6_bootstrap)
+    add_test(NAME azazel6_volatile_memory COMMAND azazel6_volatile_memory_tests)
 endif()
 if(AZAZEL6_ENTRY_DIR)
     if(NOT EXISTS "${AZAZEL6_ENTRY_DIR}/entry.cpp" OR NOT EXISTS "${AZAZEL6_ENTRY_DIR}/probe_config.hpp" OR NOT EXISTS "${AZAZEL6_ENTRY_DIR}/imports.cpp")
