@@ -556,6 +556,19 @@
     "0x088787C4",
     "0x08869644",
     "0x0886AE60",
+    "0x0886B45C",
+    "0x0892FD40",
+    "0x0896DFF8",
+    "0x08970390",
+    "0x08A78E78",
+    "0x08A78A60",
+    "0x08B7C874",
+    "0x088687C8",
+    "0x08869590",
+    "0x0886A958",
+    "0x0886A8F0",
+    "0x0886A8D0",
+    "0x0886B790",
     "0x0887C39C",
     "0x08B13BC8",
     "0x08868124",
@@ -801,23 +814,27 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x08869694",
-      "register": 3
+      "site": "0x0886898C",
+      "register": 2
     },
     {
-      "site": "0x0886AEC4",
+      "site": "0x08868E5C",
+      "register": 2
+    },
+    {
+      "site": "0x08868A3C",
+      "register": 2
+    },
+    {
+      "site": "0x0886960C",
       "register": 5
     },
     {
-      "site": "0x08868950",
-      "register": 2
+      "site": "0x08869634",
+      "register": 5
     },
     {
-      "site": "0x08868A0C",
-      "register": 2
-    },
-    {
-      "site": "0x08868DD0",
+      "site": "0x0886B678",
       "register": 2
     },
     {
@@ -1015,9 +1032,29 @@
   ],
   "pointer_calls": [
     {
+      "site": "0x08868950",
+      "register": 2,
+      "pointers": ["0x08B915C4"]
+    },
+    {
+      "site": "0x08868DD0",
+      "register": 2,
+      "pointers": ["0x08B915AC"]
+    },
+    {
+      "site": "0x08868A0C",
+      "register": 2,
+      "pointers": ["0x08B915BC"]
+    },
+    {
+      "site": "0x08869694",
+      "register": 3,
+      "pointers": ["0x08B915D0", "0x08B90E80"]
+    },
+    {
       "site": "0x0886966C",
       "register": 2,
-      "pointers": ["0x08B915C8"]
+      "pointers": ["0x08B915C8", "0x08B90E78"]
     },
     {
       "site": "0x0886A878",
@@ -2151,6 +2188,11 @@
   },
   "immediate_calls": [
     {
+      "site": "0x0886AEC4",
+      "register": 5,
+      "sources": [{"upper": "0x0886B3E8", "lower": "0x0886B3F0"}]
+    },
+    {
       "site": "0x08865504",
       "register": 5,
       "sources": ["0x088655C0"]
@@ -2357,6 +2399,10 @@
     }
   ],
   "trapped_tails": [
+    {
+      "site": "0x08A78B78",
+      "register": 4
+    },
     {
       "site": "0x08ACC654",
       "register": 25

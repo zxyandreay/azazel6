@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 watched object continuation.** A witnessed
+constructor store and exact target guard pass the callback at
+`0x0886AEC4`. The bounded slice covers 762 roots / 45,442 words and
+stops at a different guarded object call, `0x0885FCF4`. Sixteen
+captured frames remain black; title-screen boot is open. See
+[callback provenance and execution](../research/startup-vtables-2026-11-18.md#watched-constructor-callback-continuation).
+
 **VERIFIED, 2026-11-18 guarded vtable continuation.** The exact-input
 bounded slice covers 749 roots / 44,814 instruction words. Checked
 file-backed object calls and a table tail execute before the terminal

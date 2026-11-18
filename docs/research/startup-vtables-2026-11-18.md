@@ -45,8 +45,34 @@ or physical ARM64 evidence.
 
 ## Next experiment
 
-**PLANNED:** watch writes to the observed object field and trace its
-constructor/source instructions. Inspect `0x0886B45C` and its direct
+**PLANNED at the 749-root checkpoint; completed below:** watch writes to
+the observed object field and trace its constructor/source instructions.
+Inspect `0x0886B45C` and its direct
 callees with later indirect sites trapped. Admit only a proven target
 source and rerun the bounded exact-input slice. Milestones 003 and 004
 remain open.
+
+## Watched constructor callback continuation
+
+**VERIFIED, 2026-11-18:** a write watch on guest address `0x09103EA8`
+recorded one main-thread 32-bit store, changing zero to `0x0886B45C`.
+The watch logs dispatch PC `0x0886B3E8`; exact source instructions form
+the target at `0x0886B3E8/0x0886B3F0` and store it at `0x0886B3F4`
+to object offset `0x68`. The call path reads that field at
+`0x0886AE80` and reaches it through `0x0886AEC4`. The profile's
+immediate-source guard admits only the formed target; the live runtime
+guard rejects any other value. This witness applies to the observed
+object and run, not arbitrary future object lifetimes.
+
+**VERIFIED execution:** `0x0886B45C` and its inspected direct callees
+execute. The two `0x08869694` calls then use checked file-backed slots
+`0x08B915D0` and `0x08B90E80`. Later methods use checked slots
+`0x08B915BC` at `0x08868A0C`, `0x08B915AC` at `0x08868DD0`, and
+`0x08B915C4` at `0x08868950`. Other indirect branches remain trapped.
+The 762-root / 45,442-word bounded run next stops at the existing
+guard `0x0885FCF4`, observing a new object's target `0x0888A1CC`
+and vtable `0x08B93C68`. Fifteen GE lists, one controller read and
+sixteen uniformly black frames remain. Title-screen boot is not verified.
+
+**NEXT:** inspect `0x0888A1CC` and the observed vtable slot at
+`0x08B93C7C`, then rerun with later transfers guarded.
