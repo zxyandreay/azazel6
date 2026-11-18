@@ -178,3 +178,25 @@ not verified. The generated slice, media and capture remain ignored in
 
 **PLANNED:** inspect and cover `0x088AFDA0`, then observe the target
 and source at the guarded `0x088AD354` call.
+
+## Continuation through another initializer and helper
+
+**VERIFIED, 2026-11-19:** inspected direct helper `0x088AFDA0`
+executes. The call at `0x088AD354` observes target `0x088ADCC0`
+through file-backed slot `0x08B96128`; the target has a four-word
+CFG. The path then executes `0x0882D6C8`, whose exact two-word CFG
+returns immediately, and `0x088ABF60`. Within the latter helper,
+`0x088B5C40` and `0x088B5E90` each observe `0x0885E644` through
+the checked file-backed slot `0x08B8F860`. Later indirect calls at
+`0x088B5CCC` and `0x088B5DCC`, and tails at `0x088AD3C8` and
+`0x088AD438`, retain terminal guards.
+
+**VERIFIED bounded stop:** the 814-root / 48,573-word slice stops at
+missing direct function `0x0888E9EC` (return address `0x088B5EE4`).
+One volatile-memory lock remains held; fifteen GE lists and sixteen
+black display frames remain. The captured 480×272 scanout has zero
+nonblack pixels. No title screen or physical ARM64 execution is
+verified.
+
+**PLANNED:** inspect `0x0888E9EC` and its indirect site at
+`0x0888EA78`, then continue under the bounded exact-input guard.

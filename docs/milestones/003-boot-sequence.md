@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 helper continuation.** The 814-root /
+48,573-word exact-input slice passes another checked initializer and
+helper path, then stops at missing direct function `0x0888E9EC`.
+Captured scanout remains black. Title-screen boot is open; see
+[latest evidence](../research/startup-vtables-2026-11-18.md#continuation-through-another-initializer-and-helper).
+
 **VERIFIED, 2026-11-18 next object continuation.** The
 810-root / 48,153-word exact-input slice passes further checked
 object calls and stops at missing direct function `0x088AFDA0`.
