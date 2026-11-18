@@ -241,3 +241,23 @@ is not verified.
 
 **PLANNED:** inspect the observed direct helper's callees and
 continue the exact-input run under the same bound.
+
+## Nested object callback after the post-tail state
+
+**VERIFIED, 2026-11-19:** direct helper `0x088B8764` executes through
+the observed branch to five-word helper `0x08A66D1C`. The call at
+`0x088ADB30` then reads checked file-backed slot `0x08B95AA0`,
+containing target `0x088A53DC`. The latter has a four-word inspected
+CFG. The path next executes seven-word direct helper `0x088B1654`.
+Potential tails at `0x088ADC40` and `0x088ADC88` remain terminally
+trapped and unobserved.
+
+**VERIFIED bounded stop:** the 827-root / 49,652-word exact-input
+slice stops at missing direct function `0x088B8A10` (return address
+`0x088ADB98`). One volatile-memory lock remains held. Fifteen GE
+lists, one controller read, sixteen black display frames, and zero
+nonblack pixels in the captured 480×272 scanout remain. Title-screen
+boot is not verified.
+
+**PLANNED:** cover the inspected `0x088B8A10` CFG and continue the
+bounded path.

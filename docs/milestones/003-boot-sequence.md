@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 nested callback continuation.** The
+827-root / 49,652-word exact-input slice passes another checked
+object callback and stops at missing direct function `0x088B8A10`.
+Captured scanout remains black; title-screen boot is open. See
+[bounded evidence](../research/startup-vtables-2026-11-18.md#nested-object-callback-after-the-post-tail-state).
+
 **VERIFIED, 2026-11-19 post-tail helper continuation.** The
 823-root / 49,379-word exact-input slice passes a checked tail into
 `0x088ADA70` and stops at missing direct function `0x088B8764`.
