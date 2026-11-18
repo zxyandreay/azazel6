@@ -131,3 +131,22 @@ ignored `local/`.
 **PLANNED:** inspect `0x0888AEFC` and its direct callees. Keep the
 unreached calls at `0x0886CF8C` and `0x0888CCE8` trapped until their
 targets and sources are observed. Continue bounded exact-input runs.
+
+## Repeated checked helper after the callback
+
+**VERIFIED, 2026-11-18:** `0x0888AEFC` has a 54-word inspected CFG
+and calls the already covered `0x08878CD4`. The bounded run then
+observed `0x0888CCE8` and `0x0888CD48` reaching `0x0885E644`
+through the checked file-backed slot `0x08B8F860`. After an inspected
+root at `0x0888C7E4`, its call at `0x0888C860` used that same slot
+and target. The guard at each call admits only this source and value.
+
+**VERIFIED bounded stop:** the 803-root / 47,657-word slice next stops
+at missing direct function `0x0888C56C` (return address `0x0888C944`).
+One volatile-memory lock remains held; fifteen GE lists and sixteen
+black display frames remain, and the captured 480×272 scanout has zero
+nonblack pixels. The title-screen gate remains open.
+
+**PLANNED:** inspect `0x0888C56C` and its indirect call at
+`0x0888C5FC` before admitting either. `0x0886CF8C` remains trapped
+and unobserved.

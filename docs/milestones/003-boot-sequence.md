@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 repeated helper continuation.** The
+803-root / 47,657-word bounded slice passes three more checked calls
+through file-backed slot `0x08B8F860` and stops at missing direct
+function `0x0888C56C`. Captured scanout remains black. Title-screen
+boot is open; see
+[latest evidence](../research/startup-vtables-2026-11-18.md#repeated-checked-helper-after-the-callback).
+
 **VERIFIED, 2026-11-18 later object and callback continuation.** The
 801-root / 47,409-word exact-input slice passes additional checked
 vtable calls and a watched writable callback, then stops at missing
