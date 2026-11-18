@@ -76,3 +76,25 @@ sixteen uniformly black frames remain. Title-screen boot is not verified.
 
 **NEXT:** inspect `0x0888A1CC` and the observed vtable slot at
 `0x08B93C7C`, then rerun with later transfers guarded.
+
+## Object chain after volatile-memory acquisition
+
+**VERIFIED, 2026-11-18:** after the checked volatile-memory try-lock,
+the existing tail at `0x08808314` uses file-backed slot `0x08B93CC8`
+to reach `0x088891A0`. Its direct helper `0x0885EC24` is covered with
+two possible indirect tails trapped; that helper was not observed in
+the latest run. The next object call at `0x0885FCF4` uses checked slot
+`0x08B93FDC` to reach `0x0888A788`. Its observed call at
+`0x0888A7E4` uses `0x08B93E50` to reach `0x08893F44`.
+
+The same bounded path executes direct helper `0x0888A6BC`, then its
+checked call at `0x0888A844` uses `0x08B93EA0` to reach
+`0x08893F84`. Later indirect sites remain terminal guards. The
+781-root / 46,379-word slice stops at `0x0885FCF4` with a different
+object vtable `0x08B93D58` and live target `0x0888893C`. The observed
+slot would be `0x08B93D6C`; it has not been admitted. One volatile lock
+remains held. Fifteen GE lists and sixteen uniformly black frames do
+not establish title-screen boot.
+
+**NEXT:** inspect `0x0888893C` and the exact slot, then continue the
+bounded path without widening other object dispatches.

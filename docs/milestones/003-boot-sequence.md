@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 post-lock object continuation.** The
+781-root / 46,379-word ISO-backed slice passes checked object calls
+after volatile-memory acquisition. It stops at guarded call
+`0x0885FCF4` with a new target `0x0888893C`. Sixteen black frames
+leave title-screen boot open; see
+[bounded continuation](../research/startup-vtables-2026-11-18.md#object-chain-after-volatile-memory-acquisition).
+
 **VERIFIED, 2026-11-18 volatile-memory continuation.** The
 774-root / 46,118-word exact-input slice returns from the observed
 mode-zero `sceKernelVolatileMemTryLock` through checked live-partition
