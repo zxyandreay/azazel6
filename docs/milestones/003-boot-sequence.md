@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 guarded vtable continuation.** The exact-input
+bounded slice covers 749 roots / 44,814 instruction words. Checked
+file-backed object calls and a table tail execute before the terminal
+guard at `0x0886AEC4` observes a callback from a writable object field.
+The sixteen captured frames remain black. Title-screen boot is open;
+see [source and execution evidence](../research/startup-vtables-2026-11-18.md).
+
 **VERIFIED, 2026-11-18 watched callback table checkpoint.** The
 exact-input bounded slice covers 729 roots / 44,242 instruction words.
 It passes the `0x0893A320` call through two write-watched BSS table

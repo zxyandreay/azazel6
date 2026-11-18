@@ -43,6 +43,7 @@ Reviewed 2026-10-28. Evidence labels apply to individual claims:
 - [Startup coverage and reachability](research/startup-coverage.md)
 - [Guarded constructor calls](research/constructor-calls.md)
 - [Watched startup callback table](research/watched-callback-table.md)
+- [Guarded startup vtables and callback boundary](research/startup-vtables-2026-11-18.md)
 - [Bounded AOT registration stack](research/aot-registration.md)
 - [Guarded graphics startup continuation](research/startup-indirect-2026-10-22.md)
 - [PortableKit compatibility and reuse](research/portablekit.md)
