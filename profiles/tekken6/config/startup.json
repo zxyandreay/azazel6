@@ -1,5 +1,9 @@
 {
   "roots": [
+    "0x088AD808",
+    "0x0888B0C4",
+    "0x0888E2D4",
+    "0x0888E9EC",
     "0x088ABF60",
     "0x0882D6C8",
     "0x088ADCC0",
@@ -1092,6 +1096,26 @@
   ],
   "pointer_calls": [
     {
+      "site": "0x0888E518",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888E4B8",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888E364",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888EA78",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
       "site": "0x088B5E90",
       "register": 3,
       "pointers": ["0x08B8F860"]
@@ -2130,6 +2154,11 @@
   ],
   "pointer_tails": [
     {
+      "site": "0x088AD438",
+      "register": 25,
+      "pointers": ["0x08B96018"]
+    },
+    {
       "site": "0x08869EA8",
       "register": 4,
       "pointers": ["0x08B91480"]
@@ -2579,8 +2608,8 @@
   ],
   "trapped_tails": [
     {
-      "site": "0x088AD438",
-      "register": 25
+      "site": "0x088AD970",
+      "register": 4
     },
     {
       "site": "0x088AD3C8",

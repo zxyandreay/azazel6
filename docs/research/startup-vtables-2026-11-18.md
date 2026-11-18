@@ -200,3 +200,24 @@ verified.
 
 **PLANNED:** inspect `0x0888E9EC` and its indirect site at
 `0x0888EA78`, then continue under the bounded exact-input guard.
+
+## Return to the new object's tail
+
+**VERIFIED, 2026-11-19:** `0x0888E9EC` and its inspected direct callee
+`0x0888E2D4` execute. Their calls at `0x0888EA78`, `0x0888E364`,
+`0x0888E4B8`, and `0x0888E518` each observe `0x0885E644` through
+the checked file-backed slot `0x08B8F860`. Inspected helper
+`0x0888B0C4` also executes. The object method then reaches its tail
+at `0x088AD438`: `0x088AD418` reads vtable slot `0x08B96018`,
+whose checked file-backed value is the observed target `0x088AD808`.
+That target's later computed transfer at `0x088AD970` remains trapped.
+
+**VERIFIED bounded stop:** the 818-root / 49,060-word exact-input slice
+stops at missing direct function `0x0882421C` (return address
+`0x088AD830`). One volatile-memory lock remains held. The run still
+records fifteen GE lists, one controller read, sixteen black display
+frames, and zero nonblack pixels in the captured 480×272 scanout.
+This does not establish title-screen boot.
+
+**PLANNED:** cover the inspected `0x0882421C` helper and continue the
+bounded run. Investigate the computed transfer only if observed.
