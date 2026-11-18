@@ -1,5 +1,8 @@
 {
   "roots": [
+    "0x0888CAF4",
+    "0x0888D148",
+    "0x08878CD4",
     "0x08AA17D0",
     "0x08804124",
     "0x08804238",
@@ -588,6 +591,23 @@
     "0x08893F44",
     "0x0888A6BC",
     "0x08893F84",
+    "0x0888893C",
+    "0x0888897C",
+    "0x08888944",
+    "0x08889350",
+    "0x0886C78C",
+    "0x0886F6F0",
+    "0x0889C9F0",
+    "0x0889C9F8",
+    "0x088E837C",
+    "0x08811F34",
+    "0x08872E58",
+    "0x0883FB2C",
+    "0x08917108",
+    "0x0886CDD0",
+    "0x0888ABF4",
+    "0x0888AA64",
+    "0x08889F30",
     "0x0887C39C",
     "0x08B13BC8",
     "0x08868124",
@@ -833,8 +853,12 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x0888A88C",
-      "register": 2
+      "site": "0x0888CCE8",
+      "register": 3
+    },
+    {
+      "site": "0x0886CF8C",
+      "register": 3
     },
     {
       "site": "0x0886898C",
@@ -1054,6 +1078,36 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x0888CB84",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888D1D4",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0886CEC0",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888AAF4",
+      "register": 2,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888A8CC",
+      "register": 2,
+      "pointers": ["0x08B93E50"]
+    },
+    {
+      "site": "0x0888A88C",
+      "register": 2,
+      "pointers": ["0x08B93EA0"]
+    },
     {
       "site": "0x0888A844",
       "register": 2,
@@ -1619,7 +1673,9 @@
         "0x08BB802C",
         "0x08B90D84",
         "0x08B93C7C",
-        "0x08B93FDC"
+        "0x08B93FDC",
+        "0x08B93D6C",
+        "0x08B93DA4"
       ]
     },
     {
@@ -1633,7 +1689,9 @@
         "0x08B90A68",
         "0x08B901E8",
         "0x08BB8030",
-        "0x08B90D88"
+        "0x08B90D88",
+        "0x08B93D70",
+        "0x08B93DA8"
       ]
     },
     {
@@ -2170,7 +2228,8 @@
         "0x08B95510",
         "0x08B95ED0",
         "0x08B91590",
-        "0x08B93CC8"
+        "0x08B93CC8",
+        "0x08B91700"
       ]
     },
     {
@@ -2233,6 +2292,11 @@
     "confirm_button": 1
   },
   "immediate_calls": [
+    {
+      "site": "0x0886C814",
+      "register": 6,
+      "sources": [{"upper": "0x0886CC40", "lower": "0x0886CC48"}]
+    },
     {
       "site": "0x0886AEC4",
       "register": 5,

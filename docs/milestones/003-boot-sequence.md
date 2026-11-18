@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 later object and callback continuation.** The
+801-root / 47,409-word exact-input slice passes additional checked
+vtable calls and a watched writable callback, then stops at missing
+direct function `0x0888AEFC`. Sixteen frames and the captured scanout
+remain black. Title-screen boot is open; see
+[bounded evidence](../research/startup-vtables-2026-11-18.md#later-object-dispatch-and-writable-callback).
+
 **VERIFIED, 2026-11-18 post-lock object continuation.** The
 781-root / 46,379-word ISO-backed slice passes checked object calls
 after volatile-memory acquisition. It stops at guarded call

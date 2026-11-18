@@ -98,3 +98,36 @@ not establish title-screen boot.
 
 **NEXT:** inspect `0x0888893C` and the exact slot, then continue the
 bounded path without widening other object dispatches.
+
+## Later object dispatch and writable callback
+
+**VERIFIED source and execution, 2026-11-18:** the existing object sites
+`0x0885FCF4` and `0x0885FBA4` used further checked file-backed slots
+`0x08B93D6C`, `0x08B93DA4`, `0x08B93D70`, and `0x08B93DA8`.
+The call sites `0x0888A88C` and `0x0888A8CC` used checked slots
+`0x08B93EA0` and `0x08B93E50`. The tail at `0x08808314` used
+`0x08B91700` to enter `0x0886C78C`. Each admitted target was observed
+under the bounded exact-input run and inspected before adding its root.
+
+**VERIFIED watched write:** `0x0886C814` loaded its target from a
+writable object field at `0x090A9460`. One main-thread store changed
+that field from zero to `0x0886CDD0`. The exact instructions at
+`0x0886CC40/0x0886CC48` form this address and `0x0886CC4C` stores
+it at object offset `0x60`. The immediate-source guard admits this
+observed callback only; the field's behavior across other lifetimes
+remains unverified. Its direct callees were inspected. The later calls
+at `0x0888AAF4`, `0x0886CEC0`, `0x0888D1D4`, and `0x0888CB84`
+each reached `0x0885E644` through the checked file-backed slot
+`0x08B8F860`. Other indirect transfers retain terminal guards.
+
+**VERIFIED bounded stop:** the 801-root / 47,409-word slice passes those
+calls and stops at missing direct function `0x0888AEFC` (return address
+`0x0888CC9C`). One volatile-memory lock is still held. The run records
+fifteen GE lists, one controller read, sixteen display frames, and a
+captured 480×272 scanout with zero nonblack pixels. It does not verify
+a title screen. Generated code, watched logs, and captures remain in
+ignored `local/`.
+
+**PLANNED:** inspect `0x0888AEFC` and its direct callees. Keep the
+unreached calls at `0x0886CF8C` and `0x0888CCE8` trapped until their
+targets and sources are observed. Continue bounded exact-input runs.
