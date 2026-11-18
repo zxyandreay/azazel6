@@ -150,3 +150,31 @@ nonblack pixels. The title-screen gate remains open.
 **PLANNED:** inspect `0x0888C56C` and its indirect call at
 `0x0888C5FC` before admitting either. `0x0886CF8C` remains trapped
 and unobserved.
+
+## Next object and initializer chain
+
+**VERIFIED, 2026-11-18:** `0x0888C56C` executes and its call at
+`0x0888C5FC` reads the checked file-backed slot `0x08B8F860`,
+reaching `0x0885E644`. The direct `0x0896A214` initializer executes;
+the previously trapped calls at `0x0886CF8C` and `0x0886D050`
+also use that same checked slot and target. The next object call at
+`0x0885FCF4` observes vtable `0x08B96000` and file-backed slot
+`0x08B96014`, containing `0x088AD1D4`.
+
+**VERIFIED source and execution:** the new method calls inspected direct
+helpers `0x088B5AEC` and `0x088AD0CC`. Its call at `0x088AD2A4`
+reads file-backed slot `0x08B960D8` to reach `0x088ADCD0`;
+`0x088AD2FC` reads `0x08B96088` to reach `0x088ADCE0`.
+Both targets have four-word inspected CFGs. The later call at
+`0x088AD354` remains terminally trapped and has not executed.
+
+**VERIFIED bounded stop:** the 810-root / 48,153-word exact-input slice
+stops first at missing direct function `0x088AFDA0` (return address
+`0x088AD344`). One volatile-memory lock remains held, with fifteen GE
+lists, one controller read, sixteen black display frames, and zero
+nonblack pixels in the captured 480×272 scanout. Title-screen boot is
+not verified. The generated slice, media and capture remain ignored in
+`local/`.
+
+**PLANNED:** inspect and cover `0x088AFDA0`, then observe the target
+and source at the guarded `0x088AD354` call.

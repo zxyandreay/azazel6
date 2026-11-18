@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-18 next object continuation.** The
+810-root / 48,153-word exact-input slice passes further checked
+object calls and stops at missing direct function `0x088AFDA0`.
+The captured scanout remains black; title-screen boot is open. See
+[object-chain evidence](../research/startup-vtables-2026-11-18.md#next-object-and-initializer-chain).
+
 **VERIFIED, 2026-11-18 repeated helper continuation.** The
 803-root / 47,657-word bounded slice passes three more checked calls
 through file-backed slot `0x08B8F860` and stops at missing direct
