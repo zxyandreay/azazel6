@@ -497,3 +497,28 @@ is not verified.
 
 **PLANNED:** inspect and cover `0x089469A0` with its indirect
 transfers guarded, then continue the bounded run.
+
+## Allocated object and paired descriptor calls
+
+**VERIFIED, 2026-11-19:** shared virtual call `0x0885FCF4`
+reaches `0x089469A0` through checked file-backed slot
+`0x08B9E39C`. Its direct allocator/helper chain
+`0x08955FD0` and `0x08955ADC` is covered.
+
+**VERIFIED target constraint, HYPOTHESIS source:** the paired
+object-field calls at `0x089469E0` and `0x08946A18` each
+observe `0x08948818`, matching checked file-backed slot
+`0x08B9E3D8`. The four-word target and both exact call targets
+are covered. The runtime write path for the two object fields
+has not been fully traced.
+
+**VERIFIED bounded stop:** the 891-root / 53,184-word exact-input
+slice stops at shared virtual call `0x0885FCF4`, observing target
+`0x089553C0` from checked file-backed slot `0x08B9F244`.
+One volatile-memory lock remains held. Fifteen GE lists, one
+controller read, sixteen black display frames and zero nonblack
+pixels in the captured 480×272 scanout remain. Title-screen boot
+is not verified.
+
+**PLANNED:** inspect and cover `0x089553C0` with its indirect
+transfers guarded, then continue the bounded run.
