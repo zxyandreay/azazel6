@@ -9,6 +9,7 @@
 #include "azazel6/power.hpp"
 #include "azazel6/controller.hpp"
 #include "azazel6/settings.hpp"
+#include "azazel6/utility_modules.hpp"
 #include "azazel6/graphics_memory.hpp"
 #include "azazel6/ge_callbacks.hpp"
 #include "azazel6/interrupts.hpp"
@@ -145,6 +146,7 @@ int main(int argc, char** argv) {
         azazel6::register_power_callback_hle(*rt, power, threads);
         azazel6::register_system_param_hle(*rt, threads, AZAZEL6_CONFIRM_BUTTON,
             local_timezone_minutes(host_now), partition, AZAZEL6_LANGUAGE);
+        const auto av_modules = azazel6::register_startup_av_modules_hle(*rt);
         const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.
@@ -271,6 +273,9 @@ int main(int argc, char** argv) {
                   << " sdk_argument=" << hex32(bootstrap->last_sdk_argument)
                   << " game_info_flags=" << hex32(bootstrap->game_info_flags)
                   << " compiler_version=" << hex32(bootstrap->compiler_version) << std::endl;
+        std::cout << "av_module_mask=" << hex32(av_modules->loaded_mask)
+                  << " av_module_loads=" << av_modules->successful_loads
+                  << " av_module_duplicates=" << av_modules->duplicate_loads << std::endl;
         std::cout << "power_clocks_mhz=" << power->pll_mhz << '/' << power->cpu_mhz << '/'
                   << power->bus_mhz << " power_clock_reads=" << power->pll_reads << '/'
                   << power->cpu_reads << '/' << power->bus_reads

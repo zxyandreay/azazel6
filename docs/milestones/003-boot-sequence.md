@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 AV module and object continuation.** The
+953-root / 55,986-word exact-input slice passes three checked
+`sceUtilityLoadModule` requests and several file-backed virtual
+targets. It stops at the guarded `0x08976C7C` call, observing
+`0x089780BC`. Captured scanout has zero nonblack pixels;
+title-screen boot remains open. See [module evidence](../research/startup-av-modules.md).
+
 **VERIFIED, 2026-11-19 exact VFPU conversion.** The
 924-root / 54,600-word exact-input slice passes two profile
 `vi2uc.q` sites and stops at missing direct function

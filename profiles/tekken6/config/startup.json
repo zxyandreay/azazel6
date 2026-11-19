@@ -1,6 +1,35 @@
 {
   "vfpu_vi2uc_sites": ["0x08ADE234", "0x08ADE25C"],
   "roots": [
+    "0x089780CC",
+    "0x0896FDA4",
+    "0x0896FAC0",
+    "0x08971768",
+    "0x089769AC",
+    "0x08A56230",
+    "0x08AF3768",
+    "0x08AF3774",
+    "0x08AFE7D8",
+    "0x08AFE7E4",
+    "0x08AFE7F0",
+    "0x08AFE7FC",
+    "0x08AFE808",
+    "0x08A54EB0",
+    "0x08A54974",
+    "0x08A548B0",
+    "0x08A56968",
+    "0x0896A954",
+    "0x08817424",
+    "0x088171BC",
+    "0x0881726C",
+    "0x08998FE0",
+    "0x0886DBB0",
+    "0x089587A8",
+    "0x0895A7EC",
+    "0x08ADD8F0",
+    "0x08ADD9F0",
+    "0x08ADD754",
+    "0x08ADD8A0",
     "0x08ADD964",
     "0x08ADD7A4",
     "0x08ADE5DC",
@@ -945,6 +974,12 @@
   ],
   "jump_tables": [
     {
+      "site": "0x08976A80",
+      "register": 4,
+      "table_start": "0x08BB0DE8",
+      "count": 8
+    },
+    {
       "site": "0x0889DEAC",
       "register": 4,
       "table_start": "0x08B95548",
@@ -988,6 +1023,14 @@
     }
   ],
   "trapped_calls": [
+    {
+      "site": "0x08976C7C",
+      "register": 3
+    },
+    {
+      "site": "0x0895A910",
+      "register": 3
+    },
     {
       "site": "0x08A68800",
       "register": 2
@@ -1242,6 +1285,26 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x08976BC4",
+      "register": 3,
+      "pointers": ["0x08BB0F08"]
+    },
+    {
+      "site": "0x08976B60",
+      "register": 3,
+      "pointers": ["0x08BB0F08"]
+    },
+    {
+      "site": "0x08976A0C",
+      "register": 2,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x08A54904",
+      "register": 2,
+      "pointers": ["0x08BC9068"]
+    },
     {
       "site": "0x0882B7E8",
       "register": 3,
@@ -2085,7 +2148,10 @@
         "0x08B9E62C",
         "0x08B9ED7C",
         "0x08B9ED34",
-        "0x08B8C23C"
+        "0x08B8C23C",
+        "0x08BC8FE4",
+        "0x08BC90DC",
+        "0x08BB0A84"
       ]
     },
     {
@@ -2682,7 +2748,8 @@
         "0x08B91700",
         "0x08B9C580",
         "0x08B9C308",
-        "0x08BA39D0"
+        "0x08BA39D0",
+        "0x08B8AF18"
       ]
     },
     {

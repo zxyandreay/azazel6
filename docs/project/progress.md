@@ -13,7 +13,7 @@ Azazel6 is not playable. See
 | Windows framework build/regressions | VERIFIED, three suites passed |
 | Python/profile tools | VERIFIED, 97 cases passed locally, including media validation, guest execution watchdogs and exact-site VFPU lowering guards |
 | Semantic aspect math | VERIFIED native contracts passed |
-| Startup HLE / returning imports | VERIFIED synthetic contracts and integrated native CTest suites |
+| Startup HLE / returning imports | VERIFIED synthetic contracts and 29 integrated native CTest suites, including exact AV module IDs and duplicate-load state |
 | Thread lifecycle | VERIFIED create/start/exit/delete and exit-status queries, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attributes are supported at creation and by later addition/removal |
 | Mutex lifecycle | VERIFIED creation, recursion, ownership, deletion and owner exit; source-only lightweight-mutex creation initializes the guest workarea; waits/timeouts and later lightweight-mutex operations remain rejecting |
 | Semaphore lifecycle | VERIFIED synthetic creation, FIFO/priority waits, positive-count signaling, overflow checks, deletion wakeups and priority handoff; nonpositive signaling and timeouts remain unsupported; see [contracts](../research/semaphores.md) |
@@ -45,8 +45,8 @@ Azazel6 is not playable. See
 | PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
-| Native entry execution | VERIFIED 924 reviewed roots / 54,600 words. Calendar/libc time, checked virtual paths, callback targets, bounded null/file-backed cache writebacks, mode-zero volatile-memory try-lock, fixed system-language query and two exact-site `vi2uc.q` conversions execute. The next stop is missing direct function `0x08ADD8A0`. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [opcode evidence](../research/startup-vi2uc.md). |
-| Exception boundaries | VERIFIED 54 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
+| Native entry execution | VERIFIED 953 reviewed roots / 55,986 words. Calendar/libc time, checked virtual paths, callback targets, bounded cache writebacks, mode-zero volatile-memory try-lock, fixed system-language query, two exact-site `vi2uc.q` conversions and three scoped AV module requests execute. The next stop is guarded call `0x08976C7C` observing `0x089780BC`. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [module evidence](../research/startup-av-modules.md). |
+| Exception boundaries | VERIFIED 55 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
 | Android host APK | VERIFIED synthetic SDL/Vulkan probe builds, signs and passes ARM64 and x86_64 ELF / 16 KiB ELF and ZIP alignment checks; no game code |

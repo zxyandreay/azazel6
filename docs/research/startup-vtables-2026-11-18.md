@@ -595,3 +595,25 @@ nonblack pixels. Title-screen boot is not verified.
 
 **PLANNED:** inspect and cover `0x08ADD8A0`, then continue the
 bounded run.
+
+## AV module and object continuation
+
+**VERIFIED, 2026-11-19:** direct wrappers `0x08ADD8A0`,
+`0x08ADD754`, `0x08ADD9F0`, and `0x08ADD8F0` execute through
+the `0x0882B788` object loop. Tail `0x08808314` uses checked
+slot `0x08B8AF18` to reach `0x08817424`. Later shared calls
+use checked slots `0x08BC8FE4`, `0x08BC90DC`, and
+`0x08BB0A84` to reach `0x08A54974`, `0x08A56230`, and
+`0x089769AC`. Nested calls at `0x08A54904`, `0x08976A0C`,
+`0x08976B60`, and `0x08976BC4` use the inspected exact slots.
+The `0x08976A80` jump table has eight file-backed entries and
+an explicit `<8` index bound.
+
+**VERIFIED bounded stop:** the 953-root / 55,986-word slice
+passes three scoped AV module requests and stops at guarded
+`0x08976C7C`, observing `0x089780BC`. The captured 480×272
+scanout has zero nonblack pixels. Title-screen boot is open.
+See [module contract](startup-av-modules.md).
+
+**PLANNED:** inspect the observed target and exact slot for
+`0x08976C7C`, then continue the bounded run.
