@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 second nested object continuation.** The
+842-root / 50,748-word exact-input slice passes two checked virtual
+calls and stops at an observed, file-backed tail target
+`0x088B9378`. Captured scanout remains black; title-screen boot is
+open. See [bounded evidence](../research/startup-vtables-2026-11-18.md#second-nested-object-and-tail-continuation).
+
 **VERIFIED, 2026-11-19 nested initializer continuation.** The
 835-root / 50,420-word exact-input slice passes a checked nested
 call and stops at missing direct function `0x088C04C8`. Captured

@@ -301,3 +301,40 @@ Title-screen boot is not verified.
 
 **PLANNED:** cover the inspected `0x088C04C8` CFG, then observe the
 later indirect call's target and source if reached.
+
+## Further nested initializer continuation
+
+**VERIFIED, 2026-11-19:** direct helpers `0x088C04C8` and
+`0x088C1A24` execute. The later call at `0x088B9644` reads checked
+file-backed slot `0x08B96A90`, containing the observed four-word
+target `0x088B9BBC`. The next call at `0x088B969C` remains terminally
+trapped and unobserved.
+
+**VERIFIED bounded stop:** the 838-root / 50,552-word exact-input
+slice stops first at missing direct function `0x088A3738` (return
+address `0x088B968C`). One volatile-memory lock remains held.
+Fifteen GE lists, one controller read, sixteen black display frames
+and zero nonblack pixels in the captured 480×272 scanout remain.
+Title-screen boot is not verified.
+
+**PLANNED:** cover the inspected `0x088A3738` CFG and its reached
+direct callees, then continue the bounded run.
+
+## Second nested object and tail continuation
+
+**VERIFIED, 2026-11-19:** direct helper `0x088A3738` and its
+`0x08AB2F9C` callee execute. The indirect call at `0x088B969C`
+observes `0x088B9BCC` from checked file-backed slot `0x08B96A48`.
+The next indirect call at `0x088B9740` observes `0x088B9BAC`
+from checked file-backed slot `0x08B96AE0`. Both targets have
+four-word inspected CFGs.
+
+**VERIFIED bounded stop:** the 842-root / 50,748-word exact-input
+slice stops at indirect tail `0x088B9798`, with observed target
+`0x088B9378` from checked file-backed slot `0x08B96A10`. One
+volatile-memory lock remains held. Fifteen GE lists, one controller
+read, sixteen black display frames and zero nonblack pixels in the
+captured 480×272 scanout remain. Title-screen boot is not verified.
+
+**PLANNED:** cover the inspected tail target `0x088B9378` and its
+reached direct callees, then continue the bounded run.
