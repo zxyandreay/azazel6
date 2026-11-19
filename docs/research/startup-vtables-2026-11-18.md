@@ -465,3 +465,35 @@ captured 480×272 scanout remain. Title-screen boot is not verified.
 
 **PLANNED:** cover the inspected `0x08968E48` CFG with its
 indirect transfers guarded, then continue the bounded run.
+
+## Language continuation and object call
+
+**VERIFIED, 2026-11-19:** direct `0x08968E48` and its helper
+`0x0896A10C` are covered. Its calls at `0x08968EA8` and
+`0x08968EC0` resolve through checked file-backed slot
+`0x08B8F860` to already covered `0x0885E644`. The later
+`0x0892F208` call at `0x0892F27C` reaches `0x088873FC`
+through checked slot `0x08B93478`. The next direct call reaches
+`0x089699EC`; its three stack-descriptor calls use the same
+`0x08B8F860` slot. Its nine-word helper `0x0896A140` is covered.
+
+**VERIFIED target constraint, HYPOTHESIS source:** the
+object-field call at `0x08969CD0` observes `0x0885E644`,
+matching file-backed slot `0x08B8F860`. Generated dispatch is
+limited to that exact target. The write path for the object's
+descriptor field has not been fully traced.
+
+**VERIFIED, 2026-11-19:** tail `0x08808314` reaches the inspected
+four-word `0x08968B98` through checked vtable slot
+`0x08BA39D0`.
+
+**VERIFIED bounded stop:** the 887-root / 53,025-word exact-input
+slice stops at shared virtual call `0x0885FCF4`, observing target
+`0x089469A0` from checked file-backed slot `0x08B9E39C`.
+One volatile-memory lock remains held. Fifteen GE lists, one
+controller read, sixteen black display frames and zero nonblack
+pixels in the captured 480×272 scanout remain. Title-screen boot
+is not verified.
+
+**PLANNED:** inspect and cover `0x089469A0` with its indirect
+transfers guarded, then continue the bounded run.

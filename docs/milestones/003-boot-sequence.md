@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 language and object continuation.** The
+887-root / 53,025-word exact-input slice passes the checked
+descriptor calls and stops at shared virtual call `0x0885FCF4`
+targeting `0x089469A0`. Captured scanout remains black;
+title-screen boot is open. See [bounded evidence](../research/startup-vtables-2026-11-18.md#language-continuation-and-object-call).
+
 **VERIFIED, 2026-11-19 system-language continuation.** The
 881-root / 52,631-word exact-input slice passes the ID 8
 `sceUtilityGetSystemParamInt` language query and stops at missing
