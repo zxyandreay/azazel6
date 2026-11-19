@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 further shared dispatches.** The
+909-root / 54,053-word exact-input slice passes five checked
+virtual targets and stops at shared virtual call `0x0885FCF4`
+targeting `0x0882B788`. Captured scanout remains black;
+title-screen boot is open. See [bounded evidence](../research/startup-vtables-2026-11-18.md#further-shared-virtual-dispatches).
+
 **VERIFIED, 2026-11-19 descriptor-array continuation.** The
 902-root / 53,975-word exact-input slice passes checked
 descriptor initialization and cleanup, then stops at shared

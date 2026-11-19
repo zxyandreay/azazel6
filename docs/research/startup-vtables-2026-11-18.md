@@ -554,3 +554,24 @@ is not verified.
 
 **PLANNED:** inspect and cover `0x08948B24` with its indirect
 transfers guarded, then continue the bounded run.
+
+## Further shared virtual dispatches
+
+**VERIFIED, 2026-11-19:** shared call `0x0885FCF4` reaches
+two-word `0x08948B24` through checked file-backed slot
+`0x08B9E5E4`. Subsequent checked slots `0x08B9EACC`,
+`0x08B9E62C`, `0x08B9ED7C`, and `0x08B9ED34` reach
+`0x0894DBF0`, `0x08948CC0`, `0x089523A0`, and
+`0x08952374` respectively. The `0x0894DBF0` direct helper
+chain through `0x0894DA2C` and `0x08945E6C` is covered.
+
+**VERIFIED bounded stop:** the 909-root / 54,053-word exact-input
+slice stops at shared virtual call `0x0885FCF4`, observing target
+`0x0882B788` from checked file-backed slot `0x08B8C23C`.
+One volatile-memory lock remains held. Fifteen GE lists, one
+controller read, sixteen black display frames and zero nonblack
+pixels in the captured 480×272 scanout remain. Title-screen boot
+is not verified.
+
+**PLANNED:** inspect and cover `0x0882B788`, guarding its
+indirect transfer at `0x0882B7E8` until its target is verified.
