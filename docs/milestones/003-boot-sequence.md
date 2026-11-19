@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 nested initializer continuation.** The
+835-root / 50,420-word exact-input slice passes a checked nested
+call and stops at missing direct function `0x088C04C8`. Captured
+scanout remains black; title-screen boot is open. See
+[bounded evidence](../research/startup-vtables-2026-11-18.md#nested-initializer-under-the-next-object).
+
 **VERIFIED, 2026-11-19 nested tail and object continuation.** The
 831-root / 50,117-word exact-input slice passes checked nested tail
 and object dispatch, then stops at missing direct function

@@ -1,5 +1,9 @@
 {
   "roots": [
+    "0x088B9B9C",
+    "0x088A4D8C",
+    "0x08A66C74",
+    "0x08A6691C",
     "0x08A6677C",
     "0x088B94B8",
     "0x088AC7C4",
@@ -883,7 +887,7 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x088B9570",
+      "site": "0x088B9644",
       "register": 2
     },
     {
@@ -1112,6 +1116,11 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x088B9570",
+      "register": 2,
+      "pointers": ["0x08B96B28"]
+    },
     {
       "site": "0x088ADB30",
       "register": 2,

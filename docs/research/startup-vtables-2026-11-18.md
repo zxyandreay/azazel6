@@ -282,3 +282,22 @@ boot is not verified.
 
 **PLANNED:** inspect the observed direct helper's callees and
 continue the bounded exact-input run.
+
+## Nested initializer under the next object
+
+**VERIFIED, 2026-11-19:** the inspected `0x08A6691C` and its direct
+callee `0x08A66C74` are covered. The object method also executes
+direct helper `0x088A4D8C`. Its indirect call at `0x088B9570`
+observes target `0x088B9B9C` from checked file-backed slot
+`0x08B96B28`. That target has a four-word inspected CFG. The later
+call at `0x088B9644` remains terminally trapped and unobserved.
+
+**VERIFIED bounded stop:** the 835-root / 50,420-word exact-input
+slice stops first at missing direct function `0x088C04C8` (return
+address `0x088B95B4`). One volatile-memory lock remains held;
+fifteen GE lists, one controller read, sixteen black display frames
+and zero nonblack pixels in the captured 480×272 scanout remain.
+Title-screen boot is not verified.
+
+**PLANNED:** cover the inspected `0x088C04C8` CFG, then observe the
+later indirect call's target and source if reached.
