@@ -417,3 +417,24 @@ is not verified.
 
 **PLANNED:** cover the inspected `0x088C183C` CFG and its reached
 direct callees, then continue the bounded run.
+
+## Nested callback and next shared dispatch
+
+**VERIFIED, 2026-11-19:** shared virtual call `0x0885FCF4`
+reads checked file-backed slot `0x08B97294`, reaching
+`0x088C183C` and its direct helper `0x088C1AF4`. A later call
+through slot `0x08B9590C` reaches `0x088A392C`, which executes
+direct helper `0x08A67118`. Its indirect call at `0x088A39CC`
+reads checked slot `0x08B95990` and reaches four-word target
+`0x088A3B90`.
+
+**VERIFIED bounded stop:** the 875-root / 52,316-word exact-input
+slice stops at shared virtual call `0x0885FCF4`, observing target
+`0x088C0FE8` from checked file-backed slot `0x08B97234`.
+One volatile-memory lock remains held. Fifteen GE lists, one
+controller read, sixteen black display frames and zero nonblack
+pixels in the captured 480×272 scanout remain. Title-screen boot
+is not verified.
+
+**PLANNED:** cover the inspected `0x088C0FE8` CFG with its
+indirect transfers guarded, then continue the bounded run.
