@@ -360,3 +360,23 @@ is not verified.
 
 **PLANNED:** inspect and cover `0x088C0358` with its indirect
 transfers guarded, then continue the bounded run.
+
+## Next object method and helper chain
+
+**VERIFIED, 2026-11-19:** shared virtual call `0x0885FCF4`
+reads file-backed slot `0x08B97174`, reaching `0x088C0358`.
+Its direct helpers `0x088C058C` and `0x088BFC18` are reached.
+The latter's direct callees are covered; its `0x088AC558` jump
+table has fifteen checked file-backed entries within the
+`0x088AC510` CFG. Table coverage alone is not evidence that the
+branch executed.
+
+**VERIFIED bounded stop:** the 860-root / 51,408-word exact-input
+slice stops at indirect tail `0x088C03FC`, observing target
+`0x088C0298` from checked file-backed slot `0x08B97178`. One
+volatile-memory lock remains held. Fifteen GE lists, one controller
+read, sixteen black display frames and zero nonblack pixels in the
+captured 480×272 scanout remain. Title-screen boot is not verified.
+
+**PLANNED:** cover the inspected tail target `0x088C0298` and its
+reached direct callees, then continue the bounded run.

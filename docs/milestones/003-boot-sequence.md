@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 next object helper chain.** The 860-root /
+51,408-word exact-input slice reaches checked direct helpers and
+stops at indirect tail `0x088C03FC` targeting `0x088C0298`.
+Captured scanout remains black; title-screen boot is open. See
+[bounded evidence](../research/startup-vtables-2026-11-18.md#next-object-method-and-helper-chain).
+
 **VERIFIED, 2026-11-19 next object continuation.** The 848-root /
 51,061-word exact-input slice passes checked nested object methods
 and stops at shared virtual call `0x0885FCF4` targeting
