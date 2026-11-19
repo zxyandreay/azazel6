@@ -12,6 +12,7 @@ from indirect_calls import (constructor_maps, jump_maps, trap_maps, pointer_maps
                             immediate_maps, watched_slot_maps, merge_call_maps, guard_generated,
                             verify_break_stops)
 from aot_registration import compact_registration
+from vfpu_overrides import lower_startup_vi2uc
 
 
 def language_mode(startup):
@@ -122,7 +123,9 @@ def main():
     source = generated.read_text()
     verify_break_stops(source, {site: word for graph in cfg.values()
                                for site, word in graph['break_traps'].items()})
-    generated.write_text(compact_registration(guard_generated(source, indirect | jumps | traps | tails)), encoding="utf-8")
+    guarded = guard_generated(source, indirect | jumps | traps | tails)
+    lowered = lower_startup_vi2uc(elf, guarded, startup.get("vfpu_vi2uc_sites"))
+    generated.write_text(compact_registration(lowered), encoding="utf-8")
     wrappers = ['#include "azazel6/bootstrap.hpp"', 'namespace azazel6 {']
     for index, imp in enumerate(module["imports"]):
         wrappers.append(f'void import_{index}(psprecomp::Runtime& rt, psprecomp::AllegrexContext& ctx) {{ '
@@ -146,6 +149,7 @@ def main():
         "language_mode": startup["language_mode"],
         "ge_list_spans": ge_spans,
         "cache_writeback_spans": cache_spans,
+        "vfpu_vi2uc_sites": startup["vfpu_vi2uc_sites"],
         "cfg": cfg, "module": module, "indirect_maps": indirect, "jump_maps": jumps, "trap_maps": traps, "tail_maps": tails,
         "scope": "Bounded startup CFG, guarded constructor calls and returning imports; no fallback"}, indent=2) + "\n")
     print(f"Generated {sum(g['instruction_words'] for g in cfg.values())} startup instruction words in {output}")

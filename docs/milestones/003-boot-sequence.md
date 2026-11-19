@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 exact VFPU conversion.** The
+924-root / 54,600-word exact-input slice passes two profile
+`vi2uc.q` sites and stops at missing direct function
+`0x08ADD8A0`. Captured scanout remains black; title-screen
+boot is open. See [opcode evidence](../research/startup-vi2uc.md)
+and [bounded continuation](../research/startup-vtables-2026-11-18.md#new-object-call-and-vfpu-conversion).
+
 **VERIFIED, 2026-11-19 further shared dispatches.** The
 909-root / 54,053-word exact-input slice passes five checked
 virtual targets and stops at shared virtual call `0x0885FCF4`

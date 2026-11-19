@@ -575,3 +575,23 @@ is not verified.
 
 **PLANNED:** inspect and cover `0x0882B788`, guarding its
 indirect transfer at `0x0882B7E8` until its target is verified.
+
+## New object call and VFPU conversion
+
+**VERIFIED, 2026-11-19:** shared call `0x0885FCF4` reaches
+`0x0882B788` through checked slot `0x08B8C23C`. Its direct
+helper `0x08817AD8` is covered. The guarded object call at
+`0x0882B7E8` observes `0x0882C5F0` from checked slot
+`0x08B8C278`; the exact target is covered. The later direct
+`0x08ADD7A4` and its ten inspected callees are covered.
+
+**VERIFIED bounded stop and continuation:** the first run stops
+at unsupported `vi2uc.q` word `0xD03C80E0` at `0x08ADE234`.
+After [exact-site profile lowering](startup-vi2uc.md), the
+924-root / 54,600-word slice executes through both conversion
+sites and `0x08ADD964`, then stops at missing direct
+`0x08ADD8A0`. The captured scanout remains black with zero
+nonblack pixels. Title-screen boot is not verified.
+
+**PLANNED:** inspect and cover `0x08ADD8A0`, then continue the
+bounded run.
