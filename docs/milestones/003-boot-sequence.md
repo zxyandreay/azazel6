@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 further object continuation.** The
+870-root / 52,040-word exact-input slice passes a checked object
+tail and stops at shared virtual call `0x0885FCF4` targeting
+`0x088C183C`. Captured scanout remains black; title-screen boot
+is open. See [bounded evidence](../research/startup-vtables-2026-11-18.md#further-object-tail-continuation).
+
 **VERIFIED, 2026-11-19 following object continuation.** The
 865-root / 51,665-word exact-input slice passes a checked tail
 and stops at shared virtual call `0x0885FCF4` targeting
