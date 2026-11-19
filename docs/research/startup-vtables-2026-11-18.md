@@ -380,3 +380,21 @@ captured 480×272 scanout remain. Title-screen boot is not verified.
 
 **PLANNED:** cover the inspected tail target `0x088C0298` and its
 reached direct callees, then continue the bounded run.
+
+## Following object after the helper chain
+
+**VERIFIED, 2026-11-19:** indirect tail `0x088C03FC` reaches
+`0x088C0298` through checked file-backed slot `0x08B97178`.
+Its direct callees are covered. The indirect calls in the
+`0x08A68770` CFG are guarded pending an observed target and source.
+
+**VERIFIED bounded stop:** the 865-root / 51,665-word exact-input
+slice stops at shared virtual call `0x0885FCF4`, observing target
+`0x088B0D34` from checked file-backed slot `0x08B9657C`.
+One volatile-memory lock remains held. Fifteen GE lists, one
+controller read, sixteen black display frames and zero nonblack
+pixels in the captured 480×272 scanout remain. Title-screen boot
+is not verified.
+
+**PLANNED:** inspect and cover `0x088B0D34` with its indirect
+transfers guarded, then continue the bounded run.
