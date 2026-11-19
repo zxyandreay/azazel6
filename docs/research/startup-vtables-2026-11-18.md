@@ -438,3 +438,30 @@ is not verified.
 
 **PLANNED:** cover the inspected `0x088C0FE8` CFG with its
 indirect transfers guarded, then continue the bounded run.
+
+## Cleanup callback and system-language query
+
+**VERIFIED, 2026-11-19:** shared virtual call `0x0885FCF4`
+reaches `0x088C0FE8` through checked slot `0x08B97234`.
+Its nested call reaches previously covered `0x088A53DC` from
+slot `0x08B95AA0`; tail `0x088C1100` reaches `0x088C0F90`
+through slot `0x08B97238`. Cleanup tail `0x08808314` then
+observes `0x0892F99C` from slot `0x08B9C580` and later
+`0x0892D290` from slot `0x08B9C308`.
+
+**VERIFIED target constraint, HYPOTHESIS source:** the writable
+callback at `0x0892D2F4` observes `0x0892F208`, matching the
+unique file-backed descriptor word at `0x08B9C4D8`. The generated
+dispatch is limited to that exact target. The path that writes
+the callback into the object at runtime is not fully traced.
+
+**VERIFIED bounded stop:** the 881-root / 52,631-word exact-input
+slice passes `sceUtilityGetSystemParamInt` ID 8 for the fixed
+profile language and stops at missing direct function
+`0x08968E48` (return address `0x0892F26C`). One volatile-memory
+lock remains held. Fifteen GE lists, one controller read,
+sixteen black display frames and zero nonblack pixels in the
+captured 480×272 scanout remain. Title-screen boot is not verified.
+
+**PLANNED:** cover the inspected `0x08968E48` CFG with its
+indirect transfers guarded, then continue the bounded run.

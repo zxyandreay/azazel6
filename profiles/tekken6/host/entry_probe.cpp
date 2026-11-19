@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
         const auto host_now = std::chrono::system_clock::now();
         azazel6::register_power_callback_hle(*rt, power, threads);
         azazel6::register_system_param_hle(*rt, threads, AZAZEL6_CONFIRM_BUTTON,
-            local_timezone_minutes(host_now), partition);
+            local_timezone_minutes(host_now), partition, AZAZEL6_LANGUAGE);
         const auto interrupt_delivery = azazel6::register_interrupt_delivery(*rt, interrupts, threads, allocator);
         // Bounded research mode: jump only while every thread is blocked.
         // Runnable CPU time is not modeled; these frames are not measured game timing.

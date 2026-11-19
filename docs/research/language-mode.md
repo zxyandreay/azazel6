@@ -58,3 +58,21 @@ configuration, identity, alignment, overflow and mutation-free rejection. The
 real-media probe passes the query and reaches `sceCtrlSetSamplingCycle` at
 `0x08B89098`, returning to `0x08ADFEC4`. It records 15 frames, 14 GE lists and
 28,196 disc bytes; captured scanout remains black. Title boot remains open.
+
+## System language preference, 2026-11-19
+
+**DOCUMENTED:** [PSPSDK's system-parameter header](https://pspdev.github.io/pspsdk/psputility__sysparam_8h.html)
+defines `sceUtilityGetSystemParamInt` ID 8 as `LANGUAGE`, with values
+0–11. The exact game profile selects English (1).
+
+**VERIFIED:** the bounded exact-input run reaches the import with
+ID 8 and a word on its live thread stack. The profile returns its
+fixed system-language preference after the same ownership, alignment,
+range and live-stack checks used for the button preference. Unknown
+IDs and invalid outputs stop before writing. The mutable `sceImpose`
+language mode remains a separate state. Synthetic contracts cover
+profile values 0, 1 and 11, independence from `sceImpose` changes,
+invalid values, stack boundaries and mutation-free rejection.
+The import now returns and execution stops at missing direct
+function `0x08968E48`. Captured scanout is still black; title boot
+remains open.

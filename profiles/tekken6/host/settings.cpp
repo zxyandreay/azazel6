@@ -7,16 +7,19 @@
 namespace azazel6 {
 void register_system_param_hle(psprecomp::Runtime& rt, std::shared_ptr<ThreadRegistry> threads,
                                std::uint32_t confirm_button, std::int32_t timezone_minutes,
-                               std::shared_ptr<const PartitionMemory> partition) {
+                               std::shared_ptr<const PartitionMemory> partition,
+                               std::uint32_t system_language) {
     if (!threads || !threads->belongs_to(rt) || confirm_button > 1 ||
         timezone_minutes < -840 || timezone_minutes > 840 ||
-        (partition && partition->owner != &rt))
+        (partition && partition->owner != &rt) || system_language > 11)
         throw psprecomp::Error("Invalid system settings or owner");
     constexpr std::uint32_t get_int = 0xA5DA2406u;
     rt.nids().add("sceUtility", get_int, "sceUtilityGetSystemParamInt");
-    rt.register_hle("sceUtility", get_int, [threads, confirm_button, timezone_minutes, partition](auto& runtime, auto& c) {
+    rt.register_hle("sceUtility", get_int, [threads, confirm_button, timezone_minutes, partition, system_language](auto& runtime, auto& c) {
         const auto id = c.gpr[4];
-        if (id != 6u && id != 9u) { runtime.stop("Unsupported integer system parameter"); return; }
+        if (id != 6u && id != 8u && id != 9u) {
+            runtime.stop("Unsupported integer system parameter"); return;
+        }
         const auto caller = threads->current_thread();
         const auto out = c.gpr[5];
         const auto finish = static_cast<std::uint64_t>(out) + 4u;
@@ -33,7 +36,8 @@ void register_system_param_hle(psprecomp::Runtime& rt, std::shared_ptr<ThreadReg
             !runtime.memory().contains(out, 4u) || (!stack && !block)) {
             runtime.stop("System parameter output outside live caller memory"); return;
         }
-        runtime.memory().store32(out, id == 9u ? confirm_button : static_cast<std::uint32_t>(timezone_minutes));
+        runtime.memory().store32(out, id == 6u ? static_cast<std::uint32_t>(timezone_minutes)
+                                    : id == 8u ? system_language : confirm_button);
         c.set_gpr(2, 0);
     });
 }

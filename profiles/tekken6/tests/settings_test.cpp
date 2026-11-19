@@ -106,7 +106,7 @@ void system_button_query() {
         catch (const std::exception&) { rejected = true; }
         check(rejected, "Foreign system parameter owner");
     }
-    for (auto [id, out] : {std::pair{8u, stack}, {9u, stack - 4}, {9u, stack + size},
+    for (auto [id, out] : {std::pair{10u, stack}, {9u, stack - 4}, {9u, stack + size},
                             {9u, stack + 1}, {9u, 0xFFFFFFFCu}}) {
         auto rt = std::make_unique<psprecomp::Runtime>();
         register_system_param_hle(*rt, register_thread_hle(*rt, arena), 1);
@@ -143,6 +143,45 @@ void system_button_query() {
     try { register_system_param_hle(*rt, {}, 1); }
     catch (const std::exception&) { rejected = true; }
     check(rejected, "Missing system parameter owner accepted");
+}
+void system_language_query() {
+    constexpr std::uint32_t stack = 0x09010000u, size = 0x4000u, poison = 0xDEADBEEFu;
+    constexpr ThreadArena arena{0x09000000u, stack, begin, end, begin, end, begin, 40, size};
+    for (auto value : {0u, 1u, 11u}) {
+        auto rt = std::make_unique<psprecomp::Runtime>();
+        register_language_hle(*rt, {1, 1}, begin, end);
+        register_system_param_hle(*rt, register_thread_hle(*rt, arena), 1, 0, {}, value);
+        call(*rt, set_nid, (value + 1) % 12, 0);
+        auto& c = rt->cpu(); c.gpr[4] = 8; c.gpr[5] = stack; c.gpr[2] = poison;
+        c.gpr[31] = begin + 4; c.pc = begin;
+        rt->memory().store32(stack, poison);
+        invoke_returning_import(*rt, c, "sceUtility", 0xA5DA2406u);
+        check(!rt->stopped() && c.pc == begin + 4 && c.gpr[2] == 0 &&
+              rt->memory().load32(stack) == value, "System language ABI/profile value");
+        c.gpr[4] = 9; c.gpr[5] = stack;
+        invoke_returning_import(*rt, c, "sceUtility", 0xA5DA2406u);
+        check(!rt->stopped() && rt->memory().load32(stack) == 1,
+              "System button preference changed with impose mode");
+    }
+    for (auto out : {stack - 4, stack + size, stack + 1, 0xFFFFFFFCu}) {
+        auto bad = std::make_unique<psprecomp::Runtime>();
+        register_system_param_hle(*bad, register_thread_hle(*bad, arena), 1, 0, {}, 1);
+        auto& cpu = bad->cpu(); cpu.gpr[4] = 8; cpu.gpr[5] = out; cpu.gpr[2] = poison;
+        bad->memory().store32(stack, poison);
+        if (bad->memory().contains(out, 4) && !(out & 3u)) bad->memory().store32(out, poison);
+        bad->invoke_import("sceUtility", 0xA5DA2406u, cpu);
+        check(bad->stopped() && cpu.gpr[2] == poison && bad->memory().load32(stack) == poison,
+              "Language query accepted invalid output");
+        if (bad->memory().contains(out, 4) && !(out & 3u))
+            check(bad->memory().load32(out) == poison, "Language query wrote invalid output");
+    }
+    for (auto invalid : {12u, 0xFFFFFFFFu}) {
+        auto bad = std::make_unique<psprecomp::Runtime>();
+        bool rejected = false;
+        try { register_system_param_hle(*bad, register_thread_hle(*bad, arena), 1, 0, {}, invalid); }
+        catch (const std::exception&) { rejected = true; }
+        check(rejected, "Invalid system language accepted");
+    }
 }
 void system_timezone_query() {
     constexpr std::uint32_t stack = 0x09010000u, size = 0x4000u;
@@ -200,6 +239,7 @@ void system_timezone_query() {
 }
 int main() {
     try { roundtrip(); failure_atomicity(); configuration(); system_button_query();
+        system_language_query();
         system_timezone_query(); std::cout << "Settings contracts passed\n"; }
     catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

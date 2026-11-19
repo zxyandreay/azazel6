@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 system-language continuation.** The
+881-root / 52,631-word exact-input slice passes the ID 8
+`sceUtilityGetSystemParamInt` language query and stops at missing
+direct function `0x08968E48`. Captured scanout remains black;
+title-screen boot is open. See [bounded evidence](../research/startup-vtables-2026-11-18.md#cleanup-callback-and-system-language-query).
+
 **VERIFIED, 2026-11-19 nested callback continuation.** The
 875-root / 52,316-word exact-input slice reaches another checked
 callback and stops at shared virtual call `0x0885FCF4` targeting
