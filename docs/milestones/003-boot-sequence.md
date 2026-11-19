@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-19 descriptor-array continuation.** The
+902-root / 53,975-word exact-input slice passes checked
+descriptor initialization and cleanup, then stops at shared
+virtual call `0x0885FCF4` targeting `0x08948B24`. Captured
+scanout remains black; title-screen boot is open. See
+[bounded evidence](../research/startup-vtables-2026-11-18.md#descriptor-array-initialization-and-cleanup).
+
 **VERIFIED, 2026-11-19 allocated-object continuation.** The
 891-root / 53,184-word exact-input slice passes the paired
 checked descriptor calls and stops at shared virtual call

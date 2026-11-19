@@ -522,3 +522,35 @@ is not verified.
 
 **PLANNED:** inspect and cover `0x089553C0` with its indirect
 transfers guarded, then continue the bounded run.
+
+## Descriptor array initialization and cleanup
+
+**VERIFIED, 2026-11-19:** shared virtual call `0x0885FCF4`
+reaches `0x089553C0` through checked slot `0x08B9F244`.
+Its call at `0x089553E0` reads checked slot `0x08B9F25C`
+and reaches `0x08954B28`; the latter's tail reads checked
+slot `0x08B9F260` and reaches `0x089560A4`. Direct helper
+`0x08947E5C` is covered.
+
+**VERIFIED source and bounded targets:** constructor helper
+`0x08955ADC` initializes eleven object descriptors, spaced
+`0x18` bytes from offset `0x80`, with file-backed vtable
+`0x08B9F3A0`. Each call at offsets `0x80` through `0x170`
+is constrained to `0x08956A48` through checked slot
+`0x08B9F3A8`. The bounded run observed this target at
+`0x08956158` and `0x08956214`; the remaining mapped call
+sites are source-backed coverage, not a claim they all ran.
+The direct cleanup helpers `0x08954820`, `0x08956A58`,
+`0x08956A68`, `0x08956A78`, `0x08954964`, and
+`0x08958274` are covered.
+
+**VERIFIED bounded stop:** the 902-root / 53,975-word exact-input
+slice stops at shared virtual call `0x0885FCF4`, observing target
+`0x08948B24` from checked file-backed slot `0x08B9E5E4`.
+One volatile-memory lock remains held. Fifteen GE lists, one
+controller read, sixteen black display frames and zero nonblack
+pixels in the captured 480×272 scanout remain. Title-screen boot
+is not verified.
+
+**PLANNED:** inspect and cover `0x08948B24` with its indirect
+transfers guarded, then continue the bounded run.
