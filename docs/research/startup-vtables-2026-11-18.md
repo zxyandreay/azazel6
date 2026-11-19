@@ -338,3 +338,25 @@ captured 480×272 scanout remain. Title-screen boot is not verified.
 
 **PLANNED:** cover the inspected tail target `0x088B9378` and its
 reached direct callees, then continue the bounded run.
+
+## Next object after the nested tail
+
+**VERIFIED, 2026-11-19:** checked tail `0x088B9798` reaches
+`0x088B9378`; its inspected direct callees are covered. A later shared
+virtual call at `0x0885FCF4` observes `0x088A45C4` from file-backed
+slot `0x08B95A6C`. Within that method, call `0x088A4634` observes
+previously covered `0x088A53DC` from slot `0x08B95AA0`. Tail
+`0x088A46B4` then reaches `0x088A500C` through slot `0x08B95A70`.
+Two indirect calls inside that target are still terminally trapped
+and unobserved.
+
+**VERIFIED bounded stop:** the 848-root / 51,061-word exact-input
+slice stops at shared virtual call `0x0885FCF4`, now observing
+target `0x088C0358` from checked file-backed slot `0x08B97174`.
+One volatile-memory lock remains held. Fifteen GE lists, one
+controller read, sixteen black display frames and zero nonblack
+pixels in the captured 480×272 scanout remain. Title-screen boot
+is not verified.
+
+**PLANNED:** inspect and cover `0x088C0358` with its indirect
+transfers guarded, then continue the bounded run.
