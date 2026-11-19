@@ -261,3 +261,24 @@ boot is not verified.
 
 **PLANNED:** cover the inspected `0x088B8A10` CFG and continue the
 bounded path.
+
+## Nested tail and next object
+
+**VERIFIED, 2026-11-19:** inspected direct helper `0x088B8A10`
+executes. Its caller's tail at `0x088ADC40` reads checked file-backed
+slot `0x08B96060` and reaches `0x088AC7C4`. That target's 215-word
+CFG is covered with its unobserved direct callees still unadmitted.
+The next object call at `0x0885FCF4` observes vtable `0x08B969F8`;
+checked slot `0x08B96A0C` contains target `0x088B94B8`. The latter
+executes inspected direct helper `0x08A6677C`; its indirect call at
+`0x088B9570` remains terminally trapped and unobserved.
+
+**VERIFIED bounded stop:** the 831-root / 50,117-word exact-input
+slice stops at missing direct function `0x08A6691C` (return address
+`0x088B9504`). One volatile-memory lock remains held. Fifteen GE
+lists, one controller read, sixteen black display frames and zero
+nonblack pixels in the captured 480×272 scanout remain. Title-screen
+boot is not verified.
+
+**PLANNED:** inspect the observed direct helper's callees and
+continue the bounded exact-input run.
