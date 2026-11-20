@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 large cleanup continuation.**
+The 1,114-root / 64,628-word exact-input slice passes
+the checked nested cleanup call and stops at missing
+direct function `0x08945ED4`. Its indirect site remains
+unreviewed. Captured scanout remains black; title-screen
+boot remains open. See [bounded evidence](../research/startup-vtables-2026-11-18.md#large-cleanup-continuation-and-bounded-tables).
+
 **VERIFIED, 2026-11-21 nested cleanup branch.** The
 1,061-root / 61,703-word exact-input slice passes a checked
 shared object method and nested cleanup callback. It stops

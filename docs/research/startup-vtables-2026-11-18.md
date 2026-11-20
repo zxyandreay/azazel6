@@ -989,3 +989,37 @@ behavior remain unverified.
 
 **PLANNED:** inspect `0x088643A4` and its direct callees
 before replacing the `0x0885FFB4` terminal trap.
+
+## Large cleanup continuation and bounded tables
+
+**VERIFIED, 2026-11-21:** the watched object vtable
+`0x08B90128` has target `0x088643A4` in slot
+`0x08B90148`. The guarded call at `0x0885FFB4`
+passes in the bounded run. The target's 153-word CFG
+and 51 uncovered direct callees across two layers were
+inspected before adding roots. A shared eight-word tail
+at `0x08AE0180` has its own root so overlapping callers
+retain one code owner. Static coverage includes branches
+not taken in this run.
+
+**VERIFIED source bounds:** the transfers at
+`0x08946BA4` and `0x08946E94` index exact file-backed
+tables at `0x08B9E450` (six words) and `0x08B9E468`
+(seven words). Their source uses unsigned upper bounds
+of six and seven, respectively. Other newly encountered
+indirect calls and tails remain terminal traps; neither
+table's runtime path is claimed here.
+
+**VERIFIED bounded stop:** the 1,114-root / 64,628-word
+exact-input slice dispatches `0x088643A4` and reaches
+`0x0895540C`, then stops at missing direct function
+`0x08945ED4`. Its inspection is blocked by indirect
+transfer `0x08945EF8`, which still needs a target guard.
+One volatile-memory lock remains held. There are 15 GE
+lists, one controller read, 16 display frames and zero
+nonblack pixels in the captured 480×272 scanout.
+Title-screen boot and physical ARM64 behavior remain
+unverified.
+
+**PLANNED:** inspect `0x08945EF8`, cover the required
+direct target and continue bounded execution.

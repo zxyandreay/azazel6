@@ -1,6 +1,59 @@
 {
   "vfpu_vi2uc_sites": ["0x08ADE234", "0x08ADE25C"],
   "roots": [
+    "0x08AE0180",
+    "0x088643A4",
+    "0x08863524",
+    "0x0886357C",
+    "0x08863880",
+    "0x0886391C",
+    "0x088639B8",
+    "0x08863A68",
+    "0x08863AEC",
+    "0x08863B9C",
+    "0x08863C4C",
+    "0x08864104",
+    "0x08868748",
+    "0x08868B04",
+    "0x08868CEC",
+    "0x0886BD28",
+    "0x088C3BF0",
+    "0x08946390",
+    "0x08954B20",
+    "0x089C9870",
+    "0x089C99A8",
+    "0x089CA6BC",
+    "0x08AAB590",
+    "0x08ACA990",
+    "0x08ACAB14",
+    "0x0880468C",
+    "0x0885F340",
+    "0x08860E00",
+    "0x08863424",
+    "0x088636C4",
+    "0x0886DA24",
+    "0x08946B6C",
+    "0x08946C34",
+    "0x08946C58",
+    "0x08946C7C",
+    "0x08946D6C",
+    "0x08948328",
+    "0x0895540C",
+    "0x089C9B60",
+    "0x089CA3E4",
+    "0x089CAF00",
+    "0x089CAF28",
+    "0x089CB198",
+    "0x08AAB5AC",
+    "0x08AAB6EC",
+    "0x08AC2CEC",
+    "0x08AC2DA0",
+    "0x08AC5034",
+    "0x08ACA6C4",
+    "0x08ACAD34",
+    "0x08ACAF00",
+    "0x08ACE178",
+    "0x08AD58E4",
     "0x08806A48",
     "0x0885FEF8",
     "0x08864608",
@@ -1082,6 +1135,18 @@
   ],
   "jump_tables": [
     {
+      "site": "0x08946BA4",
+      "register": 4,
+      "table_start": "0x08B9E450",
+      "count": 6
+    },
+    {
+      "site": "0x08946E94",
+      "register": 4,
+      "table_start": "0x08B9E468",
+      "count": 7
+    },
+    {
       "site": "0x0893A69C",
       "register": 4,
       "table_start": "0x08B9CD08",
@@ -1138,7 +1203,7 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x0885FFB4",
+      "site": "0x0885F388",
       "register": 2
     },
     {
@@ -1395,6 +1460,11 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x0885FFB4",
+      "register": 2,
+      "pointers": ["0x08B90148"]
+    },
     {
       "site": "0x0885FF7C",
       "register": 2,
@@ -3314,6 +3384,18 @@
     }
   ],
   "trapped_tails": [
+    {
+      "site": "0x0886DCC8",
+      "register": 25
+    },
+    {
+      "site": "0x08AC2D8C",
+      "register": 25
+    },
+    {
+      "site": "0x08AC2E10",
+      "register": 25
+    },
     {
       "site": "0x0885FF48",
       "register": 25
