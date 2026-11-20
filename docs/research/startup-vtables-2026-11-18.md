@@ -1051,3 +1051,35 @@ unverified.
 
 **PLANNED:** inspect and cover the two direct callees
 under `0x08AC24F4`, then continue bounded execution.
+
+## Matrix helper chain and checked object tail
+
+**VERIFIED, 2026-11-21:** `0x08AC24F4` and inspected
+callees `0x08AC2494` and `0x08AC4DA8` execute. The
+same direct chain continues through `0x08AC2884`,
+`0x08AC281C`, `0x08AC548C` and `0x08AC22C4`.
+The bounded run then reaches trapped tail `0x08AC2D8C`,
+observing already covered `0x08AC3CB0`.
+
+**VERIFIED tail provenance:** `0x08AC2D8C` loads an
+object through the caller's offset `0x3F8`, then reads
+vtable offset `+0x10`. A write watch at caller field
+`0x08C466B8` observed object pointer `0x08C44E00`.
+A second watch at that object observed vtable
+`0x08BCF510`; exact instructions `0x08AC3C80` through
+`0x08AC3C8C` construct and store it. File-backed slot
+`0x08BCF520` contains `0x08AC3CB0`. The guarded tail
+dispatches that target in the bounded run. Watches
+report dispatch PCs, not instruction-precise store PCs.
+
+**VERIFIED bounded stop:** the 1,125-root / 65,302-word
+exact-input slice stops at missing direct function
+`0x08AC4FFC` after the object tail returns. One
+volatile-memory lock remains held. There are 15 GE
+lists, one controller read, 16 display frames and zero
+nonblack pixels in the captured 480×272 scanout.
+Title-screen boot and physical ARM64 behavior remain
+unverified.
+
+**PLANNED:** cover inspected 14-word `0x08AC4FFC`
+and continue bounded execution.

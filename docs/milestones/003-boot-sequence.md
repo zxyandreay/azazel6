@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 matrix chain and object tail.**
+The 1,125-root / 65,302-word exact-input slice passes
+inspected matrix helpers and a checked object tail, then
+stops at missing direct function `0x08AC4FFC`.
+Captured scanout remains black; title-screen boot remains
+open. See [tail evidence](../research/startup-vtables-2026-11-18.md#matrix-helper-chain-and-checked-object-tail).
+
 **VERIFIED, 2026-11-21 selector and matrix helpers.**
 The 1,118-root / 64,935-word exact-input slice passes a
 six-entry selector and three inspected matrix helpers,

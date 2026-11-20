@@ -1,6 +1,13 @@
 {
   "vfpu_vi2uc_sites": ["0x08ADE234", "0x08ADE25C"],
   "roots": [
+    "0x08AC22C4",
+    "0x08AC548C",
+    "0x08AC281C",
+    "0x08AC2884",
+    "0x08AC4DA8",
+    "0x08AC2494",
+    "0x08AC24F4",
     "0x08AC4934",
     "0x08AC23DC",
     "0x08AC2C94",
@@ -2882,6 +2889,11 @@
   ],
   "pointer_tails": [
     {
+      "site": "0x08AC2D8C",
+      "register": 25,
+      "pointers": ["0x08BCF520"]
+    },
+    {
       "site": "0x088C5B28",
       "register": 25,
       "pointers": ["0x08B974C8"]
@@ -3396,10 +3408,6 @@
   "trapped_tails": [
     {
       "site": "0x0886DCC8",
-      "register": 25
-    },
-    {
-      "site": "0x08AC2D8C",
       "register": 25
     },
     {
