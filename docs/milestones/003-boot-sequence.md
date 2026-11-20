@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-20 object-array continuation.** The
+1,018-root / 60,182-word exact-input slice passes three
+checked object calls and stops at shared dispatch targeting
+`0x08958850`. Captured scanout has zero nonblack pixels;
+title-screen boot remains open. See [array evidence](../research/startup-vtables-2026-11-18.md#following-shared-dispatch-and-object-array).
+
 **VERIFIED, 2026-11-20 constructed object continuation.** The
 1,010-root / 59,948-word exact-input slice passes a checked
 constructor vtable call and a later runtime-written object

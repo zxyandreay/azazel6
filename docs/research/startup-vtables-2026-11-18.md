@@ -714,3 +714,42 @@ ARM64 behavior remain unverified.
 
 **PLANNED:** cover inspected four-word `0x08A8CB04` and
 continue bounded exact-input execution.
+
+## Following shared dispatch and object array
+
+**VERIFIED, 2026-11-20:** direct `0x08A8CB04` executes.
+Shared virtual call `0x0885FCF4` then reaches
+`0x089B6644`, `0x08A40050` and `0x0895A4FC` through
+checked exact-input slots `0x08BB6F84`, `0x08BC8294`
+and `0x08B9F5AC`. The intervening indirect tail at
+`0x08808314` reaches `0x0892641C` and `0x08928688`
+through slots `0x08B9B9C8` and `0x08B9BA98`. Each target
+has an inspected bounded CFG.
+
+**VERIFIED object array:** `0x0895A4FC` reaches its call at
+`0x0895A5E0`, observing target `0x0895DB2C`. A bounded
+write watch at guest address `0x09067A3C` observed vtable
+`0x08B9F750` written during dispatch `0x0895AED8` before
+this call. Exact-input instructions at `0x0895AEE0` and
+`0x0895AEE4` construct that vtable; `0x0895AEFC`
+stores it at object offset `0x37C`, and checked slot
+`0x08B9F758` contains the observed target. The same
+initializer writes it to the next array entry at offset
+`0x394`, so call `0x0895A684` uses that same slot. It
+also initializes the subobject vtable at offset `0x3AC`;
+slot `0x08B9F6B0` supplies target `0x0895DB3C` to call
+`0x0895A6E4`. The bounded run dispatched through all
+three calls. The watch logs a dispatch PC, not an exact
+store PC.
+
+**VERIFIED bounded stop:** the 1,018-root / 60,182-word
+exact-input slice passes the object array and stops at
+shared call `0x0885FCF4`, observing `0x08958850` from
+unique file-backed slot `0x08B9F5F4`. It retains one
+volatile-memory lock, 15 GE lists, one controller read,
+16 display frames and zero nonblack pixels in the captured
+480×272 scanout. This is bounded host execution, not title
+boot or physical ARM64 verification.
+
+**PLANNED:** cover inspected two-word `0x08958850` through
+the exact slot and continue the bounded run.
