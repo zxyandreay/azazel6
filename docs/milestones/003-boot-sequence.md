@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 nested cleanup branch.** The
+1,061-root / 61,703-word exact-input slice passes a checked
+shared object method and nested cleanup callback. It stops
+at trapped call `0x0885FFB4` targeting `0x088643A4`.
+Captured scanout remains black; title-screen boot remains
+open. See [branch evidence](../research/startup-vtables-2026-11-18.md#shared-object-and-nested-cleanup-branch).
+
 **VERIFIED, 2026-11-21 adjacent callback and cleanup.**
 The 1,058-root / 61,559-word exact-input slice passes a
 checked indexed callback and object cleanup vtable call,

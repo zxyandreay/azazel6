@@ -955,3 +955,37 @@ remain unverified.
 
 **PLANNED:** cover inspected `0x08864608` through its
 exact shared-call slot and continue bounded execution.
+
+## Shared object and nested cleanup branch
+
+**VERIFIED, 2026-11-21:** shared call `0x0885FCF4`
+reaches inspected `0x08864608` through unique file-backed
+slot `0x08B9013C`. That function executes and calls into
+the shared cleanup path. At `0x0885F280`, the bounded run
+observed `0x0885FEF8`. Exact-input instructions at
+`0x08864720` through `0x08864728` construct and store
+object vtable `0x08B90198`; offset `+4` slot
+`0x08B9019C` contains the target. The call passes its
+exact-slot guard.
+
+**VERIFIED nested branch:** `0x0885FEF8` has several
+indirect exits, kept as terminal traps until observed.
+The bounded run takes call `0x0885FF7C`, observing
+`0x08806A48`. A write watch at object `0x08D47940`
+observed final vtable `0x08B90128` before that call.
+Offset `+0x1C` slot `0x08B90144` holds the inspected
+two-word target, which executes. The same vtable also
+holds the earlier shared-call target at `0x08B9013C`.
+The watch reports a dispatch PC, not an exact store PC.
+
+**VERIFIED bounded stop:** the 1,061-root / 61,703-word
+exact-input slice stops at the next trapped call,
+`0x0885FFB4`, observing `0x088643A4` from adjacent
+vtable slot `0x08B90148`. One volatile-memory lock
+remains held. There are 15 GE lists, one controller read,
+16 display frames and zero nonblack pixels in the captured
+480×272 scanout. Title-screen boot and physical ARM64
+behavior remain unverified.
+
+**PLANNED:** inspect `0x088643A4` and its direct callees
+before replacing the `0x0885FFB4` terminal trap.
