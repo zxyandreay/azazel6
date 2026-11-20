@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-20 nested subobject continuation.** The
+1,035-root / 60,733-word exact-input slice passes three
+checked subobject calls and an outer object callback. It
+stops at shared dispatch targeting `0x08A05F64`.
+Captured scanout remains black; title-screen boot remains
+open. See [subobject evidence](../research/startup-vtables-2026-11-18.md#nested-subobjects-and-outer-callback).
+
 **VERIFIED, 2026-11-20 five-entry jump-table continuation.**
 The 1,023-root / 60,359-word exact-input slice executes the
 bounded object jump table and stops at shared dispatch targeting
