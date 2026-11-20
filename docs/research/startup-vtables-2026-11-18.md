@@ -856,3 +856,38 @@ unverified.
 
 **PLANNED:** inspect `0x08943518` and its indirect call
 at `0x089435C4`, then continue bounded execution.
+
+## Parent and subobject callback continuation
+
+**VERIFIED, 2026-11-21:** shared call `0x0885FCF4`
+reaches `0x08943518` through unique file-backed slot
+`0x08B9D8B4`. Its direct callees `0x088C588C` and
+`0x089438B8` were inspected and added to the bounded
+slice. A write watch at subobject field `0x090670B0`
+observed vtable `0x08B9D8E8` before indirect call
+`0x089435C4`. Exact file-backed slot `0x08B9D8F0`
+contains its observed target `0x089438B8`; the guarded
+call passes in the bounded run.
+
+**VERIFIED parent object:** a write watch at `0x09067000`
+observed vtable `0x08B9D8A0` during dispatch
+`0x089436A8`. Instructions `0x089436DC` through
+`0x089436E4` construct and store that value. Calls
+`0x08943600` and `0x08943650` both read vtable offset
+`0x18`; exact slot `0x08B9D8B8` contains inspected
+two-word target `0x08943270`. The bounded run dispatched
+through `0x08943650`; the other site has the same source
+guard but was not observed on this path. The write watches
+report dispatch PCs, not instruction-precise store PCs.
+
+**VERIFIED bounded stop:** the 1,044-root / 60,859-word
+exact-input slice passes the guarded subobject and parent
+calls, then stops at shared call `0x0885FCF4`, observing
+`0x088C59C4` from unique file-backed slot `0x08B974C4`.
+One volatile-memory lock remains held. There are 15 GE
+lists, one controller read, 16 display frames and zero
+nonblack pixels in the captured 480×272 scanout. This
+does not verify title-screen boot or physical ARM64 behavior.
+
+**PLANNED:** inspect `0x088C59C4` and its indirect
+transfer at `0x088C5B28`, then continue bounded execution.

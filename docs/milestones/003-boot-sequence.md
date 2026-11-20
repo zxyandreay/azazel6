@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 parent/subobject continuation.** The
+1,044-root / 60,859-word exact-input slice passes checked
+parent and subobject callbacks, then stops at shared dispatch
+targeting `0x088C59C4`. Captured scanout remains black;
+title-screen boot remains open. See [callback evidence](../research/startup-vtables-2026-11-18.md#parent-and-subobject-callback-continuation).
+
 **VERIFIED, 2026-11-21 three-object continuation.** The
 1,040-root / 60,745-word exact-input slice passes three
 vtable variants of one wrapper and stops at shared dispatch
