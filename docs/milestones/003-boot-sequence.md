@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-20 constructed object continuation.** The
+1,010-root / 59,948-word exact-input slice passes a checked
+constructor vtable call and a later runtime-written object
+vtable. It stops at missing direct `0x08A8CB04`. Captured
+scanout remains black, so title-screen boot remains open. See
+[object evidence](../research/startup-vtables-2026-11-18.md#constructed-object-and-shared-helper-continuation).
+
 **VERIFIED, 2026-11-20 constructed callback continuation.** The
 965-root / 57,245-word exact-input slice passes a guest-written
 callback in a list node, guarded by its exact address-construction

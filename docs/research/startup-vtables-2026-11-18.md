@@ -674,3 +674,43 @@ remain unverified.
 callees. The candidate inspector reaches an indirect call at
 `0x08A3C610` in a called function, so that site needs a reviewed
 target map before generation.
+
+## Constructed object and shared helper continuation
+
+**VERIFIED, 2026-11-20:** direct constructor `0x08A3C724`
+initializes an object and enters its shared initializer. The
+inspected direct chain covers `0x08B793E0`, `0x08B56380`,
+`0x08943300` and their checked callees. Two callers share the
+tail at `0x08A56C68`; declaring that entry separately avoids
+overlapping generated code. This is AOT coverage, not evidence
+that every source-backed branch executed.
+
+**VERIFIED object call:** the initializer's call at
+`0x08A3C610` observed `0x08A3C7C4`. Constructor
+`0x08A3C724` stores subobject vtable `0x08BC8178`; exact
+file-backed slot `0x08BC8180` contains the observed target.
+The guarded call names only that slot.
+
+**VERIFIED later object call:** a bounded write watch at
+guest address `0x090A7E90` observed a main-thread write of
+`0x08BB3798` during dispatch `0x089983F4`. Exact-input
+instructions at `0x0899853C`/`0x08998540` construct this
+vtable, and `0x08998558` stores it at object offset `0x150`.
+The call at `0x089986C4` observed `0x08998968`; its exact
+file-backed slot `0x08BB37A0` contains that target. The same
+constructor stores vtable `0x08BB3738` at offset `0x168`,
+whose slot `0x08BB3740` supplies inspected target
+`0x08998978` for call `0x089987BC`. That latter site is
+source-backed coverage, not a claim it executed in this run.
+The write watch reports a dispatch PC, not the exact store PC.
+
+**VERIFIED bounded stop:** the 1,010-root / 59,948-word
+exact-input slice passes the observed virtual target and stops
+at missing direct `0x08A8CB04`, called from `0x08998760`.
+One volatile-memory lock remains held, with 15 GE lists, one
+controller read, 16 display frames and zero nonblack pixels in
+the captured 480×272 scanout. Title-screen boot and physical
+ARM64 behavior remain unverified.
+
+**PLANNED:** cover inspected four-word `0x08A8CB04` and
+continue bounded exact-input execution.
