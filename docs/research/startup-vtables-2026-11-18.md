@@ -617,3 +617,21 @@ See [module contract](startup-av-modules.md).
 
 **PLANNED:** inspect the observed target and exact slot for
 `0x08976C7C`, then continue the bounded run.
+
+## Nested object continuation
+
+**VERIFIED, 2026-11-20:** `0x08976C7C` reads checked slot
+`0x08BB0FB8`, whose exact-input word is `0x089780BC`.
+Direct helpers `0x0897668C`, `0x08975894`, `0x0888E168`
+and `0x0888D2C0` then execute. Their calls at
+`0x089766EC`, `0x08975928`, `0x08975A30`, `0x0888E1F8`
+and `0x0888D354` observe the already covered `0x0885E644`
+through checked file-backed slot `0x08B8F860`.
+
+**VERIFIED bounded stop:** the 958-root / 56,730-word slice
+stops at guarded call `0x0888D4A8`, observing the same
+`0x0885E644` target. The captured scanout still has zero
+nonblack pixels. This is bounded host execution, not a title
+screen or physical ARM64 run.
+
+**PLANNED:** check the slot at `0x0888D4A8` and continue.

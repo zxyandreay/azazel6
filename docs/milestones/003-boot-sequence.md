@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-20 nested object continuation.** The
+958-root / 56,730-word exact-input slice passes the checked
+`0x08976C7C` target and further direct object helpers. It
+stops at guarded `0x0888D4A8`, observing `0x0885E644`.
+Captured scanout is still black; title-screen boot remains
+open. See [continuation evidence](../research/startup-vtables-2026-11-18.md#nested-object-continuation).
+
 **VERIFIED, 2026-11-19 AV module and object continuation.** The
 953-root / 55,986-word exact-input slice passes three checked
 `sceUtilityLoadModule` requests and several file-backed virtual
