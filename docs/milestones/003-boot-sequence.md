@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 selector and matrix helpers.**
+The 1,118-root / 64,935-word exact-input slice passes a
+six-entry selector and three inspected matrix helpers,
+then stops at missing direct function `0x08AC24F4`.
+Captured scanout remains black; title-screen boot remains
+open. See [continuation evidence](../research/startup-vtables-2026-11-18.md#six-entry-selector-and-matrix-helpers).
+
 **VERIFIED, 2026-11-21 large cleanup continuation.**
 The 1,114-root / 64,628-word exact-input slice passes
 the checked nested cleanup call and stops at missing

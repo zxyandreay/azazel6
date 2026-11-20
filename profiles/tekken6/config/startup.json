@@ -1,6 +1,10 @@
 {
   "vfpu_vi2uc_sites": ["0x08ADE234", "0x08ADE25C"],
   "roots": [
+    "0x08AC4934",
+    "0x08AC23DC",
+    "0x08AC2C94",
+    "0x08945ED4",
     "0x08AE0180",
     "0x088643A4",
     "0x08863524",
@@ -1134,6 +1138,12 @@
     }
   ],
   "jump_tables": [
+    {
+      "site": "0x08945EF8",
+      "register": 4,
+      "table_start": "0x08B9E420",
+      "count": 6
+    },
     {
       "site": "0x08946BA4",
       "register": 4,

@@ -1023,3 +1023,31 @@ unverified.
 
 **PLANNED:** inspect `0x08945EF8`, cover the required
 direct target and continue bounded execution.
+
+## Six-entry selector and matrix helpers
+
+**VERIFIED, 2026-11-21:** missing direct function
+`0x08945ED4` uses an unsigned index below six to read
+the six exact file-backed words at `0x08B9E420`.
+All targets remain inside its inspected CFG. The bounded
+run passes this selector and stops at direct helper
+`0x08AC2C94` from `0x08AC2CEC`.
+
+**VERIFIED further continuation:** the 22-word
+`0x08AC2C94` executes, followed by `0x08AC23DC` and
+its 224-word direct callee `0x08AC4934`. These roots
+were inspected before coverage. The next direct call
+from the same chain stops before `0x08AC24F4` executes.
+
+**VERIFIED bounded stop:** the 1,118-root / 64,935-word
+exact-input slice stops at missing direct function
+`0x08AC24F4`. Its inspected 202-word CFG has uncovered
+callees `0x08AC2494` and `0x08AC4DA8`. One
+volatile-memory lock remains held. There are 15 GE
+lists, one controller read, 16 display frames and zero
+nonblack pixels in the captured 480×272 scanout.
+Title-screen boot and physical ARM64 behavior remain
+unverified.
+
+**PLANNED:** inspect and cover the two direct callees
+under `0x08AC24F4`, then continue bounded execution.
