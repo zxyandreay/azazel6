@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-20 five-entry jump-table continuation.**
+The 1,023-root / 60,359-word exact-input slice executes the
+bounded object jump table and stops at shared dispatch targeting
+`0x08866B8C`. Captured scanout remains black; title-screen
+boot remains open. See [jump-table evidence](../research/startup-vtables-2026-11-18.md#bounded-five-entry-object-jump-table).
+
 **VERIFIED, 2026-11-20 object-array continuation.** The
 1,018-root / 60,182-word exact-input slice passes three
 checked object calls and stops at shared dispatch targeting

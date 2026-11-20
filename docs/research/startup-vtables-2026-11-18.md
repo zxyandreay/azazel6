@@ -753,3 +753,30 @@ boot or physical ARM64 verification.
 
 **PLANNED:** cover inspected two-word `0x08958850` through
 the exact slot and continue the bounded run.
+
+## Bounded five-entry object jump table
+
+**VERIFIED, 2026-11-20:** shared call `0x0885FCF4`
+reaches two-word `0x08958850` through checked slot
+`0x08B9F5F4`. Tail `0x08808314` next reaches
+`0x0893A7D4` through checked slot `0x08B9CCE0`.
+Its direct helpers `0x08928B40` and `0x0893A678`
+execute. The latter's `0x0893A69C` jump reads one of
+five file-backed words beginning at `0x08B9CD08` only
+when its unsigned index is below five. The five exact
+targets are covered within its bounded CFG; no general
+computed jump is enabled.
+
+**VERIFIED bounded stop:** the 1,023-root / 60,359-word
+exact-input slice passes this jump-table path, then shared
+call `0x0885FCF4` reaches `0x0883DAC4` through checked
+slot `0x08B8D9D4`. It stops at the next shared target
+`0x08866B8C`, whose unique exact-input slot is
+`0x08B905FC`. The captured 480×272 scanout still has
+zero nonblack pixels after 16 display frames. One
+volatile-memory lock, 15 GE lists and one controller read
+remain. Title-screen boot and physical ARM64 behavior
+are unverified.
+
+**PLANNED:** cover inspected eight-word `0x08866B8C`
+through its exact slot and continue bounded execution.
