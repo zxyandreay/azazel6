@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-20 constructed callback continuation.** The
+965-root / 57,245-word exact-input slice passes a guest-written
+callback in a list node, guarded by its exact address-construction
+instructions. It stops at missing direct `0x08A3C724`.
+Captured scanout remains black; title-screen boot remains open.
+See [callback evidence](../research/startup-vtables-2026-11-18.md#nested-callbacks-and-constructed-list-node).
+
 **VERIFIED, 2026-11-20 nested object continuation.** The
 958-root / 56,730-word exact-input slice passes the checked
 `0x08976C7C` target and further direct object helpers. It

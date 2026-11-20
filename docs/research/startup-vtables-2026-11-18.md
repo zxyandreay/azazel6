@@ -635,3 +635,42 @@ nonblack pixels. This is bounded host execution, not a title
 screen or physical ARM64 run.
 
 **PLANNED:** check the slot at `0x0888D4A8` and continue.
+
+## Nested callbacks and constructed list node
+
+**VERIFIED, 2026-11-20:** the calls at `0x0888D4A8` and
+`0x0888D508` use checked file-backed slot `0x08B8F860`, whose
+exact-input word is `0x0885E644`. Shared dispatch
+`0x0885FCF4` then reaches `0x08974BD4`, `0x08986888`,
+`0x08A9C104`, `0x08A535EC` and `0x089985D4` through checked
+slots `0x08BB0ACC`, `0x08BB271C`, `0x08BCE188`,
+`0x08BC8E7C` and `0x08BB36F4`, respectively. Nested calls at
+`0x08986930`, `0x089869D8` and `0x08986A7C` also use
+`0x08B8F860`. Direct helper `0x089B6C54` is covered.
+
+**VERIFIED callback provenance:** `0x08A9C104` takes a call
+target from offset 4 of a runtime list node, then invokes it at
+`0x08A9C168`. This pointer is guest-written, not a file-backed
+vtable slot. A bounded write watch of node address `0x090A8180`
+observed the main thread store `0x08A9CB44` during dispatch
+`0x08A9F034`, before the guarded call observed the same target.
+Exact-input instructions at `0x08A9F070` and `0x08A9F074`
+construct `0x08A9CB44`; `0x08A9F078` stores that value at node
+offset 4. The guard for `0x08A9C168` names only this source pair
+and target. The watch identifies the dispatch and address, while
+the disassembly identifies the store instruction; it does not
+claim an instruction-precise watch PC.
+
+**VERIFIED bounded stop:** the 965-root / 57,245-word exact-input
+slice passes these callbacks and `0x089B6C54`, then stops at
+missing direct function `0x08A3C724`, called from
+`0x08998658`. One volatile-memory lock remains held. It records
+15 GE lists, one controller read, 16 display frames and zero
+nonblack pixels in the captured 480×272 scanout. This is bounded
+host execution; title-screen boot and physical ARM64 behavior
+remain unverified.
+
+**PLANNED:** inspect and cover `0x08A3C724` and its direct
+callees. The candidate inspector reaches an indirect call at
+`0x08A3C610` in a called function, so that site needs a reviewed
+target map before generation.

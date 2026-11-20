@@ -1,6 +1,13 @@
 {
   "vfpu_vi2uc_sites": ["0x08ADE234", "0x08ADE25C"],
   "roots": [
+    "0x089B6C54",
+    "0x089985D4",
+    "0x08A535EC",
+    "0x08A9CB44",
+    "0x08A9C104",
+    "0x08986888",
+    "0x08974BD4",
     "0x0888D2C0",
     "0x0888E168",
     "0x08975894",
@@ -1029,8 +1036,8 @@
   ],
   "trapped_calls": [
     {
-      "site": "0x0888D4A8",
-      "register": 3
+      "site": "0x089986C4",
+      "register": 2
     },
     {
       "site": "0x08975B78",
@@ -1294,6 +1301,31 @@
     }
   ],
   "pointer_calls": [
+    {
+      "site": "0x08986A7C",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x089869D8",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x08986930",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888D508",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
+    {
+      "site": "0x0888D4A8",
+      "register": 3,
+      "pointers": ["0x08B8F860"]
+    },
     {
       "site": "0x0888D354",
       "register": 3,
@@ -2190,7 +2222,11 @@
         "0x08B8C23C",
         "0x08BC8FE4",
         "0x08BC90DC",
-        "0x08BB0A84"
+        "0x08BB0A84",
+        "0x08BB0ACC",
+        "0x08BB271C",
+        "0x08BC8E7C",
+        "0x08BB36F4"
       ]
     },
     {
@@ -2788,7 +2824,8 @@
         "0x08B9C580",
         "0x08B9C308",
         "0x08BA39D0",
-        "0x08B8AF18"
+        "0x08B8AF18",
+        "0x08BCE188"
       ]
     },
     {
@@ -2852,6 +2889,11 @@
     "confirm_button": 1
   },
   "immediate_calls": [
+    {
+      "site": "0x08A9C168",
+      "register": 5,
+      "sources": [{"upper": "0x08A9F070", "lower": "0x08A9F074"}]
+    },
     {
       "site": "0x0886C814",
       "register": 6,
