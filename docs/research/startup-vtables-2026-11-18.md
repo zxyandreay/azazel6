@@ -1083,3 +1083,33 @@ unverified.
 
 **PLANNED:** cover inspected 14-word `0x08AC4FFC`
 and continue bounded execution.
+
+## Following matrix helpers and sibling tail
+
+**VERIFIED, 2026-11-21:** inspected direct function
+`0x08AC4FFC` executes. Its caller continues through
+inspected `0x08AC5064` and `0x08AC4E24` before entering
+`0x08AC2DA0`. The latter executes inspected direct
+`0x08AC2438` and reaches trapped tail `0x08AC2E10`,
+observing already covered `0x08AC3CD8`.
+
+**VERIFIED sibling tail provenance:** `0x08AC2E10`
+loads the same object through caller offset `0x3F8` as
+the earlier `0x08AC2D8C` tail. The watched object at
+`0x08C44E00` has vtable `0x08BCF510`; offset `+0xC`
+slot `0x08BCF51C` contains `0x08AC3CD8`. The exact-slot
+guard passes and dispatches that target in the bounded
+run. The other sibling tail uses offset `+0x10`; no
+additional vtable variant is authorized here.
+
+**VERIFIED bounded stop:** the 1,129-root / 65,364-word
+exact-input slice stops at missing direct function
+`0x089550A0` after the sibling tail returns. One
+volatile-memory lock remains held. There are 15 GE
+lists, one controller read, 16 display frames and zero
+nonblack pixels in the captured 480×272 scanout.
+Title-screen boot and physical ARM64 behavior remain
+unverified.
+
+**PLANNED:** cover inspected eight-word `0x089550A0`
+and continue bounded execution.
