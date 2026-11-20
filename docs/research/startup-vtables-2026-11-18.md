@@ -817,3 +817,42 @@ unverified.
 
 **PLANNED:** cover inspected two-word `0x08A05F64`
 through its exact slot, then continue bounded execution.
+
+## Three observed vtables at one wrapper
+
+**VERIFIED, 2026-11-21:** shared call `0x0885FCF4`
+passes `0x08A05F64` through checked slot `0x08BBFD74`.
+The next shared target is `0x08A006B8`. Four file-backed
+slots contain that address, so the target word alone does
+not establish which object supplies it. Three bounded
+write watches identify the actual object vtables:
+
+| Guest object | Final vtable | Shared-call slot | Tail slot | Tail target |
+| --- | --- | --- | --- | --- |
+| `0x08D47D00` | `0x08BBF2B0` | `0x08BBF2C4` | `0x08BBF2E0` | `0x08A0053C` |
+| `0x08D47C40` | `0x08BBF510` | `0x08BBF524` | `0x08BBF540` | `0x08A01970` |
+| `0x08D47B80` | `0x08BBF5A0` | `0x08BBF5B4` | `0x08BBF5D0` | `0x08A02380` |
+
+**VERIFIED source and execution:** constructors
+`0x08A005C8`, `0x08A01C70` and `0x08A023D8`
+write these final vtables after an intermediate base
+vtable. The common wrapper `0x08A006B8` reads the tail
+at vtable offset `0x30` and dispatches through all three
+checked targets in the bounded run. The shared call reads
+offset `0x14`. The remaining matching file word, slot
+`0x08BBF314`, is not authorized by this profile change.
+The watches report dispatch PCs and guest addresses;
+the exact store instructions were separately inspected.
+
+**VERIFIED bounded stop:** the 1,040-root / 60,745-word
+exact-input slice passes these three object variants and
+stops at shared call `0x0885FCF4`, observing target
+`0x08943518` from unique file-backed slot `0x08B9D8B4`.
+One volatile-memory lock remains held. There are 15 GE
+lists, one controller read, 16 display frames and zero
+nonblack pixels in the captured 480×272 scanout.
+Title-screen boot and physical ARM64 behavior remain
+unverified.
+
+**PLANNED:** inspect `0x08943518` and its indirect call
+at `0x089435C4`, then continue bounded execution.
