@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 object-tail and callback continuation.**
+The 1,054-root / 61,429-word exact-input slice passes a
+checked object tail and indexed callback, then stops at
+guarded call `0x08863364` targeting `0x08864A2C`.
+Captured scanout remains black; title-screen boot remains
+open. See [table evidence](../research/startup-vtables-2026-11-18.md#checked-object-tail-and-callback-table).
+
 **VERIFIED, 2026-11-21 parent/subobject continuation.** The
 1,044-root / 60,859-word exact-input slice passes checked
 parent and subobject callbacks, then stops at shared dispatch

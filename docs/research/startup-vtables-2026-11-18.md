@@ -891,3 +891,35 @@ does not verify title-screen boot or physical ARM64 behavior.
 
 **PLANNED:** inspect `0x088C59C4` and its indirect
 transfer at `0x088C5B28`, then continue bounded execution.
+
+## Checked object tail and callback table
+
+**VERIFIED, 2026-11-21:** shared call `0x0885FCF4`
+reaches `0x088C59C4` through unique file-backed slot
+`0x08B974C4`. The method's inspected direct callees
+`0x088AA400` and `0x089EBC00` are covered. Its tail
+at `0x088C5B28` reads vtable offset `0x18` and observed
+`0x088C5534`. Exact adjacent slot `0x08B974C8`
+contains that target. The bounded run passes the guarded
+tail and the target's five inspected direct callees.
+
+**VERIFIED callback table:** `0x088675EC` installs
+the file-backed table base `0x08B90B98` in a guest
+object. The indexed call at `0x088676A8` subsequently
+observed `0x08867850` from exact slot `0x08B90B9C`.
+That 30-word target was inspected, added alongside the
+two previously guarded entries, and dispatched in the
+bounded continuation.
+
+**VERIFIED bounded stop:** the 1,054-root / 61,429-word
+exact-input slice stops at guarded call `0x08863364`,
+observing `0x08864A2C`. The target has one file-backed
+word at `0x08B90380`; its provenance at this call is
+still under review. One volatile-memory lock remains
+held. The run has 15 GE lists, one controller read,
+16 display frames and zero nonblack pixels in the
+captured 480×272 scanout. Title-screen boot and physical
+ARM64 behavior remain unverified.
+
+**PLANNED:** inspect the `0x08863364` callback table
+and `0x08864A2C` target before widening its guard.
