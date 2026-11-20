@@ -923,3 +923,35 @@ ARM64 behavior remain unverified.
 
 **PLANNED:** inspect the `0x08863364` callback table
 and `0x08864A2C` target before widening its guard.
+
+## Adjacent callback and cleanup vtable
+
+**VERIFIED, 2026-11-21:** the bounded run passes
+guarded call `0x08863364` with target `0x08864A2C`.
+The target occurs once in the exact executable, at
+file-backed word `0x08B90380`, and its 44-word CFG was
+inspected. A write watch at guest field `0x090B0FA8`
+observed table pointer `0x08B90388` before this call.
+The indexed lookup is guarded by the exact target word;
+the watch reports a dispatch PC, not an exact store PC.
+
+**VERIFIED cleanup call:** `0x08864A2C` leads through
+inspected direct function `0x08864858` and its four-word
+callee `0x088651B4`. The call at `0x088649E0` then
+observed `0x088651F4`. A write watch at guest object field
+`0x090B0FC8` observed vtable `0x08B902F0` before that
+call. Offset `+8` slot `0x08B902F8` contains the observed
+target; the guarded four-word method dispatched in the
+bounded run.
+
+**VERIFIED bounded stop:** the 1,058-root / 61,559-word
+exact-input slice stops at shared call `0x0885FCF4`,
+observing `0x08864608` from unique file-backed slot
+`0x08B9013C`. One volatile-memory lock remains held.
+There are 15 GE lists, one controller read, 16 display
+frames and zero nonblack pixels in the captured 480×272
+scanout. Title-screen boot and physical ARM64 behavior
+remain unverified.
+
+**PLANNED:** cover inspected `0x08864608` through its
+exact shared-call slot and continue bounded execution.

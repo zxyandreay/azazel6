@@ -1,5 +1,12 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 adjacent callback and cleanup.**
+The 1,058-root / 61,559-word exact-input slice passes a
+checked indexed callback and object cleanup vtable call,
+then stops at shared dispatch targeting `0x08864608`.
+Captured scanout remains black; title-screen boot remains
+open. See [cleanup evidence](../research/startup-vtables-2026-11-18.md#adjacent-callback-and-cleanup-vtable).
+
 **VERIFIED, 2026-11-21 object-tail and callback continuation.**
 The 1,054-root / 61,429-word exact-input slice passes a
 checked object tail and indexed callback, then stops at
