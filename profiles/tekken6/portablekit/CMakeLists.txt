@@ -18,7 +18,12 @@ endif()
 # Renderer evaluation is explicit; normal compatibility runs remain headless.
 option(AZAZEL6_PORTABLEKIT_RENDERER "Build the optional renderer contract probe" OFF)
 set(PORTABLEKIT_RENDERER ${AZAZEL6_PORTABLEKIT_RENDERER} CACHE BOOL "Explicit renderer research" FORCE)
-set(PORTABLEKIT_FFMPEG OFF CACHE STRING "No media downloads" FORCE)
+set(AZAZEL6_PORTABLEKIT_FFMPEG OFF CACHE STRING "Optional real ATRAC/movie decoder: OFF, system, or bundled")
+set_property(CACHE AZAZEL6_PORTABLEKIT_FFMPEG PROPERTY STRINGS OFF system bundled)
+if(NOT AZAZEL6_PORTABLEKIT_FFMPEG MATCHES "^(OFF|system|bundled)$")
+    message(FATAL_ERROR "AZAZEL6_PORTABLEKIT_FFMPEG must be OFF, system, or bundled")
+endif()
+set(PORTABLEKIT_FFMPEG ${AZAZEL6_PORTABLEKIT_FFMPEG} CACHE STRING "Explicit media research" FORCE)
 set(PSPRECOMP_MSVC_MP_JOBS 1 CACHE STRING "Bound compiler concurrency")
 add_subdirectory("${AZAZEL6_PORTABLEKIT_SOURCE}" portablekit)
 portablekit_add_game(azazel6_portablekit_probe PROFILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -29,7 +34,10 @@ if(AZAZEL6_PORTABLEKIT_RENDERER)
         message(FATAL_ERROR "Explicit renderer evaluation requires SDL3, Vulkan and glslang; no headless fallback")
     endif()
 endif()
-target_sources(azazel6_portablekit_probe PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/host/bootstrap.cpp")
+target_sources(azazel6_portablekit_probe PRIVATE
+    "${AZAZEL6_ROOT}/profiles/tekken6/host/bootstrap.cpp"
+    "${AZAZEL6_ROOT}/profiles/tekken6/host/media.cpp"
+    "${AZAZEL6_ROOT}/profiles/tekken6/host/media_hash.cpp")
 target_include_directories(azazel6_portablekit_probe PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/include")
 enable_testing()
 add_test(NAME portablekit_ge_compatibility COMMAND azazel6_portablekit_probe --test-ge)
@@ -42,3 +50,8 @@ add_executable(azazel6_portablekit_clock_tests "${AZAZEL6_ROOT}/profiles/tekken6
 target_include_directories(azazel6_portablekit_clock_tests PRIVATE "${AZAZEL6_ROOT}/profiles/tekken6/include")
 target_link_libraries(azazel6_portablekit_clock_tests PRIVATE psprecomp_core)
 add_test(NAME portablekit_clock_compatibility COMMAND azazel6_portablekit_clock_tests)
+add_executable(azazel6_portablekit_wakeup_tests cancel_wakeup_test.cpp)
+target_include_directories(azazel6_portablekit_wakeup_tests PRIVATE
+    "${AZAZEL6_PORTABLEKIT_SOURCE}/host" "${AZAZEL6_PORTABLEKIT_SOURCE}/include")
+target_link_libraries(azazel6_portablekit_wakeup_tests PRIVATE psprecomp_core)
+add_test(NAME portablekit_wakeup_compatibility COMMAND azazel6_portablekit_wakeup_tests)

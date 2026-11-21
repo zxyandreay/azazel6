@@ -145,3 +145,11 @@ and bounded memory/resource lifetime on a real Android device. Complete Mileston
 Synthetic graphics tests, cross-compilation, callback registration and headless
 startup alone do not meet either visual gate. Publish reviewed results only;
 captures, game-derived translations and logs remain under ignored `local/`.
+
+**2026-11-21 research update:** the isolated exact-ISO PortableKit interpreter
+with a real ATRAC decoder and pinned Vulkan backend captured a visible Bandai
+Namco Games opening logo. The synthetic clear/readback contract also passed.
+A later bounded movie transition remained black and stopped at the missing
+`scePsmfPlayerGetCurrentPts` service. The opening logo is not the Tekken title
+or a gameplay frame; this milestone's menu/game-rendering gate stays open. See the
+[strategy comparison](../research/interpreter-first-bring-up-2026-11-21.md).

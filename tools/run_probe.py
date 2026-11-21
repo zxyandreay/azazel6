@@ -10,10 +10,10 @@ from analyze import ROOT, local_output
 from elf import load_profile, validate
 
 
-def run_mounted(command, log, deadline, execution_seconds=15):
+def run_mounted(command, log, deadline, execution_seconds=15, env=None):
     """The child flushes a marker and blocks on stdin before any guest execution."""
     phase = "media_validation"
-    with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=log, stderr=subprocess.STDOUT) as child:
+    with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=log, stderr=subprocess.STDOUT, env=env) as child:
         try:
             with open(log.name, "rb") as reader:
                 while time.monotonic() < deadline:

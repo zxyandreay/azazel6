@@ -1,6 +1,8 @@
 """Synthetic refusal and isolation checks for the optional upstream comparison."""
 import json
+import hashlib
 import os
+import struct
 from pathlib import Path
 import tempfile
 import unittest
@@ -9,7 +11,7 @@ from types import SimpleNamespace
 
 from test_elf import ROOT, fixture
 from elf import ValidationError
-from portablekit_probe import checked_source, clear_packet, main, probe_environment
+from portablekit_probe import checked_source, clear_packet, main, probe_environment, summarize_bmp, validate_media
 
 
 class PortableKitProbeTests(unittest.TestCase):
@@ -44,6 +46,49 @@ class PortableKitProbeTests(unittest.TestCase):
         self.assertEqual(env['AZAZEL6_EVAL_FAST_LOADING'], '0')
         self.assertEqual(env['AZAZEL6_EVAL_STRICT_HLE'], '1')
         self.assertEqual(env['AZAZEL6_EVAL_DATA_DIR'], str(Path('local/probe')))
+        self.assertEqual(env['AZAZEL6_EVAL_LIST_STUBS'], '1')
+
+    def test_media_preflight_refuses_size_hash_and_deadline(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'local') as directory:
+            path = Path(directory) / 'disc.iso'
+            path.write_bytes(b'fake disc')
+            profile = {'media': {'size': 9, 'sha256': hashlib.sha256(b'fake disc').hexdigest()}}
+            self.assertEqual(validate_media(path, profile, float('inf')), profile['media']['sha256'])
+            with self.assertRaisesRegex(ValueError, 'size'):
+                validate_media(path, {'media': {**profile['media'], 'size': 10}}, float('inf'))
+            with self.assertRaisesRegex(ValueError, 'SHA-256'):
+                validate_media(path, {'media': {**profile['media'], 'sha256': '0' * 64}}, float('inf'))
+            with self.assertRaisesRegex(ValueError, 'timed out'):
+                validate_media(path, profile, 0)
+
+    def test_renderer_capture_requires_bounded_bmp(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'local') as directory:
+            path = Path(directory) / 'game.bmp'
+            header = bytearray(54)
+            header[:2] = b'BM'
+            struct.pack_into('<I', header, 2, 62)
+            struct.pack_into('<I', header, 10, 54)
+            struct.pack_into('<IiiHHI', header, 14, 40, 2, 1, 1, 24, 0)
+            path.write_bytes(header + b'\0\0\0\xff\0\0\0\0')
+            self.assertEqual(summarize_bmp(path)['nonblack_pixels'], 1)
+            path.write_bytes(header + b'\0\0\0')
+            self.assertEqual(summarize_bmp(path)['status'], 'invalid')
+            with self.assertRaisesRegex(ValueError, 'exact ISO'):
+                main(['render-game', 'local/game/EBOOT.BIN', '--output', str(Path(directory) / 'out')])
+
+    def test_wrong_media_has_no_output_or_child(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / 'local') as directory:
+            output = Path(directory) / 'output'
+            disc = Path(directory) / 'wrong.iso'
+            disc.write_bytes(b'wrong')
+            with patch('portablekit_probe.validate') as executable, patch('portablekit_probe.checked_source') as source, patch(
+                    'subprocess.Popen') as child:
+                with self.assertRaisesRegex(ValueError, 'ISO size'):
+                    main(['run', 'local/game/EBOOT.BIN', '--iso', str(disc), '--output', str(output)])
+                executable.assert_called_once()
+                source.assert_not_called()
+                child.assert_not_called()
+                self.assertFalse(output.exists())
 
     def test_clear_packet_is_complete_and_owned(self):
         sha = "a" * 64

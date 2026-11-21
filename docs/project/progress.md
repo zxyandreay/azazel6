@@ -42,7 +42,7 @@ Azazel6 is not playable. See
 | Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes four VBLANK handlers, SetMode and next-edge WaitVblankStartCB with inactive callbacks under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
-| PortableKit reuse | VERIFIED optional pinned Windows headless build, exact sectionless ELF admission and shared metadata/clock tests and checked external clear-vertex decoding; bounded interpreter comparison only. A separate Windows Vulkan stripe/readback contract passes; depth-address handling, disc and audio compatibility are not established. See [evaluation](../research/portablekit.md) |
+| PortableKit reuse | VERIFIED optional pinned exact-ISO Windows interpreter and Vulkan/FFmpeg build reached a visible Bandai Namco Games opening logo. The next strict stop is movie-player current-PTS; GE depth alias, completion and ATRAC ID-pool contracts remain unresolved. The primary runtime is unchanged. See [measured comparison](../research/interpreter-first-bring-up-2026-11-21.md). |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
 | Native entry execution | VERIFIED 1,134 reviewed roots / 65,487 words. Calendar/libc time, checked virtual paths, callback targets, bounded cache writebacks, mode-zero volatile-memory try-lock, fixed system-language query, two exact-site `vi2uc.q` conversions and three scoped AV module requests execute. Guest-written callback and object vtable targets have exact source guards. Further inspected direct helpers and an object-update chain execute after the checked sibling tails. The next stop is missing direct function `0x0886546C`. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [continuation evidence](../research/startup-vtables-2026-11-18.md#following-direct-helper-and-object-update). |
@@ -81,3 +81,15 @@ Linux environment; the full repository suite, exact-EBOOT inspection, native
 probe, Android SDK builds and AVD runs were **not available** in that environment.
 The previously verified game execution and graphics boundaries above are
 unchanged.
+
+**2026-11-21 optional whole-host comparison:** VERIFIED exact-ISO interpreter
+execution against pinned PortableKit reached a visible Bandai Namco Games
+opening logo in a bounded Windows Vulkan capture after 188 VBLANKs and 103 GE
+enqueues. A larger bounded pass reached a black movie transition at the next
+strict `scePsmfPlayerGetCurrentPts` barrier after 657 VBLANKs and 337 GE
+enqueues. No Tekken title, gameplay frame or Android game execution is
+established. PortableKit's ATRAC ID-pool and GE completion approximations keep
+this diagnostic, while the primary AOT implementation remains intact. Broad
+generation produced 1,015 units with 62,036 unsupported sites, so a full
+compile has not been justified. See the
+[measured strategy comparison](../research/interpreter-first-bring-up-2026-11-21.md).

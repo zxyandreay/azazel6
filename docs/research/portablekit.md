@@ -1,5 +1,10 @@
 # PortableKit compatibility investigation
 
+The [2026-11-21 interpreter-first comparison](interpreter-first-bring-up-2026-11-21.md)
+adds exact-ISO execution, strict missing-HLE tracing, broad AOT generation
+measurements and a current native-baseline comparison. The earlier checkpoints
+below remain historical evidence.
+
 **2026-10-24: optional research integration; primary AOT architecture unchanged.**
 The user suggested [PortableKit](https://github.com/TeamGDB/PortableKit).
 Revision `33800c4060c53f3233e08f8ab2cc4590a0872063` is pinned separately in
