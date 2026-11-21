@@ -49,6 +49,7 @@ Reviewed 2026-10-28. Evidence labels apply to individual claims:
 - [Guarded graphics startup continuation](research/startup-indirect-2026-10-22.md)
 - [PortableKit compatibility and reuse](research/portablekit.md)
 - [Interpreter-first bring-up comparison](research/interpreter-first-bring-up-2026-11-21.md)
+- [First PortableKit hybrid AOT checkpoint](research/hybrid-aot-portablekit-2026-11-21.md)
 - [Startup mutex ownership](research/mutexes.md)
 - [Bounded semaphore signaling and deletion](research/semaphores.md)
 - [Guarded formatter jump table](research/jump-tables.md)

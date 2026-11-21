@@ -3,6 +3,8 @@
 #include "kernel/kernel.hpp"
 #include "psprecomp/common.hpp"
 #include "psprecomp/sha256.hpp"
+#include "psprecomp/interpreter.hpp"
+#include "psprecomp/runtime.hpp"
 #include "azazel6/bootstrap.hpp"
 #include "azazel6/clock_conversion.hpp"
 #include "azazel6/media.hpp"
@@ -18,7 +20,20 @@ int portablekit_ge_contracts();
 int portablekit_decode_clear(const char*);
 int portablekit_renderer_contracts();
 
+#ifdef AZAZEL6_ENTRY_AOT
+namespace psprecomp {
+void Tekken6Entry(CorpusRuntime&, AllegrexContext&);
+}
+#endif
+
 namespace {
+std::uint64_t native_aot_entry_calls = 0;
+#ifdef AZAZEL6_ENTRY_AOT
+void counted_entry(psprecomp::CorpusRuntime& runtime, psprecomp::AllegrexContext& ctx) {
+    ++native_aot_entry_calls;
+    psprecomp::Tekken6Entry(runtime, ctx);
+}
+#endif
 struct Nid { const char* library; std::uint32_t nid; const char* name; };
 constexpr Nid nids[] = {
 #include "nid_table.inc"
@@ -97,8 +112,15 @@ int main(int argc, char** argv) {
         if (elf.runtime_entry(0) != 0x08804124u || !module || module->gp != 0x08C022B0u ||
             module->name != "tekken" || elf.scan_imports(rt.memory(), *module).size() != 268)
             throw psprecomp::Error("Unexpected executable/module/import identity");
+        psprecomp::register_generated_functions(rt);
+#ifdef AZAZEL6_ENTRY_AOT
+        if (!rt.has_function(elf.runtime_entry(0)))
+            throw psprecomp::Error("Linked corpus omitted the reviewed Tekken entry");
+        rt.register_function(elf.runtime_entry(0), counted_entry, "Tekken6Entry/counted");
+#endif
+        const bool entry_aot_linked = rt.has_function(elf.runtime_entry(0));
         std::cout << "Exact input admitted; " << (capture_game ? "Vulkan" : "headless")
-                  << " diagnostic interpretation, not AOT boot verification\n";
+                  << " hybrid diagnostic entry_aot_linked=" << entry_aot_linked << '\n';
         portablekit::install_system(rt, elf, {disc_image, std::filesystem::path(argv[2]) / "ms0"});
 #ifdef PORTABLEKIT_HAS_RENDERER
         if (capture_game && !portablekit::active_renderer())
@@ -118,6 +140,9 @@ int main(int argc, char** argv) {
         const auto dispatch_limit = capture_game && std::string_view(argv[10]) == "250000" ? 250000u : 100000u;
         std::cout << "dispatch_limit=" << dispatch_limit << '\n';
         rt.run(elf.runtime_entry(0), dispatch_limit);
+        const auto interpreted = psprecomp::interpreter_stats();
+        std::cout << "native_aot_entry_calls=" << native_aot_entry_calls
+                  << " interpreter_instructions=" << interpreted.instructions << '\n';
 #ifdef PORTABLEKIT_HAS_RENDERER
         if (capture_game) {
             if (!portablekit::active_renderer()->capture_frame(argv[8]))

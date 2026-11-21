@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-11-17: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-11-21: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -11,7 +11,7 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 97 cases passed locally, including media validation, guest execution watchdogs and exact-site VFPU lowering guards |
+| Python/profile tools | VERIFIED, 103 cases passed locally, including media validation, guest execution watchdogs, exact-site VFPU lowering guards and hybrid AOT admission/counter refusals |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts and 29 integrated native CTest suites, including exact AV module IDs and duplicate-load state |
 | Thread lifecycle | VERIFIED create/start/exit/delete and exit-status queries, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attributes are supported at creation and by later addition/removal |
@@ -42,14 +42,14 @@ Azazel6 is not playable. See
 | Display foundation | VERIFIED synthetic LCD phases, checked framebuffer latches and integrated interrupt/wait ordering; real startup executes four VBLANK handlers, SetMode and next-edge WaitVblankStartCB with inactive callbacks under bounded idle events; runnable guest-time accounting remains unimplemented |
 | ULUS10466 validation | VERIFIED exact local hash/ELF match |
 | Reverse-engineering tools | VERIFIED native Windows Ghidra 12.1.3 / Allegrex v21.4 headless import, 45 instruction-byte checks and advisory decompilation; reusable local evidence wrapper. REA's documented gate rejects missing separate ABI metadata; no REA execution claimed. See [workflow](../research/reverse-engineering.md) |
-| PortableKit reuse | VERIFIED optional pinned exact-ISO Windows interpreter and Vulkan/FFmpeg build reached a visible Bandai Namco Games opening logo. The next strict stop is movie-player current-PTS; GE depth alias, completion and ATRAC ID-pool contracts remain unresolved. The primary runtime is unchanged. See [measured comparison](../research/interpreter-first-bring-up-2026-11-21.md). |
+| PortableKit reuse | VERIFIED pinned exact-ISO Windows hybrid AOT/interpreter build reached the Bandai Namco Games opening logo, with one measured native Tekken entry call and 73,261,212 interpreted instructions. The next strict stop is movie-player current-PTS; GE depth alias, completion and ATRAC ID-pool contracts remain unresolved. The primary runtime is unchanged. See [hybrid evidence](../research/hybrid-aot-portablekit-2026-11-21.md). |
 | Module and imports | VERIFIED GP and 268 imports in 30 libraries |
 | Full exploratory generation | VERIFIED 1,015 local units; not fully compiled |
 | Native entry execution | VERIFIED 1,134 reviewed roots / 65,487 words. Calendar/libc time, checked virtual paths, callback targets, bounded cache writebacks, mode-zero volatile-memory try-lock, fixed system-language query, two exact-site `vi2uc.q` conversions and three scoped AV module requests execute. Guest-written callback and object vtable targets have exact source guards. Further inspected direct helpers and an object-update chain execute after the checked sibling tails. The next stop is missing direct function `0x0886546C`. One VBLANK controller read, sixteen display frames, fifteen GE lists and zero nonblack pixels. See [continuation evidence](../research/startup-vtables-2026-11-18.md#following-direct-helper-and-object-update). |
 | Exception boundaries | VERIFIED 55 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
-| Android host APK | VERIFIED synthetic SDL/Vulkan probe builds, signs and passes ARM64 and x86_64 ELF / 16 KiB ELF and ZIP alignment checks; no game code |
+| Android host APK | VERIFIED synthetic SDL/Vulkan probe builds, signs and passes ARM64 and x86_64 ELF / 16 KiB ELF and ZIP alignment checks; no game code. The Windows hybrid has not yet been packaged for Android. |
 | Host input | VERIFIED synthetic touch identity, stock coordinate and analog contracts; SDL gamepad/touch adapter compiled. Guest one-sample read consumes a VBLANK-produced pad snapshot in the native probe; game-running Android input wiring remains open. |
 | Android virtual device | VERIFIED official emulator API 37 x86_64 / 16 KiB and API 35 x86_64 / 4 KiB: APK installation, Vulkan pixels, touch, virtual controller, navigation overlays, three Home/resume cycles and 30-second advancing-frame intervals; API 35 setup limitations documented |
 | Physical Android device | BLOCKED: no physical ARM64 device/controller attached; hardware GPU/input behavior unverified |

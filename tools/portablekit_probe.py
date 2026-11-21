@@ -84,6 +84,21 @@ def summarize_bmp(path):
             "sha256": hashlib.sha256(data).hexdigest(), "scope": "Diagnostic Vulkan target; no title or gameplay inference"}
 
 
+def aot_execution_counters(trace):
+    """Accept one native function counter and one interpreter count from this probe."""
+    if len(trace) > 8 * 1024 * 1024:
+        raise ValueError("Execution trace exceeds the counter parsing budget")
+    matches = re.findall(r"^native_aot_entry_calls=(\d+) interpreter_instructions=(\d+)$", trace, re.M)
+    linked = re.findall(r"^Exact input admitted; .* hybrid diagnostic entry_aot_linked=([01])$", trace, re.M)
+    if len(matches) != 1 or len(linked) != 1:
+        raise ValueError("Expected exactly one hybrid execution counter and admission marker")
+    native, interpreted = map(int, matches[0])
+    if native and linked[0] != "1":
+        raise ValueError("AOT invocation disagrees with linked entry status")
+    return {"entry_linked": linked[0] == "1", "native_entry_calls": native,
+            "interpreter_instructions": interpreted}
+
+
 def clear_packet(trace, expected_sha):
     """Parse one bounded failed-list observation; never infer missing words."""
     if len(trace) > 8 * 1024 * 1024 or re.findall(r"^input_sha256=(\w+)$", trace, re.M) != [expected_sha]:
@@ -115,6 +130,8 @@ def main(argv=None):
     p.add_argument("--ffmpeg", choices=["OFF", "system", "bundled"], default="OFF",
                    help="Build-only real decoder selection; default OFF")
     p.add_argument("--renderer", action="store_true", help="Build-only Vulkan renderer selection")
+    p.add_argument("--aot-source", type=Path, help="Build-only local output from portablekit_aot.py")
+    p.add_argument("--require-aot", action="store_true", help="Require measured native entry execution and interpreter fallback")
     p.add_argument("--dispatches", type=int, choices=[100000, 250000], default=100000,
                    help="Bounded visual dispatch budget; default 100000")
     args = p.parse_args(argv)
@@ -122,10 +139,14 @@ def main(argv=None):
         raise ValueError("--iso is only valid for a game run")
     if args.action == "render-game" and args.iso is None:
         raise ValueError("Game rendering requires exact ISO")
+    if args.require_aot and (args.action not in ("run", "render-game") or args.iso is None):
+        raise ValueError("--require-aot needs a bounded exact-ISO game run")
     if args.ffmpeg != "OFF" and args.action != "build":
         raise ValueError("--ffmpeg is only valid for build")
     if args.renderer and args.action != "build":
         raise ValueError("--renderer is only valid for build")
+    if args.aot_source is not None and args.action != "build":
+        raise ValueError("--aot-source is only valid for build")
     if args.dispatches != 100000 and args.action != "render-game":
         raise ValueError("--dispatches is only valid for game rendering")
     profile = load_profile(ROOT / "profiles/tekken6/config/profile.json")
@@ -138,10 +159,14 @@ def main(argv=None):
     revision = checked_source(args.source)
     build = local_output(args.build)
     if args.action == "build":
+        aot_source = local_output(args.aot_source) if args.aot_source is not None else ""
+        if aot_source and not aot_source.is_file():
+            raise ValueError("Generated AOT source is missing")
         subprocess.run(["cmake", "-S", str(ROOT / "profiles/tekken6/portablekit"), "-B", str(build),
                         "-DAZAZEL6_PORTABLEKIT_SOURCE=" + str(args.source.resolve()),
                         "-DAZAZEL6_PORTABLEKIT_FFMPEG=" + args.ffmpeg,
-                        "-DAZAZEL6_PORTABLEKIT_RENDERER=" + ("ON" if args.renderer else "OFF")], check=True)
+                        "-DAZAZEL6_PORTABLEKIT_RENDERER=" + ("ON" if args.renderer else "OFF"),
+                        "-DAZAZEL6_PORTABLEKIT_AOT_SOURCE=" + str(aot_source)], check=True)
         subprocess.run(["cmake", "--build", str(build), "--config", "Release", "--parallel", "2",
                         "--target", "azazel6_portablekit_probe", "azazel6_portablekit_bootstrap_tests",
                         "azazel6_portablekit_clock_tests", "azazel6_portablekit_wakeup_tests"], check=True)
@@ -226,6 +251,22 @@ def main(argv=None):
             result["status"] = "timeout"
     if args.action == "render-game":
         result["frame"] = summarize_bmp(capture) if "returncode" in result else {"status": "unavailable"}
+    if "returncode" in result:
+        trace = (output / "execution.log").read_text(encoding="utf-8", errors="replace")
+        if "native_aot_entry_calls=" in trace or args.require_aot:
+            try:
+                result["execution"] = aot_execution_counters(trace)
+            except ValueError as error:
+                result["aot_evidence_error"] = str(error)
+                if args.require_aot:
+                    result["status"] = "invalid_aot_evidence"
+            else:
+                if (result["execution"]["native_entry_calls"] > 0 and
+                        result["execution"]["interpreter_instructions"] > 0 and
+                        result["status"] == "research_boundary"):
+                    result["scope"] = "VERIFIED Windows native Tekken entry AOT plus interpreter fallback; no Android claim"
+                elif args.require_aot:
+                    result["status"] = "missing_hybrid_execution"
     (output / "execution.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result))
     return 0 if result["status"] == "research_boundary" else 1

@@ -112,6 +112,34 @@ successful, is not proof of native execution or gameplay. Never commit the raw
 report or game-derived code. Synthetic inspector regressions live in
 `tests/test_inspect_root.py` and run with the existing Python suite.
 
+## Optional Windows hybrid AOT checkpoint
+
+This isolated profile links one reviewed Tekken entry function into pinned
+PortableKit while retaining its interpreter fallback and shared PSP/ISO/media/
+Vulkan host. The primary Yakumo probe remains separate. The compiler must be
+the `psp_recomp.exe` built from the pinned PortableKit checkout. Supply the
+exact EBOOT and ISO locally; the commands below keep generated source, game
+captures and outputs in ignored `local/` paths. Choose fresh output paths on
+subsequent runs.
+
+```powershell
+python tools/portablekit_aot.py local/game/EBOOT.BIN --compiler local/build/portablekit-probe/portablekit/Release/psp_recomp.exe --output local/portablekit-hybrid-entry
+python tools/portablekit_probe.py build --build local/build/portablekit-vulkan --renderer --ffmpeg bundled --aot-source local/portablekit-hybrid-entry/generated_entry.cpp
+python tools/portablekit_probe.py render-game local/game/EBOOT.BIN --iso "<exact user-supplied ISO>" --build local/build/portablekit-vulkan --output local/portablekit-hybrid-run --require-aot
+```
+
+The build requires the local SDL3, Vulkan and glslang paths described in
+[PortableKit reuse](../research/portablekit.md). The generator refuses a changed
+entry CFG or nonempty output, and CMake checks the local source against its
+exact-input report and source pin. `--require-aot` fails unless the native
+entry wrapper and interpreter both execute in the bounded real-input run.
+The result JSON distinguishes the AOT counter, fallback instruction count and
+Vulkan capture. See [the measured checkpoint](../research/hybrid-aot-portablekit-2026-11-21.md).
+
+When invoking CTest directly on Windows, prepend
+`local/build/portablekit-vulkan/bin` to `PATH` so the pinned FFmpeg DLLs load.
+The build wrapper sets this path for its own CTest run.
+
 ## Android cross-compilation
 
 The native probe accepts optional `--iso <local image>` through `tools/run_probe.py`.

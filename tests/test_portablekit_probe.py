@@ -11,10 +11,23 @@ from types import SimpleNamespace
 
 from test_elf import ROOT, fixture
 from elf import ValidationError
-from portablekit_probe import checked_source, clear_packet, main, probe_environment, summarize_bmp, validate_media
+from portablekit_probe import aot_execution_counters, checked_source, clear_packet, main, probe_environment, summarize_bmp, validate_media
 
 
 class PortableKitProbeTests(unittest.TestCase):
+    def test_native_aot_counter_requires_one_consistent_admission(self):
+        trace = ('Exact input admitted; headless hybrid diagnostic entry_aot_linked=1\n'
+                 'native_aot_entry_calls=1 interpreter_instructions=100\n')
+        self.assertEqual(aot_execution_counters(trace), {
+            'entry_linked': True, 'native_entry_calls': 1, 'interpreter_instructions': 100})
+        for invalid in (trace + trace, trace.replace('entry_aot_linked=1', 'entry_aot_linked=0'),
+                        trace.replace('native_aot_entry_calls=1', 'native_aot_entry_calls=-1'),
+                        trace.replace('interpreter_instructions=100', 'interpreter_instructions=x')):
+            with self.subTest(invalid=invalid[:80]), self.assertRaises(ValueError):
+                aot_execution_counters(invalid)
+        with self.assertRaisesRegex(ValueError, 'exact-ISO'):
+            main(['run', 'local/game/EBOOT.BIN', '--require-aot'])
+
     def test_wrong_input_has_no_side_effects(self):
         (ROOT / 'local').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / 'local') as directory:

@@ -1,5 +1,11 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-21 Windows hybrid lane.** One exact Tekken entry function
+executed as native AOT inside pinned PortableKit; the same runtime then
+interpreted 73,261,212 instructions and rendered the game's Bandai Namco Games
+opening logo through Vulkan. This does not establish the title screen or an
+Android game APK. See [hybrid evidence](../research/hybrid-aot-portablekit-2026-11-21.md).
+
 **VERIFIED, 2026-11-21 following object update.**
 The 1,134-root / 65,487-word exact-input slice passes
 further inspected direct helpers, then stops at missing
