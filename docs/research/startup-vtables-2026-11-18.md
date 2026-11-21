@@ -1113,3 +1113,24 @@ unverified.
 
 **PLANNED:** cover inspected eight-word `0x089550A0`
 and continue bounded execution.
+
+## Following direct helper and object update
+
+**VERIFIED, 2026-11-21:** inspected eight-word
+`0x089550A0` executes. The bounded path next enters
+`0x08AC5CD4`, its direct callee `0x08ACDF3C`, and
+inspected leaves `0x08AD668C` and `0x08AECAAC`.
+These roots were added from the exact executable CFG;
+the run dispatched through the outer two functions.
+
+**VERIFIED bounded stop:** the 1,134-root / 65,487-word
+exact-input slice stops at missing direct function
+`0x0886546C`, reached from the continuing object-update
+chain. One volatile-memory lock remains held. There are
+15 GE lists, one controller read, 16 display frames and
+zero nonblack pixels in the captured 480×272 scanout.
+Title-screen boot and physical ARM64 behavior remain
+unverified.
+
+**PLANNED:** cover inspected five-word `0x0886546C`
+and continue bounded execution.
