@@ -1,5 +1,12 @@
 # Milestone 004: graphics and input
 
+**VERIFIED 2026-11-22 hybrid lane:** an earlier signed ARM64 hybrid Android
+APK rendered the actual Bandai Namco Games opening logo on an x86_64 AVD with
+ARM64 translation. The final font-bearing APK executed AOT and interpreter
+fallback but stopped under strict HLE before a verified game capture. The
+separate primary AOT lane's scanout remains black. No title/menu or physical
+ARM64 rendering is established. See [Android evidence](../research/hybrid-android-apk-2026-11-22.md).
+
 **2026-11-05 local continuation:** validated ISO access allows the media worker to
 complete and startup to advance to a new guarded callback. Scanout remains black;
 neither visual gate is complete. See [media evidence](../research/local-media-continuation.md).

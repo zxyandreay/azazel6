@@ -1,5 +1,14 @@
 # Android ARM64 preparation
 
+**VERIFIED 2026-11-22:** a signed API 29+ Android ARM64 hybrid game APK now
+links one exact Tekken 6 AOT function with PortableKit's shared interpreter,
+kernel, ISO, FFmpeg and Vulkan host. It installed and executed its AOT and
+fallback paths on an x86_64 AVD with ARM64 translation. The final package
+stopped at a strict CancelWakeup guard; an earlier fontless package rendered
+the game opening logo. Physical ARM64, graphical ISO picker and title/menu
+behavior remain unverified. See [Android evidence](../research/hybrid-android-apk-2026-11-22.md)
+and [build instructions](../development/android-game.md).
+
 **VERIFIED 2026-10-17:** NDK `27.1.12297006` (r27b), Clang 18.0.2,
 CMake 4.0.3 and Ninja from SDK CMake 3.22.1 cross-compiled the math library,
 PSPRecomp core/tools and generated entry probe for `arm64-v8a`, API 26. The
@@ -15,19 +24,23 @@ implies a compatible driver. Resolve device features, formats and queues at star
 
 ## Application integration
 
-Use SDL3's Android activity and Java classes from the same pinned SDL source as
-the native library. The synthetic `libmain.so` owns a checked Vulkan clear
-presenter and sampled input adapter. [ADR-0003](../decisions/ADR-0003-android-host-probe.md)
-selects SDK-tool packaging for this diagnostic, with the external SDL activity.
-A conventional Gradle externalNativeBuild integration remains the planned
-product route once a running game host warrants it.
+Both the synthetic diagnostic and the hybrid game APK use SDL3's Android
+activity and Java classes from the pinned SDL source. The synthetic
+`libmain.so` owns a checked Vulkan clear presenter and sampled input adapter;
+the game package links the shared PortableKit host instead.
+[ADR-0003](../decisions/ADR-0003-android-host-probe.md) selects SDK-tool
+packaging for the diagnostic. The hybrid APK also uses SDK tools and local
+debug signing; a distribution build process remains planned.
 
-Use Android's Storage Access Framework picker for user game imports. A content URI
-is not a filesystem path: use a granted descriptor or bounded streaming copy into
-app-private storage, hash the copied bytes, reject incompatible executables and
-commit the import atomically. Preserve user permission grants and report disk-space,
-cancellation and partial-copy errors. Never request broad storage access just to
-avoid URI handling. Separate immutable game input, caches, saves and diagnostics.
+PortableKit's Android app includes a file picker for user game imports. Its
+graphical behavior has not been verified on the translated AVD; the measured
+runtime used exact inputs placed in app-private storage by `run-as`. A content
+URI is not a filesystem path: import through a granted descriptor or bounded
+streaming copy into app-private storage, hash the copied bytes, reject
+incompatible executables and commit the import atomically. Preserve user
+permission grants and report disk-space, cancellation and partial-copy errors.
+Never request broad storage access just to avoid URI handling. Separate
+immutable game input, caches, saves and diagnostics.
 
 Recreate Vulkan swapchains on surface/size changes without destroying guest game
 state. Pause presentation/audio as required on backgrounding; resume with valid

@@ -6,8 +6,8 @@ These are dependency-ordered research milestones, not delivery promises.
 | --- | --- | --- |
 | 001 Foundation | Implemented | Pinned framework, validation, analysis, native entry slice, Android cross-build |
 | 002 Native bring-up | Implemented: bounded native bootstrap and child execution | First import semantics, wider verified AOT coverage, bootstrap ABI, explicit failure boundaries |
-| 003 Boot sequence | In progress: startup completes GE initialization and display mode under bounded idle events; title gate remains open | Kernel threads, scheduler, I/O, module loading and title-screen progression |
-| 004 Graphics/input | In progress: [interrupt/display/GE foundation and synthetic Android host APK](../milestones/004-graphics-input.md); synthetic AVD Vulkan/input/lifecycle verified; first native VRAM clears verified; general game drawing and physical-device verification remain open | GE/Vulkan correctness, menus, gamepads and multitouch |
+| 003 Boot sequence | In progress: the PortableKit hybrid executes one verified Tekken function as AOT, interprets further startup, and has rendered the opening logo; the final Android APK stops at a strict CancelWakeup guard, while the longer Windows run reaches movie-player current PTS. The primary AOT lane has a separate missing-function stop. Title gate remains open. | Kernel threads, scheduler, I/O, module loading and title-screen progression |
+| 004 Graphics/input | In progress: [interrupt/display/GE foundation](../milestones/004-graphics-input.md), synthetic Android host probe and genuine hybrid game APK. An earlier hybrid package rendered game opening-logo pixels on an ARM64-translating AVD; the final font-bearing package's rendering and physical-device behavior remain unverified. | GE/Vulkan correctness, menus, gamepads and multitouch |
 | 005 Stock combat | Planned | Character selection, training, advancing simulation, audio and stable stock matches |
 | 006 Ultrawide | Planned | Verified 3D projection and semantic HUD ownership, round-win matrix |
 | 007 Textures/mod platform | Planned | Compatible texture keys, safe resource packages, conflict management |

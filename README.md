@@ -1,46 +1,52 @@
 # Azazel6
 
 **An independent, unofficial project researching a standalone native Android
-ARM64 port of Tekken 6 for PSP.** Azazel6 translates verified Allegrex/MIPS code
-ahead of time to C++ and supplies the PSP runtime around it. Users must supply
-compatible files from their own game copy.
+ARM64 port of Tekken 6 for PSP.** Azazel6 recompiles reviewed Allegrex/MIPS
+functions ahead of time and uses a PSP interpreter for uncovered code. Users
+must supply compatible files from their own game copy.
 
-**Status (2026-10-25): Milestone 002 implemented; Milestones 003 and 004 in
-progress. Not playable. No title screen, displayed game scene, audio or guest
-controls.** The bounded translated-game startup reaches graphics initialization,
-four VBLANK returns, GE state setup and guarded graphics-object calls, then
-completes matrix/resource setup, builds a clear command block and synchronizes
-completed GE work and latches the next framebuffer. Two clear/flip cycles write guest VRAM and return through FINISH callbacks.
-Startup then stops at guarded target `0x08862338` from `0x08860FBC`. A **separate synthetic** SDL/Vulkan
-Android probe APK builds for ARM64 and x86_64, and has run on an official x86_64
-AVD. That APK does not execute Tekken 6.
+**Status (2026-11-22): the first genuine hybrid Android ARM64 debug APK is
+built and signed; Milestones 003 and 004 remain in progress. The game is not
+playable and the title screen and menus have not been reached.** The APK links
+one verified Tekken 6 USA function as ARM64 code into the shared PortableKit
+interpreter, PSP kernel, ISO, FFmpeg and Vulkan runtime. It contains no game
+files. On an x86_64 emulator with ARM64 translation, the final APK installed,
+validated the exact game input, executed that AOT function once and then
+interpreted 54,086,580 instructions. Strict HLE stopped that run at a
+CancelWakeup context guard. An earlier fontless hybrid APK rendered the actual
+Bandai Namco Games opening logo on the same translated emulator. Neither run
+establishes physical ARM64 device behavior or title-screen boot. See the
+[Android checkpoint](docs/research/hybrid-android-apk-2026-11-22.md).
 
 ## What works
 
 - Exact executable fingerprint and bounded ELF validation for Tekken 6 USA.
 - Sectionless PSP module/GP discovery and 268-import inventory.
 - Pinned Yakumo/PSPRecomp framework fetch, native builds and regression tests.
-- Real executable analysis and local exploratory AOT generation.
-- Bounded translated startup with modeled thread, display/VBLANK and GE initialization
-  services. The title-screen boot gate is still open.
-- Checked, local-only inspection of the next uncovered helper via
-  `python tools/inspect_root.py local/game/EBOOT.BIN --root 0x08AC6D74 --inspect-existing-root`;
-  this does not authorize new AOT roots.
+- A verified one-function Tekken 6 AOT corpus, compiled for Windows and Android
+  ARM64, with interpreter fallback in the same PortableKit runtime.
+- Exact-ISO Windows hybrid execution with one native AOT call, 73,261,212
+  interpreted instructions and a Vulkan opening-logo capture.
+- A signed Android ARM64 hybrid debug APK with exact input checks, strict HLE,
+  FFmpeg decoding, Vulkan rendering and a pinned fallback CJK font. Its AOT
+  counter and interpreter fallback ran on an ARM64-translating x86_64 emulator.
+- A separate primary AOT research lane with bounded thread, display/VBLANK and
+  GE startup contracts. It has not reached a visible game frame.
 - Tested semantic HUD aspect mathematics, with no gameplay hooks installed.
-- Android ARM64 cross-compilation of the expanded entry probe and a separate
-  synthetic Android Vulkan/input/lifecycle diagnostic APK.
+- A separate synthetic Android Vulkan/input/lifecycle diagnostic APK; its
+  results are not game-execution evidence.
 
-The long-term product is a dedicated Android application, not a PPSSPP frontend
-or PRX plugin. AOT still requires memory semantics, kernel/HLE, GE graphics,
-audio, file I/O and a controlled fallback for uncovered code. Performance relative
-to PPSSPP is unmeasured.
+The long-term product is a dedicated Android application. Startup still needs
+correct movie-player, ATRAC, GE and kernel behavior. Performance relative to
+PPSSPP is unmeasured. Physical Android hardware, game audio, controls, title
+screen and gameplay remain unverified.
 
-**Latest bounded investigation:** The verified non-likely delay-slot source for
-callback `0x08862338` has now been exercised in the native probe. The 438-root
-slice reaches five VBLANK events, four Complete GE lists and source-only Memory
-Stick callback registration before stopping at missing power-callback registration
-`0x04B7766E`. This remains startup research, with no
-title/menu or playable-game claim. See [executed continuation](docs/research/startup-indirect-2026-10-22.md#post-clear-timing-and-state-callback-2026-10-27).
+**Current limits:** the final Android run stopped at a strict
+`sceKernelCancelWakeupThread` context check; a longer Windows hybrid run reaches
+the movie-player current-PTS barrier. The primary AOT lane is maintained
+separately and still stops at a missing direct function. See
+[progress](docs/project/progress.md) and the
+[Windows hybrid evidence](docs/research/hybrid-aot-portablekit-2026-11-21.md).
 
 ## Start without game files
 
@@ -64,18 +70,20 @@ ctest --test-dir local/build/all -C Release --output-on-failure
 ```
 
 For your own decrypted EBOOT, run `python tools/analyze.py local/game/EBOOT.BIN`.
-See [building](docs/development/building.md) for analysis, generation, the native
-probe and Android commands. Game inputs, generated translations and local reports
-must remain under ignored paths. No game download or decryption service is provided.
+See [building](docs/development/building.md) for analysis, generation and the
+native probe, and [hybrid Android build](docs/development/android-game.md) for
+the signed game APK. Game inputs, generated translations, APKs and local reports
+must remain under ignored paths. No game files are distributed.
 
-The separate [Android host probe](docs/development/android-host.md) builds a
-synthetic Vulkan/input diagnostic APK without game files. It is not a playable
-Tekken application.
+The [Android host probe](docs/development/android-host.md) is a separate
+synthetic Vulkan/input diagnostic. Its APK does not run Tekken 6.
 
 ## Project knowledge
 
 - [Documentation index](docs/README.md)
 - [Progress and compatibility](docs/project/progress.md)
+- [First hybrid Android APK evidence](docs/research/hybrid-android-apk-2026-11-22.md)
+- [Hybrid Android build instructions](docs/development/android-game.md)
 - [Roadmap](docs/project/roadmap.md)
 - [Milestone 001 evidence](docs/milestones/001-project-foundation.md)
 - [Milestone 002 checkpoint and next task](docs/milestones/002-native-bring-up.md)

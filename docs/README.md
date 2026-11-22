@@ -8,6 +8,14 @@ Reviewed 2026-11-22. Evidence labels apply to individual claims:
 - **PLANNED:** a design not implemented.
 - **BLOCKED:** progress requires a named prerequisite.
 
+**Current checkpoint:** a signed Android ARM64 hybrid APK contains one verified
+Tekken 6 AOT function and an interpreter fallback. Its final font-bearing build
+installed and executed both paths on an ARM64-translating x86_64 emulator, then
+stopped at a strict CancelWakeup guard. An earlier hybrid APK rendered the
+game's opening logo. Title, menus and physical ARM64 execution remain
+unverified. See [progress](project/progress.md) and
+[Android evidence](research/hybrid-android-apk-2026-11-22.md).
+
 ## Project
 
 - [Vision and scope](project/vision.md)
