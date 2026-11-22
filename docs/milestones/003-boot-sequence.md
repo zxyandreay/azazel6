@@ -1,10 +1,18 @@
 # Milestone 003: boot sequence
 
+**VERIFIED, 2026-11-22 hybrid Android APK.** A signed ARM64 APK with the
+exact Tekken 6 USA entry function linked as native AOT ran on an x86_64
+Android emulator with ARM64 translation. Its log measured one native AOT
+entry call and interpreter fallback; a capture showed the game's opening
+Bandai Namco Games logo. This is translated-device evidence, not physical
+ARM64 hardware validation, title boot or functional menus. See
+[Android checkpoint](../research/hybrid-android-apk-2026-11-22.md).
+
 **VERIFIED, 2026-11-21 Windows hybrid lane.** One exact Tekken entry function
 executed as native AOT inside pinned PortableKit; the same runtime then
 interpreted 73,261,212 instructions and rendered the game's Bandai Namco Games
-opening logo through Vulkan. This does not establish the title screen or an
-Android game APK. See [hybrid evidence](../research/hybrid-aot-portablekit-2026-11-21.md).
+opening logo through Vulkan. It does not establish the title screen. See
+[hybrid evidence](../research/hybrid-aot-portablekit-2026-11-21.md).
 
 **VERIFIED, 2026-11-21 following object update.**
 The 1,134-root / 65,487-word exact-input slice passes

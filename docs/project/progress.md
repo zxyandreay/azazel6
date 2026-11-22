@@ -1,6 +1,6 @@
 # Progress and compatibility
 
-**2026-11-21: Milestone 002 implemented; Milestones 003 and 004 in progress.**
+**2026-11-22: Milestone 002 implemented; Milestones 003 and 004 in progress.**
 Azazel6 is not playable. See
 [current checkpoint](../milestones/003-boot-sequence.md),
 [foundation evidence](../milestones/001-project-foundation.md) and
@@ -11,7 +11,7 @@ Azazel6 is not playable. See
 | Repository source, licensing, docs, CI | Implemented |
 | Locked framework fetch | VERIFIED reproducible sparse checkout |
 | Windows framework build/regressions | VERIFIED, three suites passed |
-| Python/profile tools | VERIFIED, 103 cases passed locally, including media validation, guest execution watchdogs, exact-site VFPU lowering guards and hybrid AOT admission/counter refusals |
+| Python/profile tools | VERIFIED, 109 cases passed locally, including media validation, guest execution watchdogs, exact-site VFPU lowering guards, hybrid AOT admission/counter refusals and pinned font admission |
 | Semantic aspect math | VERIFIED native contracts passed |
 | Startup HLE / returning imports | VERIFIED synthetic contracts and 29 integrated native CTest suites, including exact AV module IDs and duplicate-load state |
 | Thread lifecycle | VERIFIED create/start/exit/delete and exit-status queries, copied arguments and service-boundary priority scheduling and strict-priority changes; VFPU attributes are supported at creation and by later addition/removal |
@@ -49,11 +49,11 @@ Azazel6 is not playable. See
 | Exception boundaries | VERIFIED 55 generated BREAK sites retain terminal stops; no exception delivery or syscall fallback |
 | Android ARM64 build | VERIFIED framework, math, startup HLE and expanded entry probe compiled/linked |
 | Linux execution | VERIFIED startup-object, fixed-pool, language and event-flag checkpoints passed hosted CI |
-| Android host APK | VERIFIED synthetic SDL/Vulkan probe builds, signs and passes ARM64 and x86_64 ELF / 16 KiB ELF and ZIP alignment checks; no game code. The Windows hybrid has not yet been packaged for Android. |
+| Android host APK | VERIFIED synthetic SDL/Vulkan probe and separate signed ARM64 genuine hybrid APK. The final hybrid packages one exact Tekken native AOT function, interpreter, ISO, FFmpeg, Vulkan and pinned fallback font. An x86_64 emulator with ARM64 translation installed and ran it: measured `native_aot_entry_calls=1`, 54,086,580 interpreted instructions and font loading, then a strict CancelWakeup stop. The earlier fontless package rendered actual opening-logo pixels. Physical ARM64 device remains untested. See [Android evidence](../research/hybrid-android-apk-2026-11-22.md). |
 | Host input | VERIFIED synthetic touch identity, stock coordinate and analog contracts; SDL gamepad/touch adapter compiled. Guest one-sample read consumes a VBLANK-produced pad snapshot in the native probe; game-running Android input wiring remains open. |
 | Android virtual device | VERIFIED official emulator API 37 x86_64 / 16 KiB and API 35 x86_64 / 4 KiB: APK installation, Vulkan pixels, touch, virtual controller, navigation overlays, three Home/resume cycles and 30-second advancing-frame intervals; API 35 setup limitations documented |
 | Physical Android device | BLOCKED: no physical ARM64 device/controller attached; hardware GPU/input behavior unverified |
-| Game boot/combat/graphics/audio/input | Native boot passes the first guest controller read, RTC calendar and libc time queries and earlier VRAM clears; title, visible scene, stock gameplay, audio and physical guest controls remain unverified. |
+| Game boot/combat/graphics/audio/input | The PortableKit hybrid renders the Bandai Namco Games opening logo on Windows and a translated Android emulator. Title, menus, gameplay, audio output and physical guest controls remain unverified. The primary AOT lane still stops at a missing direct function. |
 | Ultrawide gameplay hooks / moveset packages | PLANNED; reference research only |
 
 Supported game-input identity is limited to the exact USA decrypted baseline.

@@ -1,6 +1,6 @@
 # Azazel6 technical knowledge base
 
-Reviewed 2026-10-28. Evidence labels apply to individual claims:
+Reviewed 2026-11-22. Evidence labels apply to individual claims:
 
 - **VERIFIED:** inspected source/bytes or reproduced execution/test in this project.
 - **DOCUMENTED:** reported by a reference project, not reproduced here.
@@ -50,6 +50,7 @@ Reviewed 2026-10-28. Evidence labels apply to individual claims:
 - [PortableKit compatibility and reuse](research/portablekit.md)
 - [Interpreter-first bring-up comparison](research/interpreter-first-bring-up-2026-11-21.md)
 - [First PortableKit hybrid AOT checkpoint](research/hybrid-aot-portablekit-2026-11-21.md)
+- [First hybrid Android APK checkpoint](research/hybrid-android-apk-2026-11-22.md)
 - [Startup mutex ownership](research/mutexes.md)
 - [Bounded semaphore signaling and deletion](research/semaphores.md)
 - [Guarded formatter jump table](research/jump-tables.md)
@@ -81,6 +82,7 @@ Reviewed 2026-10-28. Evidence labels apply to individual claims:
 
 - [Setup and builds](development/building.md)
 - [Synthetic Android host probe](development/android-host.md)
+- [Tekken 6 hybrid Android game build](development/android-game.md)
 - [Testing and debugging](development/testing.md)
 - [Coding standards and workflow](development/workflow.md)
 

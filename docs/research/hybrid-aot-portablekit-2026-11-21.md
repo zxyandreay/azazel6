@@ -67,11 +67,10 @@ FFmpeg ABI.
 at `scePsmfPlayerGetCurrentPts` (`0x3ED62233`). ATRAC ID-pool and GE completion
 semantics also need review. This AOT slice did not change those services.
 
-**PLANNED:** port the shared hybrid host, exact media admission, FFmpeg and
-Vulkan stack to an ARM64 Android application; package a signed debug APK and
-verify native AOT counters on a matching device. PortableKit's upstream
-Android entry point and the separate synthetic Azazel6 host are useful
-starting points, but neither is an Android Tekken hybrid APK yet.
+**VERIFIED 2026-11-22:** the shared hybrid host, exact media admission,
+FFmpeg and Vulkan stack were packaged into a signed ARM64 APK. See the
+[Android checkpoint](hybrid-android-apk-2026-11-22.md) for translated-emulator
+runtime evidence and the remaining physical-device/title limits.
 
 To reproduce generation and the Windows run, use the commands in
 [building](../development/building.md#optional-windows-hybrid-aot-checkpoint).

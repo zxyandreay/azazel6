@@ -60,6 +60,10 @@ if(AZAZEL6_PORTABLEKIT_AOT_SOURCE)
         set_source_files_properties("${aot_source}" PROPERTIES COMPILE_OPTIONS "-O2;-g0")
     endif()
 endif()
+if(ANDROID AND (NOT PORTABLEKIT_ANDROID_APP OR NOT aot_sources OR
+                NOT AZAZEL6_PORTABLEKIT_RENDERER))
+    message(FATAL_ERROR "Android Tekken builds require the SDL app, Vulkan and verified local AOT source")
+endif()
 portablekit_add_game(azazel6_portablekit_probe ${aot_options} PROFILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
     HOST_MAIN_NAME unused_portablekit_main SOURCES probe.cpp ge_contracts.cpp renderer_contracts.cpp ${aot_sources})
 if(aot_sources)
